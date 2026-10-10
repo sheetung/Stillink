@@ -180,9 +180,10 @@ static esp_err_t settings_get_handler(httpd_req_t *req)
 
     snprintf(buf, sizeof(buf),
         "{\"panel\":%u,\"hflip\":%u,\"a1_mode\":%u,\"wifi_pwr\":%u,"
-        "\"sleep_s\":%lu,\"wake_s\":%lu,\"ssid\":\"%s\",\"pass_set\":%s}",
+        "\"sleep_s\":%lu,\"wake_s\":%lu,\"bat_cal_ppm\":%lu,\"ssid\":\"%s\",\"pass_set\":%s}",
         s->panel, s->hflip, s->a1_mode, s->wifi_pwr,
         (unsigned long)s->sleep_s, (unsigned long)s->wake_s,
+        (unsigned long)s->bat_cal_ppm,
         s->ap_ssid, s->ap_pass[0] ? "true" : "false");
 
     httpd_resp_set_type(req, "application/json");
@@ -210,6 +211,15 @@ static esp_err_t settings_post_handler(httpd_req_t *req)
     char v[SETT_PASS_MAX];
     bool ap_changed = false;
     bool panel_changed = false, hflip_changed = false;
+
+    if (kv_get(body, "bat_cal_ppm", v, sizeof(v))) {
+        char *end;
+        unsigned long ppm = strtoul(v, &end, 10);
+        if (!v[0] || *end || ppm < 500000 || ppm > 1500000)
+            return httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid battery calibration");
+        if (settings_set_battery_cal((uint32_t)ppm) != ESP_OK)
+            return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Cannot save battery calibration");
+    }
 
     if (kv_get(body, "panel", v, sizeof(v))) {
         settings_set_panel((uint8_t)atoi(v));

@@ -10,7 +10,7 @@
  * 旋转…）都留在手机 localStorage，固件只存会影响「传输与电源」的这几项。
  *
  * ★ R1.2.0（FB-015）起：每次固件升级都强制重置设置
- * （settings_reset_for_upgrade()），只保留热点名与密码。旧值不参与兼容，
+ * （settings_reset_for_upgrade()），保留热点名、密码与电池校准。旧值不参与兼容，
  * 因此这里不再有任何「历史值归一」逻辑；越界值一律回落到默认档。
  */
 
@@ -41,6 +41,7 @@ typedef struct {
     uint8_t  wifi_pwr;  /* SETT_WIFI_PWR_HIGH / MID / LOW */
     uint32_t sleep_s;   /* 空闲后深睡；0 = 不休眠 */
     uint32_t wake_s;    /* 定时自动唤醒间隔；0 = 关闭 */
+    uint32_t bat_cal_ppm; /* Battery gain, 1000000 = 1.0; preserved across OTA. */
     char     ap_ssid[SETT_SSID_MAX];  /* 空 = 用默认 Stillink-XXXX */
     char     ap_pass[SETT_PASS_MAX];  /* 空 = 热点开放 */
 } epaper_settings_t;
@@ -55,6 +56,7 @@ esp_err_t settings_set_a1_mode(uint8_t v);
 esp_err_t settings_set_wifi_pwr(uint8_t v);
 esp_err_t settings_set_sleep(uint32_t v);
 esp_err_t settings_set_wake(uint32_t v);
+esp_err_t settings_set_battery_cal(uint32_t ppm);
 /* FB-014①：ssid / pass 任一为 NULL = 保持当前值；pass 为空串 = 清除密码（热点开放）。 */
 esp_err_t settings_set_ap(const char *ssid, const char *pass);
 
@@ -62,7 +64,7 @@ esp_err_t settings_set_ap(const char *ssid, const char *pass);
 void settings_factory_reset(void);
 
 /*
- * 固件升级强制重置：擦除除热点名/密码以外的全部设置键。
+ * 固件升级强制重置：擦除除热点名/密码及电池校准以外的设备设置键。
  * 页面热更标记（web_len / web_crc / page_ver）由 ota_web_clear() 负责清除。
  * 调用方在固件校验通过、确定要切槽重启之后调用。
  */

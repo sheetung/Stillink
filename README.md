@@ -46,15 +46,15 @@ idf.py -p COM11 flash monitor
 生成整包及 OTA 镜像：
 
 ```powershell
-python tools/package_bins.py V0.0.1
-python tools/flash_device.py --port COM11 --bin stillink_V0.0.1_merged.bin
+python tools/package_bins.py V0.0.2
+python tools/flash_device.py --port COM11 --bin stillink_V0.0.2_merged.bin
 ```
 
-- `build/stillink.bin` / `stillink_V0.0.1_app.bin`：应用镜像，供 OTA 使用。
-- `stillink_V0.0.1_merged.bin`：含启动程序、分区表和应用，USB 烧录地址为 `0x0`。
-- `flash_kit/`：预编译 V0.0.1 镜像、网页和 Windows 一键刷机脚本。
+- `build/stillink.bin` / `stillink_V0.0.2_app.bin`：应用镜像，供 OTA 使用。
+- `stillink_V0.0.2_merged.bin`：含启动程序、分区表和应用，USB 烧录地址为 `0x0`。
+- `flash_kit/`：预编译 V0.0.2 镜像、网页和 Windows 一键刷机脚本。
 
-旧版 R1.2.1 的 OTA 校验固定为 ESP32-C3 芯片标识；当前 C6 板首次升级到 V0.0.1 请用 USB。V0.0.1 已按实际构建目标校验镜像。
+旧版 R1.2.1 的 OTA 校验固定为 ESP32-C3 芯片标识；当前 C6 板首次升级到 V0.0.2 请用 USB。V0.0.2 已按实际构建目标校验镜像。
 
 ## 热点直连与 Wi-Fi 配网
 
@@ -71,16 +71,23 @@ python tools/flash_device.py --port COM11 --bin stillink_V0.0.1_merged.bin
 
 直接以 `file://` 打开网页可进行本地编辑与预览；要操作设备，请访问热点 / 局域网控制页，或使用从设备页面导出的离线客户端。
 
+## 电池电压校准
+
+电池检测使用 GPIO0：电池正极经 470kΩ 接 GPIO0，GPIO0 经 100kΩ 接地，电池与开发板共地。供电需另接合适的稳压及充电电路，不可把锂电池直接接到 3.3V 引脚。
+
+在设备设置展开「电池电压校准」，等电池读数稳定后，输入万用表测得的实际电压（例如 4.10 V），点击「保存校准」。设备会按当前读数计算校正系数；再次校准会考虑已有系数。未检测到电池或偏差过大时不保存。支持恢复默认，校准在重启与 OTA 后保留，恢复出厂会清除。单点校准仅改善电压显示，不等于精确电量估算。
+
 ## 开发与验证
 
 ```powershell
 node tools/smoke_page.js
 node tools/test_wifi_page.js
+node tools/test_battery_page.js
 python tools/check_frame.py
 idf.py build
 ```
 
-页面测试覆盖帧打包、页面结构和配网交互，包括扫描结果、凭据编码、连接状态、局域网链接与忘记网络。V0.0.1 已完成 ESP32-C6 编译和页面测试；此前 R1.2.1 已在 COM11 完成 USB 烧录与启动检查，V0.0.1 配网仍需真机连接路由器验证。
+页面测试覆盖帧打包、页面结构和配网交互，包括扫描结果、凭据编码、连接状态、局域网链接与忘记网络。V0.0.2 已完成 ESP32-C6 编译和页面测试；此前 R1.2.1 已在 COM11 完成 USB 烧录与启动检查，V0.0.2 配网仍需真机连接路由器验证。
 
 内部 NVS 命名空间与网页版本标记保留 `epaper` 标识，以保持已有设置和页面升级格式兼容。
 

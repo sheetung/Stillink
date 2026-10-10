@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="epaper-page-version" content="V0.0.1">
+<meta name="epaper-page-version" content="V0.0.2">
 <title>Stillink</title>
 <style>
 /* ===== Cropper.js v1.6.2 | MIT | https://github.com/fengyuanchen/cropperjs ===== */
@@ -361,6 +361,15 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
       <div><span>电池</span><b id="i-bat">—</b></div>
       <div><span>在线设备</span><b id="i-clients">—</b></div>
     </div>
+
+    <details>
+      <summary>电池电压校准</summary>
+      <p class="hint">接好电池与分压电阻，等设备显示稳定电压后，输入万用表测得的电池电压。校准会保存到设备，重启及固件升级后保留。</p>
+      <div class="row"><label for="batActual">实际电压</label><input id="batActual" type="number" min="2.4" max="4.6" step="0.01" inputmode="decimal" placeholder="例如 4.10"><span>V</span></div>
+      <div class="row"><button class="mini" id="saveBatteryCal">保存校准</button><button class="mini" id="resetBatteryCal">恢复默认</button></div>
+      <p class="hint" id="batteryCalFactor">校正系数：—</p>
+      <span class="savestate" id="batterymsg"></span>
+    </details>
 
     <details>
       <summary>休眠与唤醒</summary>
@@ -2064,6 +2073,7 @@ function refreshInfo(){
 function loadSettings(){
   refreshWifiStatus();
   fetch(api("/api/settings")).then(function(r){ return r.json(); }).then(function(s){
+    renderBatteryCalibration(s);
     $("sleepSel").value = String(s.sleep_s);
     $("wakeSel").value = String(s.wake_s);
     $("apSsid").value = s.ssid || "";
@@ -2202,7 +2212,7 @@ $("forgetWifi").addEventListener("click", function(){
 });
 
 var SETT_LABEL = { panel:"屏幕", hflip:"左右镜像", a1_mode:"A1 驱动",
-                   wifi_pwr:"WiFi 功率", sleep_s:"休眠", wake_s:"自动唤醒",
+                   wifi_pwr:"WiFi 功率", bat_cal_ppm:"电池校准", sleep_s:"休眠", wake_s:"自动唤醒",
                    ssid:"热点名", pass:"热点密码" };
 function saveState(id, kind, text){
   var el = id ? $(id) : null; if (!el) return;
@@ -2276,6 +2286,39 @@ function postSettings(fields, done, stateId, note){
     });
   });
 }
+/* ---------- 电池校准 ---------- */
+function renderBatteryCalibration(s){
+  var supported = Number.isFinite(s.bat_cal_ppm);
+  $("saveBatteryCal").disabled = $("resetBatteryCal").disabled = !supported;
+  $("batteryCalFactor").textContent = supported ? "校正系数：" + (s.bat_cal_ppm / 1000000).toFixed(4) : "请先升级支持电池校准的固件";
+}
+function batteryCalibrationPpm(actual, measured, current){
+  if (!Number.isFinite(actual) || actual < 2.4 || actual > 4.6) throw new Error("请输入 2.4～4.6 V 的实际电压");
+  if (!(measured > 0)) throw new Error("尚未检测到电池，请检查接线并等待电压读数稳定");
+  if (!Number.isFinite(current)) throw new Error("请先升级支持电池校准的固件");
+  var ppm = Math.round(current * actual * 1000 / measured);
+  if (ppm < 500000 || ppm > 1500000) throw new Error("偏差过大，请检查分压电阻与电池接线");
+  return ppm;
+}
+$("saveBatteryCal").addEventListener("click", function(){
+  if (LOCAL_PREVIEW){ saveState("batterymsg", "warn", "请连接设备后校准"); return; }
+  var actual = Number($("batActual").value);
+  if (!Number.isFinite(actual) || actual < 2.4 || actual > 4.6){ saveState("batterymsg", "err", "请输入 2.4～4.6 V 的实际电压"); return; }
+  $("saveBatteryCal").disabled = true;
+  saveState("batterymsg", "busy", "正在读取电池电压…");
+  Promise.all(["/api/info", "/api/settings"].map(function(path){
+    return fetch(api(path + "?t=" + Date.now())).then(function(r){ if (!r.ok) throw new Error("无法读取设备数据"); return r.json(); });
+  })).then(function(data){
+    var ppm = batteryCalibrationPpm(actual, data[0].bat_mv, data[1].bat_cal_ppm);
+    postSettings({bat_cal_ppm:ppm}, function(){ refreshInfo(); loadSettings(); }, "batterymsg");
+  }).catch(function(error){ saveState("batterymsg", "err", error.message); })
+    .finally(function(){ $("saveBatteryCal").disabled = false; });
+});
+$("resetBatteryCal").addEventListener("click", function(){
+  if (LOCAL_PREVIEW){ saveState("batterymsg", "warn", "请连接设备后操作"); return; }
+  postSettings({bat_cal_ppm:1000000}, function(){ refreshInfo(); loadSettings(); }, "batterymsg");
+});
+/* ---------- 电池校准结束 ---------- */
 /* 休眠/唤醒改为显式保存（不再随下拉框变更即时保存） */
 $("saveSleep").addEventListener("click", function(){
   postSettings({ sleep_s: $("sleepSel").value, wake_s: $("wakeSel").value },

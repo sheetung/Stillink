@@ -117,9 +117,9 @@ int power_battery_mv(void)
 
     int raw = 0;
     if (adc_oneshot_read(s_adc, ADC_CHANNEL_0, &raw) != ESP_OK) { s_valid = 0; return -1; }
-    int mv = raw * BAT_FULLSCALE_MV / BAT_ADC_MAX * BAT_DIV_NUM / BAT_DIV_DEN;
+    int mv = (int)((int64_t)raw * BAT_FULLSCALE_MV * BAT_DIV_NUM / BAT_ADC_MAX / BAT_DIV_DEN);
 
     if (mv < BAT_MV_MIN || mv > BAT_MV_MAX) { s_valid = 0; return -1; }
     if (++s_valid < 3) return -1;
-    return mv;
+    return (int)((int64_t)mv * settings_get()->bat_cal_ppm / 1000000);
 }

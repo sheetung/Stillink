@@ -18,6 +18,7 @@ static const epaper_settings_t DEFAULTS = {
     .wifi_pwr = SETT_WIFI_PWR_MID,
     .sleep_s  = SETT_SLEEP_3MIN,
     .wake_s   = SETT_WAKE_OFF,
+    .bat_cal_ppm = 1000000,
     .ap_ssid  = "",
     .ap_pass  = "",
 };
@@ -65,6 +66,9 @@ void settings_init(void)
     read_u8("wifi_pwr", &s_cfg.wifi_pwr);
     read_u32("sleep_s", &s_cfg.sleep_s);
     read_u32("wake_s",  &s_cfg.wake_s);
+    read_u32("bat_cal_ppm", &s_cfg.bat_cal_ppm);
+    if (s_cfg.bat_cal_ppm < 500000 || s_cfg.bat_cal_ppm > 1500000)
+        s_cfg.bat_cal_ppm = DEFAULTS.bat_cal_ppm;
     read_str("ap_ssid", s_cfg.ap_ssid, SETT_SSID_MAX);
     read_str("ap_pass", s_cfg.ap_pass, SETT_PASS_MAX);
 
@@ -158,6 +162,16 @@ esp_err_t settings_set_wake(uint32_t v)
     return ESP_OK;
 }
 
+esp_err_t settings_set_battery_cal(uint32_t ppm)
+{
+    if (ppm < 500000 || ppm > 1500000) return ESP_ERR_INVALID_ARG;
+    if (!s_ok) return ESP_ERR_INVALID_STATE;
+    esp_err_t err = nvs_set_u32(s_nvs, "bat_cal_ppm", ppm);
+    if (err == ESP_OK) err = nvs_commit(s_nvs);
+    if (err == ESP_OK) s_cfg.bat_cal_ppm = ppm;
+    return err;
+}
+
 esp_err_t settings_set_ap(const char *ssid, const char *pass)
 {
     /* FB-014①：单字段更新 —— 任一参数为 NULL 表示「保持当前值」；
@@ -198,6 +212,7 @@ void settings_factory_reset(void)
 
 void settings_reset_for_upgrade(void)
 {
+    uint32_t calibration = s_cfg.bat_cal_ppm;
     /* 每次固件升级都强制重置设置：旧值不参与兼容（FB-015）。热点名与密码**保留**，
        否则设备会以默认开放热点出现，用户得重新寻找并重连才能继续用页面。 */
     static const char *KEYS[] = { "panel", "hflip", "a1_mode",
@@ -213,6 +228,7 @@ void settings_reset_for_upgrade(void)
     }
 
     s_cfg = DEFAULTS;
+    s_cfg.bat_cal_ppm = calibration;
     strlcpy(s_cfg.ap_ssid, ssid, SETT_SSID_MAX);
     strlcpy(s_cfg.ap_pass, pass, SETT_PASS_MAX);
     ESP_LOGW(TAG, "upgrade reset: settings cleared, AP credentials kept (ssid='%s')",
