@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-flash_on_pc.py —— 异地一键刷机助手（供 MoInk一键刷机.bat 调用，也可命令行单独运行）。
+flash_on_pc.py —— 异地一键刷机助手（供 Stillink一键刷机.bat 调用，也可命令行单独运行）。
 
-本板是 ESP32-C3 原生 USB-Serial/JTAG（VID 0x303a / PID 0x1001）。
+本板是 ESP32-C6 原生 USB-Serial/JTAG（VID 0x303a / PID 0x1001）。
 不要用浏览器网页烧录器（WebSerial）——会卡死在 "Stub running..."，一个字节都写不进。
 
 用法：
-  python flash_on_pc.py                自动选口 + 刷同目录 moink_*_merged.bin
+  python flash_on_pc.py                自动选口 + 刷同目录 stillink_*_merged.bin
   python flash_on_pc.py --list         只列串口（含 VID 信息，虚拟口标 no VID）
   python flash_on_pc.py --port COM7    手动指定串口
   python flash_on_pc.py --baud 115200  降波特率
@@ -19,7 +19,7 @@ import os
 import subprocess
 import sys
 
-# 真实 USB 设备 VID 优先级（C3 原生 USB-JTAG 最优先；无 VID 的蓝牙虚拟口会被跳过）
+# 真实 USB 设备 VID 优先级（C6 原生 USB-JTAG 最优先；无 VID 的蓝牙虚拟口会被跳过）
 VID_PRIORITY = {0x303A: 0, 0x1A86: 1, 0x10C4: 2, 0x0403: 3}
 
 
@@ -39,7 +39,7 @@ def pick_port():
 
 def find_merged():
     here = os.path.dirname(os.path.abspath(__file__))
-    hits = sorted(glob.glob(os.path.join(here, "moink_*_merged.bin")))
+    hits = sorted(glob.glob(os.path.join(here, "stillink_*_merged.bin")))
     return hits[-1] if hits else None
 
 
@@ -68,7 +68,7 @@ def main():
 
     binfile = a.bin or find_merged()
     if not binfile or not os.path.exists(binfile):
-        print("[错误] 找不到 moink_*_merged.bin。")
+        print("[错误] 找不到 stillink_*_merged.bin。")
         print("       请把固件和本脚本、bat 放在同一个文件夹里再运行。")
         return 1
 
@@ -78,7 +78,7 @@ def main():
     print()
 
     cmd = [sys.executable, "-m", "esptool",
-           "--chip", "esp32c3",
+           "--chip", "esp32c6",
            "--port", port,
            "--baud", str(a.baud)]
     if a.no_stub:
@@ -90,7 +90,7 @@ def main():
     if r.returncode == 0:
         print()
         print("[OK] 刷机完成！设备即将重启。")
-        print("     手机 Wi-Fi 连接热点 MoInk-XXXX（默认开放），自动弹出控制页；")
+        print("     手机 Wi-Fi 连接热点 Stillink-XXXX（默认开放），自动弹出控制页；")
         print("     或浏览器打开 http://192.168.4.1 。固件版本应显示 R1.2.1。")
     else:
         print()

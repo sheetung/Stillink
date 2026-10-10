@@ -1,5 +1,5 @@
-#ifndef MOINK_OTA_WEB_H
-#define MOINK_OTA_WEB_H
+#ifndef EPAPER_OTA_WEB_H
+#define EPAPER_OTA_WEB_H
 
 #include "esp_http_server.h"
 #include <stddef.h>
@@ -34,10 +34,10 @@ bool ota_web_has_page(void);
 /* 清除已上传页面，回退到内嵌页。 */
 void ota_web_clear(void);
 
-/* 当前生效版本：热更页在用时取热更页 meta 版本，否则 = MOINK_VERSION。 */
+/* 当前生效版本：热更页在用时取热更页 meta 版本，否则 = EPAPER_VERSION。 */
 const char *ota_web_page_version(void);
 
 /* 流式发送 web 分区里的页面（调用前先 ota_web_has_page()）。 */
 esp_err_t ota_web_stream_page(httpd_req_t *req);
 
-#endif /* MOINK_OTA_WEB_H */
+#endif /* EPAPER_OTA_WEB_H */

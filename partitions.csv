@@ -1,7 +1,7 @@
 # Name,   Type, SubType, Offset,   Size,     Flags
 # UTF-8 without BOM; use PYTHONUTF8=1 on Windows.
 #
-# MoInk R1.2.0 布局（4 MB flash）—— ★ 本版分区表有变（FB-017 第一部分）：
+# EPaper R1.2.0 布局（4 MB flash）—— ★ 本版分区表有变（FB-017 第一部分）：
 #   新增 "store" 原始帧存储分区（轮播存储底座），OTA 槽 1.5M -> 1.25M、
 #   web 960K -> 384K，把余量让给 store 1.0625M。
 #   ★★ 分区表只能靠整包线刷改写 —— 升级到本版必须用 FlashKit 线刷（merged.bin

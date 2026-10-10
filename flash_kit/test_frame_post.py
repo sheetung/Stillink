@@ -8,7 +8,7 @@ test_frame_post.py —— PC 直连传帧诊断（绕过手机页面，标准库
      ②屏幕显示四色条 = 顺便验证色码 + 180° 方向 + 整条刷新链路
 
 用法：
-  1. 电脑 WiFi 连上 MoInk-XXXX 热点（不动设备其他设置）
+  1. 电脑 WiFi 连上 Stillink-XXXX 热点（不动设备其他设置）
   2. 任意装了 Python 3 的机器上运行：
        python test_frame_post.py            （默认发 http://192.168.4.1）
        python test_frame_post.py 192.168.4.1
@@ -76,7 +76,7 @@ def main():
         print(">> 设备拒绝了帧：把上面这行报错发我。")
     except Exception as e:
         print("连接失败：%s" % e)
-        print(">> 检查电脑是否连上 MoInk-XXXX 热点；手机连着不影响，可同时在线。")
+        print(">> 检查电脑是否连上 Stillink-XXXX 热点；手机连着不影响，可同时在线。")
     return 0
 
 

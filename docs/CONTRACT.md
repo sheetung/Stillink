@@ -1,4 +1,4 @@
-# 墨印 · MoInk — 传输与驱动契约（CONTRACT）
+# Stillink — 传输与驱动契约（CONTRACT）
 
 > 本文档是**固件与页面之间的唯一权威接口定义**，以及**屏驱动的物理契约**。
 > 改动任何一条必须同步更新 `check_frame.py` / `smoke_page.js` 并全量回归。
@@ -145,12 +145,12 @@
 
 ## 7. 设置与 NVS
 
-- 命名空间 `moink`；键 `panel` / `hflip` / `a1_mode` / `wifi_pwr` / `sleep_s` / `wake_s` /
+- 命名空间 `epaper`；键 `panel` / `hflip` / `a1_mode` / `wifi_pwr` / `sleep_s` / `wake_s` /
   `ap_ssid` / `ap_pass`（`page_ver` 为控制页热更标记，由 `ota_web.c` 维护）。
 - **固件升级强制重置**（R1.2.0）：OTA 校验通过、切槽之后调用 `settings_reset_for_upgrade()` ——
   擦除上表**除 `ap_ssid` / `ap_pass` 外**的全部键并回落默认值。保留热点凭据是为了避免
   「改了热点名的设备升级后热点消失、再也连不上」。
-- **恢复出厂**（长按唤醒键 5s / `POST /api/factory`）：`nvs_erase_all()` 擦除整个 `moink`
+- **恢复出厂**（长按唤醒键 5s / `POST /api/factory`）：`nvs_erase_all()` 擦除整个 `epaper`
   命名空间（含 `page_ver` 热更标记，即页面一并回退内嵌版）。
 - 休眠档位（`sleep_s`）：`0`=不休眠 / `60` / `180`（默认）/ `300` 秒。
 - 定时唤醒档位（`wake_s`）：`0`=关（默认）/ `3600` / `43200` / `86400` 秒。
@@ -160,22 +160,31 @@
 - **热点配置延迟应用（FB-014②，R1.2.0）**：`settings_post_handler` **先发 `200` 应答**，
   300 ms 后经 esp_timer 一次性回调再 `netif_ap_apply()`（踢客户端）。改名 / 改密码场景
   页面可以正常收到成功应答。
-- 热点：SSID 空 → 默认 `MoInk-XXXX`（XXXX = MAC 后 2 字节）；密码空 → **开放**。
-  AP 通道 **6**（避开 ESP32-C3 40MHz 晶振落在 2.4 GHz 低段的谐波，见 FB-001），最多 4 客户端，
+- 热点：SSID 空 → 默认 `Stillink-XXXX`（XXXX = MAC 后 2 字节）；密码空 → **开放**。
+  未连接路由器时 AP 通道 **6**；连接后跟随路由器信道，最多 4 客户端，
   DHCP DNS 指向 `192.168.4.1`。
-- 页面自身所有画面参数（风格 / 强度 / 文字 / 旋转 / 方向）一律存于手机 `localStorage`（key `moink.cfg4`，历史键自动一次性迁移），**固件不存、不回读**。
+- 页面自身所有画面参数（风格 / 强度 / 文字 / 旋转 / 方向）一律存于手机 `localStorage`（key `epaper.cfg4`），**固件不存、不回读**。
+
+### 路由器配网（R1.3.0）
+
+- Wi-Fi 使用 AP+STA 双模式；热点仍保留，DNS 劫持仅监听 `192.168.4.1`。
+- `GET /api/wifi/scan` 返回 `networks` 列表（`ssid` / `rssi` / `secured`），连接期间返回 409。
+- `POST /api/wifi/connect` 接收 URL 编码的 `ssid` 与 `password`，返回 202，连接结果由 `GET /api/wifi/status` 获取。
+- 状态值：`idle` / `connecting` / `connected` / `failed`，附带 `ssid` / `ip` / `saved` / `reason`，不包含密码。
+- 成功连接后在独立 `wifi_lan` NVS 命名空间保存凭据；OTA 保留，忘记 Wi-Fi 与恢复出厂清除。
+- `POST /api/wifi/forget` 清除凭据并断开 STA，AP 保持运行。局域网连接或配网期间不自动深睡。
 
 ## 8. 版本号与升级流程（R1.2.0 起）
 
-- **单一版本号**：固件与控制页**共用** `MOINK_VERSION` 一个号（不再有 fw / page 两套）。
+- **单一版本号**：固件与控制页**共用** `EPAPER_VERSION` 一个号（不再有 fw / page 两套）。
   运行时 `/api/info` 的 `ver` = **当前生效的控制页版本** —— 热更页在用时取它的
-  `<meta name="moink-page-version">`，否则等于 `MOINK_VERSION`。因此恒有 `ver ≥ fw`。
+  `<meta name="epaper-page-version">`，否则等于 `EPAPER_VERSION`。因此恒有 `ver ≥ fw`。
   `fw` 字段保留一版，**仅供**前端判断「热更控制页是否落后于固件」（落后时状态栏红字警示）。
 - **升级统一走 `POST /api/upload`**（§6.1）：用户只上传一个文件，固件按内容分流。
   固件升级会**顺带更新控制页并强制重置设置**（热点名与密码保留）；控制页升级只换页面、不重启。
 - **`api`（帧格式契约号）与发布版本号解耦**：只在 §1–§3 帧契约变化时 +1，与 `version` 无关。
 - **防漂移门禁**：固化内嵌页前 `tools/make_index_header.py` 断言
-  `page/index.html` 的 `<meta moink-page-version>` == `main/version.h` 的 `MOINK_VERSION`，
+  `page/index.html` 的 `<meta epaper-page-version>` == `main/version.h` 的 `EPAPER_VERSION`，
   不一致直接失败（打印两边实际值），从机制上杜绝「页面改了、版本号没跟」。
 - 回归门禁（必须全绿）：
   - `python tools/check_frame.py`（帧契约黄金校验）

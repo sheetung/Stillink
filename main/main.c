@@ -1,13 +1,14 @@
 /*
- * 墨印 · MoInk — 固件主装配（R 系列，重构版）
+ * 电子墨水屏 — 固件主装配（R 系列，重构版）
  *
  * 职责一句话：固件只做「热点 / 接收 / 刷图 / 休眠 / 唤醒 / OTA」，画面全部由页面
- * 在浏览器里合成。没有任何 STA 配网、没有拉图、没有固件端图像处理。
+ * 在浏览器里合成。支持热点配网及局域网访问，没有固件端图像处理。
  *
  * 模块分工：
  *   epd_drv   锁定屏驱动（A0/A1，RST=GPIO3），不改
  *   settings  持久化：面板 / 翻转 / 休眠时长 / 自动唤醒 / 热点凭据
- *   netif_ap  纯 SoftAP（默认开放，SSID 默认 MoInk-XXXX）
+ *   netif_ap  AP+STA（默认热点开放，SSID 默认 Stillink-XXXX）
+ *   wifi_lan  扫描路由器、持久化配网、局域网 IP
  *   captive   DNS 劫持 + OS 探测劫持（连上即弹控制页）
  *   frame     帧接收（16B 头 + CRC16 校验）+ 显示触发
  *   power     电池 ADC / 深睡 / 唤醒源 / 空闲休眠
@@ -43,6 +44,7 @@
 #include "epd_drv.h"
 #include "settings.h"
 #include "netif_ap.h"
+#include "wifi_lan.h"
 #include "captive.h"
 #include "frame.h"
 #include "power.h"
@@ -55,7 +57,7 @@ static const char *TAG = "main";
 
 #define HOLD_RESET_S    5          /* 长按恢复出厂 */
 #define HTTPD_STACK     4096
-#define HTTPD_MAX_URI   16
+#define HTTPD_MAX_URI   20
 
 /* ---------------- 请求小工具 ---------------- */
 
@@ -144,7 +146,7 @@ static esp_err_t page_handler(httpd_req_t *req)
 static esp_err_t info_handler(httpd_req_t *req)
 {
     power_activity();
-    const moink_settings_t *s = settings_get();
+    const epaper_settings_t *s = settings_get();
     char buf[512];
 
     /* ver = 统一版本号 = 当前生效页面版本（热更页优先，否则等于固件编译号）。
@@ -156,7 +158,7 @@ static esp_err_t info_handler(httpd_req_t *req)
         "\"panel\":\"%s\",\"a1_mode\":%u,\"heap\":%lu,\"bat_mv\":%d,"
         "\"sleep_s\":%lu,\"wake_s\":%lu,\"clients\":%d,"
         "\"ssid\":\"%s\",\"uptime\":%lld,\"store_slots\":%d}",
-        ota_web_page_version(), MOINK_VERSION, MOINK_API_VERSION,
+        ota_web_page_version(), EPAPER_VERSION, EPAPER_API_VERSION,
         epd_panel_name((epd_panel_t)s->panel), (unsigned)s->a1_mode,
         (unsigned long)esp_get_free_heap_size(), power_battery_mv(),
         (unsigned long)s->sleep_s, (unsigned long)s->wake_s,
@@ -173,7 +175,7 @@ static esp_err_t info_handler(httpd_req_t *req)
 static esp_err_t settings_get_handler(httpd_req_t *req)
 {
     power_activity();
-    const moink_settings_t *s = settings_get();
+    const epaper_settings_t *s = settings_get();
     char buf[384];
 
     snprintf(buf, sizeof(buf),
@@ -308,6 +310,36 @@ static esp_err_t options_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
+/* ---------------- 路由器配网 ---------------- */
+
+static esp_err_t wifi_connect_handler(httpd_req_t *req)
+{
+    power_activity();
+    char body[512], ssid[256], pass[256];
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    if (req->content_len >= sizeof(body) || read_body(req, body, sizeof(body)) <= 0 ||
+        !kv_get(body, "ssid", ssid, sizeof(ssid)) ||
+        !kv_get(body, "password", pass, sizeof(pass)))
+        return httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "SSID and password are required");
+    esp_err_t err = wifi_lan_connect(ssid, pass);
+    memset(pass, 0, sizeof(pass));
+    if (err != ESP_OK)
+        return httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid Wi-Fi credentials");
+    httpd_resp_set_status(req, "202 Accepted");
+    httpd_resp_set_type(req, "application/json");
+    return httpd_resp_sendstr(req, "{\"status\":\"connecting\"}");
+}
+
+static esp_err_t wifi_forget_handler(httpd_req_t *req)
+{
+    power_activity();
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    if (wifi_lan_forget() != ESP_OK)
+        return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Could not forget Wi-Fi");
+    httpd_resp_set_type(req, "application/json");
+    return httpd_resp_sendstr(req, "{\"status\":\"idle\"}");
+}
+
 /* ---------------- HTTP 服务器 ---------------- */
 
 static httpd_handle_t start_server(void)
@@ -339,6 +371,8 @@ static httpd_handle_t start_server(void)
         { .uri = "/api/frame",      .method = HTTP_POST,   .handler = frame_upload_handler, .user_ctx = NULL },
         { .uri = "/api/clear",      .method = HTTP_POST,   .handler = clear_handler,        .user_ctx = NULL },
         { .uri = "/api/factory",    .method = HTTP_POST,   .handler = factory_handler,      .user_ctx = NULL },
+        { .uri = "/api/wifi/connect", .method = HTTP_POST, .handler = wifi_connect_handler },
+        { .uri = "/api/wifi/forget", .method = HTTP_POST, .handler = wifi_forget_handler },
         { .uri = "/hotspot-detect.html", .method = HTTP_GET, .handler = captive_apple_landing, .user_ctx = NULL },
         { .uri = "/library/test/success.html", .method = HTTP_GET, .handler = captive_apple_landing, .user_ctx = NULL },
         { .uri = "*",               .method = HTTP_OPTIONS,.handler = options_handler,      .user_ctx = NULL },
@@ -350,6 +384,7 @@ static httpd_handle_t start_server(void)
     }
 
     ota_web_register(server);
+    wifi_lan_register(server);
 
     /* 必须在所有业务路由之后注册：OS 探测路径此前直接 404，根本进不了首页。
        兜底 GET 同时覆盖带查询参数的探测与厂商自定义路径。 */
@@ -412,7 +447,7 @@ static void button_task(void *arg)
 
 void app_main(void)
 {
-    ESP_LOGI(TAG, "=== MoInk %s | 4-color | ap + unified upgrade ===", MOINK_VERSION);
+    ESP_LOGI(TAG, "=== Stillink %s | 4-color | ap + unified upgrade ===", EPAPER_VERSION);
 
     /* 唤醒原因：GPIO = 按键，TIMER = 定时自动唤醒。 */
     uint32_t wake = power_wakeup_causes();

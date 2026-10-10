@@ -1,5 +1,6 @@
 #include "settings.h"
 #include "epd_drv.h"
+#include "wifi_lan.h"
 
 #include "nvs.h"
 #include "nvs_flash.h"
@@ -8,9 +9,9 @@
 
 static const char *TAG = "settings";
 
-#define NVS_NS "moink"
+#define NVS_NS "epaper"
 
-static const moink_settings_t DEFAULTS = {
+static const epaper_settings_t DEFAULTS = {
     .panel    = EPD_PANEL_A0,
     .hflip    = 0,
     .a1_mode  = EPD_A1_MODE_DEFAULT,
@@ -21,7 +22,7 @@ static const moink_settings_t DEFAULTS = {
     .ap_pass  = "",
 };
 
-static moink_settings_t s_cfg;
+static epaper_settings_t s_cfg;
 static nvs_handle_t s_nvs;
 static bool s_ok = false;
 
@@ -80,7 +81,7 @@ void settings_init(void)
              s_cfg.ap_pass[0] == 0);
 }
 
-const moink_settings_t *settings_get(void) { return &s_cfg; }
+const epaper_settings_t *settings_get(void) { return &s_cfg; }
 
 static void store_u8(const char *key, uint8_t v)
 {
@@ -183,6 +184,7 @@ esp_err_t settings_set_ap(const char *ssid, const char *pass)
 
 void settings_factory_reset(void)
 {
+    wifi_lan_forget();
     /* R1.2.0（FB-015）：整个命名空间一起擦 —— 「恢复出厂」就该回到出厂状态。
        旧实现刻意保留 web_len/web_crc/page_ver（页面热更标记），理由是「页面是
        系统资产」；现在恢复出厂连热更页面一起清掉、回到内嵌页，才是预期行为。 */

@@ -1,6 +1,7 @@
 #include "netif_ap.h"
 #include "settings.h"
 #include "captive.h"
+#include "wifi_lan.h"
 
 #include "esp_wifi.h"
 #include "esp_netif.h"
@@ -59,7 +60,7 @@ void netif_ap_apply_tx_power(void)
        低 8.5dBm=34。低档针对天线阻抗失配批次——反射失真随功率升高而加重，
        社区实测降功率反而改善连接（FB-001）。phy 层上限已在 sdkconfig 收到 18。 */
     static const int PWR_QDBM[] = { 72, 40, 34 };
-    const moink_settings_t *s = settings_get();
+    const epaper_settings_t *s = settings_get();
     uint8_t lvl = s->wifi_pwr;
     if (lvl > SETT_WIFI_PWR_LOW) lvl = SETT_WIFI_PWR_HIGH;
 
@@ -88,14 +89,14 @@ static void wifi_event_handler(void *arg, esp_event_base_t base, int32_t id, voi
 
 static void build_ssid(char *out, size_t n)
 {
-    const moink_settings_t *s = settings_get();
+    const epaper_settings_t *s = settings_get();
     if (s->ap_ssid[0]) {
         strlcpy(out, s->ap_ssid, n);
         return;
     }
     uint8_t mac[6];
     esp_read_mac(mac, ESP_MAC_WIFI_STA);
-    snprintf(out, n, "MoInk-%02X%02X", mac[4], mac[5]);
+    snprintf(out, n, "Stillink-%02X%02X", mac[4], mac[5]);
 }
 
 void netif_ap_init(void)
@@ -103,20 +104,22 @@ void netif_ap_init(void)
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     s_ap = esp_netif_create_default_wifi_ap();
+    wifi_lan_init();
 
     ESP_ERROR_CHECK(esp_event_handler_instance_register(
         WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_event_handler, NULL, NULL));
 
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
+    ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
 
     netif_ap_apply();
 }
 
 void netif_ap_apply(void)
 {
-    const moink_settings_t *s = settings_get();
+    const epaper_settings_t *s = settings_get();
     build_ssid(s_ssid, sizeof(s_ssid));
 
     wifi_config_t ap = { 0 };

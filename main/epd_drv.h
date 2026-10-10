@@ -57,7 +57,7 @@ extern const epd_profile_t EPD_PROFILES[EPD_PANEL_COUNT];
 /*
  * 引脚映射（R 系列：RST 自旧项目 GPIO2 改到 GPIO3）
  *   SCK=4  MOSI=6  CS=7  DC=1  RST=3  BUSY=10
- *   唤醒键 : GPIO5 -> GND（C3 深睡唤醒域 GPIO0..5 内空闲脚；兼做长按恢复出厂）
+ *   唤醒键 : GPIO5 -> GND（C6 深睡唤醒域 GPIO0..7 内的 GPIO5，另接按键，非板载 BOOT GPIO9；兼做长按恢复出厂）
  *   电池 ADC : GPIO0（ADC1_CH0——ADC2 与 WiFi 共用不可用）
  */
 #define EPD_PIN_SCK      4

@@ -46,7 +46,7 @@ ok("offline export keeps </script> escaped in injected html", page.indexOf("<\\/
 ok("cropper.js inlined (first script block)", /<script>\s*\n?\/\* ===== Cropper\.js v1\.6\.2/.test(page));
 ok("startup block intact (loadSettings call present)", /loadSettings\(\)/.test(js));
 // R1.0.12 结构检查
-ok("page version meta present (R1.x.y)", /moink-page-version" content="R1\.\d+\.\d+"/.test(page));
+ok("page version meta present (R1.x.y)", /epaper-page-version" content="R1\.\d+\.\d+"/.test(page));
 // 10. R1.0.18 UI 重构：齿轮入口 / 返回按钮 / 无页签 / 步骤条 / 设备信息网格 / 分栏 / 文案
 ok("R1.0.18 gear + back nav present", page.includes('id="gearBtn"') && page.includes('id="backBtn"'));
 ok("R1.0.18 tab bar removed", page.indexOf('data-t="image"') < 0 && page.indexOf('id="tabs"') < 0);
@@ -168,7 +168,7 @@ ok("R1.1.1 DEV_API tri-state + apiAtLeast2()",
    && js.indexOf("DEV_API === 0 || DEV_API >= 2") >= 0);
 ok("R1.1.0 a1_mode saved with panel",
    js.indexOf('fields.a1_mode = $("a1Sel").value') >= 0 && js.indexOf("syncPanelRows") >= 0);
-// R1.2.0（FB-015）：版本号由 fw/page 两套合并为 MOINK_VERSION 一套；
+// R1.2.0（FB-015）：版本号由 fw/page 两套合并为 EPAPER_VERSION 一套；
 //   固件与控制页合并到同一入口 /api/upload，由固件按请求体首块内容嗅探分流。
 ok("R1.2.0 统一升级入口 UI (upFile/upGo/upmsg)",
    page.includes('id="upFile"') && page.includes('id="upGo"')
@@ -216,7 +216,7 @@ ok("R1.2.0 热点密码单字段语义（留空=保持 / 勾选清除=开放，F
 ok("R1.2.0 热点保存按需携带 pass（缺省不发送 = 固件保持）",
    js.indexOf('if ($("apClearPw").checked) fields.pass = "";') >= 0
    && js.indexOf('else if ($("apPass").value) fields.pass = $("apPass").value;') >= 0);
-ok("R1.2.1 版本 meta", page.indexOf('content="R1.2.1"') >= 0);
+ok("R1.3.0 版本 meta", page.indexOf('content="R1.3.0"') >= 0);
 ok("R1.2.1 正式配置页不含 iOS captive 专用渲染逻辑",
    js.indexOf("captiveLitePreview") < 0 && js.indexOf("iosDevice") < 0
    && page.indexOf("iosCaptiveNotice") < 0
@@ -231,11 +231,11 @@ ok("R1.2.1 裁剪手势松手后才生成目标预览",
    && js.indexOf("cropend: function(){ cropInvalid(); schedulePreview(false); }") >= 0);
 ok("R1.2.1 Apple captive 使用轻量 Safari 引导页并返回 Success",
    captive.indexOf("请使用 Safari 打开配置页") >= 0
-   && captive.indexOf("<p>墨印 · MoInk</p>") >= 0
+   && captive.indexOf("<p>电子墨水屏</p>") >= 0
    && captive.indexOf("连接窗口性能较低") < 0
    && captive.indexOf("复制地址并关闭此页") >= 0
    && captive.indexOf("192.168.4.1") >= 0
-   && captive.indexOf("moink_done=1") >= 0
+   && captive.indexOf("epaper_done=1") >= 0
    && captive.indexOf("请点击右上角的“完成”关闭此页面") >= 0
    && captive.indexOf("<TITLE>Success</TITLE>") >= 0
    && captive.indexOf("#define APPLE_SUCCESS_WINDOW_MS 60000") >= 0
@@ -292,9 +292,9 @@ ok("R1.2.0 版本号比较按 主*10000+次*100+修订",
    js.indexOf("+m[1] * 10000 + +m[2] * 100 + +m[3]") >= 0);
 ok("页脚存在 (footer#appFoot)",
    page.indexOf('id="appFoot"') >= 0 && page.indexOf("footer#appFoot") >= 0);
-ok("页脚含 GitHub 地址", page.indexOf('href="https://github.com/atunverse/moink"') >= 0);
+ok("页脚不含仓库推广链接", !/<footer[\s\S]*?href=[\s\S]*?<\/footer>/.test(page));
 ok("页脚版本号运行时填充 (footVer + meta)",
-   page.indexOf('id="footVer"') >= 0 && page.indexOf('meta[name="moink-page-version"]') >= 0);
+   page.indexOf('id="footVer"') >= 0 && page.indexOf('meta[name="epaper-page-version"]') >= 0);
 
 console.log(failed === 0 ? "SMOKE: ALL PASS" : ("SMOKE: " + failed + " FAILED"));
 process.exit(failed === 0 ? 0 : 1);

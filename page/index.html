@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="moink-page-version" content="R1.2.1">
-<title>墨印 · MoInk</title>
+<meta name="epaper-page-version" content="R1.3.0">
+<title>Stillink</title>
 <style>
 /* ===== Cropper.js v1.6.2 | MIT | https://github.com/fengyuanchen/cropperjs ===== */
 /*!
@@ -190,7 +190,7 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
 <header>
   <div id="hdrL">
     <div id="hdrBrand">
-      <h1>墨印 · MoInk</h1>
+      <h1>Stillink</h1>
       <div class="sub">把喜欢的瞬间，放在身边</div>
     </div>
     <button class="iconbtn" id="backBtn" style="display:none" aria-label="返回创作">
@@ -390,10 +390,25 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
     </details>
 
     <details>
-      <summary>热点设置</summary>
+      <summary>Wi-Fi 配网 · 局域网访问</summary>
+      <p class="hint">先连接设备热点，再扫描并连接家里的 2.4 GHz Wi-Fi。连接成功后，手机或电脑接入同一路由器，即可通过下方局域网地址访问。热点入口仍可使用。</p>
+      <div class="row">
+        <button class="mini" id="scanWifi">扫描 Wi-Fi</button>
+        <select id="wifiNetworks" aria-label="扫描到的 Wi-Fi"><option value="">选择扫描到的网络</option></select>
+      </div>
+      <div class="row"><label>Wi-Fi 名称</label><input type="text" id="staSsid" maxlength="32" placeholder="扫描选择，也可手动输入"></div>
+      <div class="row"><label>Wi-Fi 密码</label><input type="password" id="staPass" maxlength="64" autocomplete="new-password" placeholder="开放网络留空"></div>
+      <div class="row"><button class="mini" id="connectWifi">连接并保存</button><button class="mini" id="forgetWifi">忘记 Wi-Fi</button></div>
+      <p id="wifiStatus" class="hint" role="status" aria-live="polite">正在读取网络状态…</p>
+      <p id="lanAddress" class="hint" hidden>局域网地址：<a id="lanLink" target="_blank" rel="noopener"></a></p>
+      <p class="hint">连接路由器后设备保持在线，不自动休眠；忘记 Wi-Fi 后恢复原来的休眠设置。重启后会自动连接已保存的网络。</p>
+    </details>
+
+    <details>
+      <summary>设备热点设置</summary>
     <div class="row">
       <label>热点名</label>
-      <input type="text" id="apSsid" maxlength="32" placeholder="留空 = MoInk-XXXX">
+      <input type="text" id="apSsid" maxlength="32" placeholder="留空 = Stillink-XXXX">
     </div>
     <div class="row">
       <label>密码</label>
@@ -458,11 +473,10 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
 </main>
 
 <footer id="appFoot">
-  <span>墨印 · MoInk<b id="footVer"></b></span>
-  <a href="https://github.com/atunverse/moink" target="_blank" rel="noopener noreferrer">GitHub · atunverse/moink</a>
+  <span>Stillink<b id="footVer"></b></span>
 </footer>
 <script>
-(function(){var m=document.querySelector('meta[name="moink-page-version"]');
+(function(){var m=document.querySelector('meta[name="epaper-page-version"]');
 var e=document.getElementById("footVer");
 if(m&&m.content&&e){ e.textContent=" · 版本 "+m.content; }})();
 </script>
@@ -484,7 +498,7 @@ if(m&&m.content&&e){ e.textContent=" · 版本 "+m.content; }})();
 "use strict";
 
 /* 离线客户端：整页存成 file:// 打开时用它拼 URL */
-var BASE = (typeof window.MOINK_BASE === "string" && window.MOINK_BASE) ? window.MOINK_BASE : "";
+var BASE = (typeof window.EPAPER_BASE === "string" && window.EPAPER_BASE) ? window.EPAPER_BASE : "";
 function api(p){ return BASE + p; }
 
 /* ==================================================================
@@ -1225,21 +1239,20 @@ function afterLoadingPaint(fn){
   requestAnimationFrame(function(){ requestAnimationFrame(fn); });
 }
 
-var captivePage = /(?:^|[?&])moink_captive=1(?:&|$)/.test(location.search);
+var captivePage = /(?:^|[?&])epaper_captive=1(?:&|$)/.test(location.search);
 
 var cfg = Object.assign({}, DEF);
 var img = null;
 var curRot = 0;   /* 裁剪旋转角（-180..180），Cropper 增量驱动 */
 var previewTimer = null, previewBusy = false, previewWant = null;
 var previewOK = false;   /* 图像管线离线跑通标记：预览成功才允许上传（用户要求：先离线跑通再 OTA） */
-/* 裸页面以 file:// 打开（未注入 MOINK_BASE）= 纯本地预览：
+/* 裸页面以 file:// 打开（未注入 EPAPER_BASE）= 纯本地预览：
    渲染/裁剪可用，但 API 全部不可达——上传类操作给出明确提示而非「net」。 */
 var LOCAL_PREVIEW = (location.protocol === "file:" && !BASE);
 
 function msg(s, cls){ msgEl.textContent = s; msgEl.className = cls || ""; }
 
-var LS_KEY = "moink.cfg4";
-var LS_KEY_OLD = "einkframe.cfg4";
+var LS_KEY = "epaper.cfg4";
 /* FB-005：saveCfg 节流（前沿 + 300ms 拖尾）。滑杆拖动等高频调用不再逐次写
    localStorage，最后一次改动保证落盘；调用点保持原样无需改动。 */
 var _saveLast = 0, _saveTmr = null;
@@ -1270,7 +1283,7 @@ function normObjs(a){
 }
 function loadCfg(){
   try {
-    var t = localStorage.getItem(LS_KEY) || localStorage.getItem(LS_KEY_OLD);
+    var t = localStorage.getItem(LS_KEY);
     if (t) Object.assign(cfg, JSON.parse(t));
   } catch(e){}
   /* 迁移：旧版单条 cfg.text → 单个文字对象（拍立得/便签各一份） */
@@ -1917,7 +1930,7 @@ function odUp(e){
 function setBar(frac){ barEl.style.display = "block"; fillEl.style.width = Math.round(frac*100) + "%"; }
 function upload(){
   if (LOCAL_PREVIEW){
-    msg("本地预览模式：请连接 MoInk 热点后打开 http://192.168.4.1 上传，或使用导出的离线客户端", "err");
+    msg("本地预览模式：请连接 Stillink 热点后打开 http://192.168.4.1 上传，或使用导出的离线客户端", "err");
     return;
   }
   if (MODE === 0 && !img){ msg("请先选择图片", "err"); return; }
@@ -2048,6 +2061,7 @@ function refreshInfo(){
   }).catch(function(){ $("conn").textContent = LOCAL_PREVIEW ? "本地预览（未连设备）" : "未连接"; });
 }
 function loadSettings(){
+  refreshWifiStatus();
   fetch(api("/api/settings")).then(function(r){ return r.json(); }).then(function(s){
     $("sleepSel").value = String(s.sleep_s);
     $("wakeSel").value = String(s.wake_s);
@@ -2070,6 +2084,108 @@ function loadSettings(){
    保存中 / ✓ 已保存并生效 / ✗ 未生效 / ✗ 失败原因。
    并且不轻信 "HTTP 200"：保存后回读 /api/settings 逐字段核对，确认真落进了设备。
    热点改名会立刻踢掉客户端（应答可能收不到），所以回读带重试。 */
+/* ---------- 路由器配网 ---------- */
+var wifiPollTimer = null;
+function wifiMessage(text, failed){
+  $("wifiStatus").textContent = text;
+  $("wifiStatus").style.color = failed ? "var(--err)" : "";
+}
+function wifiRequest(path, options){
+  return fetch(api(path), options).then(function(r){
+    if (!r.ok) return r.text().then(function(){
+      throw new Error(r.status === 409 ? "设备正在连接 Wi-Fi，请稍候再试" :
+        r.status === 400 ? "Wi-Fi 名称或密码格式不正确" :
+        r.status === 404 ? "请先升级支持配网的设备固件" : "设备请求失败，请重试");
+    });
+    return r.json();
+  });
+}
+function renderWifiStatus(s){
+  if (!$("staSsid").value && s.ssid) $("staSsid").value = s.ssid;
+  var connecting = s.status === "connecting";
+  $("scanWifi").disabled = connecting;
+  $("connectWifi").disabled = connecting;
+  $("lanAddress").hidden = !(s.status === "connected" && s.ip);
+  if (s.status === "connected" && s.ip){
+    var url = "http://" + s.ip + "/";
+    $("lanLink").textContent = url;
+    $("lanLink").href = url;
+    wifiMessage("已连接 " + s.ssid + "，配置已保存。设备保持在线。");
+    $("staPass").value = "";
+  } else if (connecting){
+    wifiMessage("正在连接 " + (s.ssid || $("staSsid").value) + "…热点切换信道时可能短暂断开，请稍候。");
+  } else if (s.status === "failed"){
+    wifiMessage([2,15,23,202,204].indexOf(s.reason) >= 0 ? "连接失败：认证未通过，请检查 Wi-Fi 密码后重试。" :
+      s.reason === 201 ? "连接失败：未找到该 Wi-Fi，请检查名称及 2.4 GHz 信号后重试。" :
+      "连接失败，请检查名称、密码及 2.4 GHz 信号后重试。", true);
+  } else {
+    wifiMessage(s.saved ? "已保存 Wi-Fi，当前尚未连接。" : "热点直连模式：尚未配置路由器 Wi-Fi。");
+  }
+  return connecting;
+}
+function refreshWifiStatus(retries){
+  clearTimeout(wifiPollTimer);
+  wifiRequest("/api/wifi/status?t=" + Date.now()).then(function(s){
+    if (renderWifiStatus(s)) wifiPollTimer = setTimeout(function(){ refreshWifiStatus(15); }, 1500);
+  }).catch(function(){
+    if (retries > 0){
+      wifiMessage("等待设备恢复连接…请保持连接设备热点。");
+      wifiPollTimer = setTimeout(function(){ refreshWifiStatus(retries - 1); }, 2000);
+    } else {
+      $("scanWifi").disabled = false;
+      $("connectWifi").disabled = false;
+      wifiMessage("无法读取 Wi-Fi 状态，请连接设备热点或通过设备 IP 打开页面。", true);
+    }
+  });
+}
+$("scanWifi").addEventListener("click", function(){
+  $("scanWifi").disabled = true;
+  wifiMessage("正在扫描附近的 2.4 GHz Wi-Fi…");
+  wifiRequest("/api/wifi/scan").then(function(result){
+    var select = $("wifiNetworks");
+    select.replaceChildren(new Option("选择网络（" + result.networks.length + " 条记录）", ""));
+    var seen = Object.create(null);
+    result.networks.forEach(function(network){
+      if (seen[network.ssid]) return;
+      seen[network.ssid] = true;
+      select.add(new Option(network.ssid + " · " + network.rssi + " dBm · " + (network.secured ? "加密" : "开放"), network.ssid));
+    });
+    wifiMessage(result.networks.length ? "请选择 Wi-Fi，输入密码后连接。" : "未扫描到网络，可重新扫描或手动输入 Wi-Fi 名称。");
+  }).catch(function(error){ wifiMessage("扫描失败：" + error.message, true); })
+    .finally(function(){ $("scanWifi").disabled = false; });
+});
+$("wifiNetworks").addEventListener("change", function(){
+  if (this.value) $("staSsid").value = this.value;
+});
+$("connectWifi").addEventListener("click", function(){
+  var ssid = $("staSsid").value, password = $("staPass").value;
+  if (!ssid || new TextEncoder().encode(ssid).length > 32){ wifiMessage("Wi-Fi 名称不能为空，且不能超过 32 字节。", true); return; }
+  var passBytes = new TextEncoder().encode(password).length;
+  if (password && (passBytes < 8 || passBytes > 64 || (passBytes === 64 && !/^[0-9a-fA-F]{64}$/.test(password)))){
+    wifiMessage("密码需为 8–63 字符或 64 位十六进制密钥；开放网络留空。", true); return;
+  }
+  $("connectWifi").disabled = true;
+  $("scanWifi").disabled = true;
+  wifiMessage("正在提交配网信息…");
+  wifiRequest("/api/wifi/connect", { method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"},
+    body:"ssid=" + encodeURIComponent(ssid) + "&password=" + encodeURIComponent(password) })
+    .then(function(){ refreshWifiStatus(15); })
+    .catch(function(error){
+      wifiMessage("连接请求未确认：" + error.message + "，正在核对设备状态…", true);
+      refreshWifiStatus(15);
+    });
+});
+$("forgetWifi").addEventListener("click", function(){
+  $("forgetWifi").disabled = true;
+  wifiRequest("/api/wifi/forget", {method:"POST"}).then(function(){
+    $("staSsid").value = "";
+    $("staPass").value = "";
+    $("lanAddress").hidden = true;
+    wifiMessage("Wi-Fi 配置已清除。若当前通过局域网访问，请重新连接设备热点。");
+  }).catch(function(error){ wifiMessage("忘记 Wi-Fi 失败：" + error.message, true); })
+    .finally(function(){ $("forgetWifi").disabled = false; $("scanWifi").disabled = false; $("connectWifi").disabled = false; });
+});
+
 var SETT_LABEL = { panel:"屏幕", hflip:"左右镜像", a1_mode:"A1 驱动",
                    wifi_pwr:"WiFi 功率", sleep_s:"休眠", wake_s:"自动唤醒",
                    ssid:"热点名", pass:"热点密码" };
@@ -2140,7 +2256,7 @@ function postSettings(fields, done, stateId, note){
     saveState(stateId, "warn", "⚠ 没收到应答，正在核对（热点可能已切换）…");
     verifyFields(fields, function(bad){
       if (bad === null) saveState(stateId, "warn", "⚠ 没收到应答：若刚改了热点名/密码，请用新名称重连热点后再刷新核对");
-      else if (bad.length) saveState(stateId, "err", "✗ 保存失败：" + badLabel(bad) + " 未生效 —— 请重连 MoInk 热点后重试");
+      else if (bad.length) saveState(stateId, "err", "✗ 保存失败：" + badLabel(bad) + " 未生效 —— 请重连 Stillink 热点后重试");
       else { saveState(stateId, "ok", "✓ 已保存并生效（热点已切换，请用新名称重连）"); done && done(); }
     });
   });
@@ -2274,7 +2390,7 @@ $("upGo").addEventListener("click", function(){
                                 + "设备设置已重置，热点名与密码保留）";
         return;
       }
-      bad("✗ 上传失败：连接中断（请确认已连接 MoInk 热点）");
+      bad("✗ 上传失败：连接中断（请确认已连接 Stillink 热点）");
     };
     /* 包一层 text/plain Blob：Content-Type 落在简单请求白名单内 → 不触发跨源预检。 */
     xhr.send(new Blob([f], { type: "text/plain" }));
@@ -2308,11 +2424,12 @@ $("saveOffline").addEventListener("click", function(){
   var th = root.querySelector("#thumb"); if (th) th.removeAttribute("src");
   var mm = root.querySelector("#msg"); if (mm) { mm.textContent = ""; mm.className = ""; }
   var html = "<!DOCTYPE html>\n" + root.outerHTML;
-  html = html.replace("</head>", "<script>window.MOINK_BASE=\"http://192.168.4.1\";<\/script></head>");
+  var offlineBase = BASE || (/^https?:$/.test(location.protocol) ? location.origin : "http://192.168.4.1");
+  html = html.replace("</head>", "<script>window.EPAPER_BASE=" + JSON.stringify(offlineBase) + ";<\/script></head>");
   var blob = new Blob([html], { type: "text/html" });
   var a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "墨印-离线客户端.html";
+  a.download = "Stillink-离线客户端.html";
   a.click();
   setTimeout(function(){ URL.revokeObjectURL(a.href); }, 10000);
 });

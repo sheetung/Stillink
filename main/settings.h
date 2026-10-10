@@ -1,12 +1,12 @@
-#ifndef MOINK_SETTINGS_H
-#define MOINK_SETTINGS_H
+#ifndef EPAPER_SETTINGS_H
+#define EPAPER_SETTINGS_H
 
 #include <stdint.h>
 #include <stddef.h>
 #include "esp_err.h"
 
 /*
- * 持久化设置（NVS 命名空间 "moink"）。页面所有画面参数（风格 / 强度 / 文字 /
+ * 持久化设置（NVS 命名空间 "epaper"）。页面所有画面参数（风格 / 强度 / 文字 /
  * 旋转…）都留在手机 localStorage，固件只存会影响「传输与电源」的这几项。
  *
  * ★ R1.2.0（FB-015）起：每次固件升级都强制重置设置
@@ -41,12 +41,12 @@ typedef struct {
     uint8_t  wifi_pwr;  /* SETT_WIFI_PWR_HIGH / MID / LOW */
     uint32_t sleep_s;   /* 空闲后深睡；0 = 不休眠 */
     uint32_t wake_s;    /* 定时自动唤醒间隔；0 = 关闭 */
-    char     ap_ssid[SETT_SSID_MAX];  /* 空 = 用默认 MoInk-XXXX */
+    char     ap_ssid[SETT_SSID_MAX];  /* 空 = 用默认 Stillink-XXXX */
     char     ap_pass[SETT_PASS_MAX];  /* 空 = 热点开放 */
-} moink_settings_t;
+} epaper_settings_t;
 
 void settings_init(void);
-const moink_settings_t *settings_get(void);
+const epaper_settings_t *settings_get(void);
 
 /* 各 setter 立即写 NVS；失败仅告警不影响 RAM 态。 */
 esp_err_t settings_set_panel(uint8_t v);
@@ -68,4 +68,4 @@ void settings_factory_reset(void);
  */
 void settings_reset_for_upgrade(void);
 
-#endif /* MOINK_SETTINGS_H */
+#endif /* EPAPER_SETTINGS_H */

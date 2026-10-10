@@ -1,5 +1,5 @@
 @echo off
-title MoInk 一键刷机
+title Stillink 一键刷机
 cd /d "%~dp0"
 setlocal enableDelayedExpansion
 set /a tried=0
@@ -51,17 +51,17 @@ if not defined release (
 )
 echo [安装] 目标版本 Python !release!，开始下载官方安装包...
 set "url=https://www.python.org/ftp/python/!release!/python-!release!-amd64.exe"
-powershell -command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; (new-object System.Net.WebClient).DownloadFile('!url!','%TEMP%\moink_pyinstall.exe')" >nul 2>&1
-if not exist "%TEMP%\moink_pyinstall.exe" (
+powershell -command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; (new-object System.Net.WebClient).DownloadFile('!url!','%TEMP%\stillink_pyinstall.exe')" >nul 2>&1
+if not exist "%TEMP%\stillink_pyinstall.exe" (
     echo [错误] 安装包下载失败，请检查网络后重新运行本脚本。
     set /a tried=!tried!+1
     goto checkpy
 )
 echo [安装] 正在静默安装，约 1 分钟，装完自动继续...
 pushd "%TEMP%"
-moink_pyinstall.exe /quiet PrependPath=1 Include_test=0 Shortcuts=0 Include_launcher=0
+stillink_pyinstall.exe /quiet PrependPath=1 Include_test=0 Shortcuts=0 Include_launcher=0
 popd
-del "%TEMP%\moink_pyinstall.exe" >nul 2>&1
+del "%TEMP%\stillink_pyinstall.exe" >nul 2>&1
 call :updatepath
 echo [安装] 安装完成，重新检测 Python...
 goto checkpy
@@ -102,7 +102,7 @@ echo.
 set RC=%ERRORLEVEL%
 echo.
 if "%RC%"=="0" (
-    echo 刷机成功。可以关闭本窗口，去手机上连热点 MoInk-XXXX 了。
+    echo 刷机成功。可以关闭本窗口，去手机上连热点 Stillink-XXXX 了。
 ) else (
     echo 刷机失败。快捷排查：
     echo   1. 拔插一次 USB 线，重新双击本脚本

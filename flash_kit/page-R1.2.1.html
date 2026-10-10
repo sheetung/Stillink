@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="moink-page-version" content="R1.2.1">
-<title>墨印 · MoInk</title>
+<meta name="epaper-page-version" content="R1.2.1">
+<title>电子墨水屏</title>
 <style>
 /* ===== Cropper.js v1.6.2 | MIT | https://github.com/fengyuanchen/cropperjs ===== */
 /*!
@@ -190,7 +190,7 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
 <header>
   <div id="hdrL">
     <div id="hdrBrand">
-      <h1>墨印 · MoInk</h1>
+      <h1>电子墨水屏</h1>
       <div class="sub">把喜欢的瞬间，放在身边</div>
     </div>
     <button class="iconbtn" id="backBtn" style="display:none" aria-label="返回创作">
@@ -393,7 +393,7 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
       <summary>热点设置</summary>
     <div class="row">
       <label>热点名</label>
-      <input type="text" id="apSsid" maxlength="32" placeholder="留空 = MoInk-XXXX">
+      <input type="text" id="apSsid" maxlength="32" placeholder="留空 = EPaper-XXXX">
     </div>
     <div class="row">
       <label>密码</label>
@@ -458,11 +458,10 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
 </main>
 
 <footer id="appFoot">
-  <span>墨印 · MoInk<b id="footVer"></b></span>
-  <a href="https://github.com/atunverse/moink" target="_blank" rel="noopener noreferrer">GitHub · atunverse/moink</a>
+  <span>电子墨水屏<b id="footVer"></b></span>
 </footer>
 <script>
-(function(){var m=document.querySelector('meta[name="moink-page-version"]');
+(function(){var m=document.querySelector('meta[name="epaper-page-version"]');
 var e=document.getElementById("footVer");
 if(m&&m.content&&e){ e.textContent=" · 版本 "+m.content; }})();
 </script>
@@ -484,7 +483,7 @@ if(m&&m.content&&e){ e.textContent=" · 版本 "+m.content; }})();
 "use strict";
 
 /* 离线客户端：整页存成 file:// 打开时用它拼 URL */
-var BASE = (typeof window.MOINK_BASE === "string" && window.MOINK_BASE) ? window.MOINK_BASE : "";
+var BASE = (typeof window.EPAPER_BASE === "string" && window.EPAPER_BASE) ? window.EPAPER_BASE : "";
 function api(p){ return BASE + p; }
 
 /* ==================================================================
@@ -1225,21 +1224,20 @@ function afterLoadingPaint(fn){
   requestAnimationFrame(function(){ requestAnimationFrame(fn); });
 }
 
-var captivePage = /(?:^|[?&])moink_captive=1(?:&|$)/.test(location.search);
+var captivePage = /(?:^|[?&])epaper_captive=1(?:&|$)/.test(location.search);
 
 var cfg = Object.assign({}, DEF);
 var img = null;
 var curRot = 0;   /* 裁剪旋转角（-180..180），Cropper 增量驱动 */
 var previewTimer = null, previewBusy = false, previewWant = null;
 var previewOK = false;   /* 图像管线离线跑通标记：预览成功才允许上传（用户要求：先离线跑通再 OTA） */
-/* 裸页面以 file:// 打开（未注入 MOINK_BASE）= 纯本地预览：
+/* 裸页面以 file:// 打开（未注入 EPAPER_BASE）= 纯本地预览：
    渲染/裁剪可用，但 API 全部不可达——上传类操作给出明确提示而非「net」。 */
 var LOCAL_PREVIEW = (location.protocol === "file:" && !BASE);
 
 function msg(s, cls){ msgEl.textContent = s; msgEl.className = cls || ""; }
 
-var LS_KEY = "moink.cfg4";
-var LS_KEY_OLD = "einkframe.cfg4";
+var LS_KEY = "epaper.cfg4";
 /* FB-005：saveCfg 节流（前沿 + 300ms 拖尾）。滑杆拖动等高频调用不再逐次写
    localStorage，最后一次改动保证落盘；调用点保持原样无需改动。 */
 var _saveLast = 0, _saveTmr = null;
@@ -1270,7 +1268,7 @@ function normObjs(a){
 }
 function loadCfg(){
   try {
-    var t = localStorage.getItem(LS_KEY) || localStorage.getItem(LS_KEY_OLD);
+    var t = localStorage.getItem(LS_KEY);
     if (t) Object.assign(cfg, JSON.parse(t));
   } catch(e){}
   /* 迁移：旧版单条 cfg.text → 单个文字对象（拍立得/便签各一份） */
@@ -1917,7 +1915,7 @@ function odUp(e){
 function setBar(frac){ barEl.style.display = "block"; fillEl.style.width = Math.round(frac*100) + "%"; }
 function upload(){
   if (LOCAL_PREVIEW){
-    msg("本地预览模式：请连接 MoInk 热点后打开 http://192.168.4.1 上传，或使用导出的离线客户端", "err");
+    msg("本地预览模式：请连接 EPaper 热点后打开 http://192.168.4.1 上传，或使用导出的离线客户端", "err");
     return;
   }
   if (MODE === 0 && !img){ msg("请先选择图片", "err"); return; }
@@ -2140,7 +2138,7 @@ function postSettings(fields, done, stateId, note){
     saveState(stateId, "warn", "⚠ 没收到应答，正在核对（热点可能已切换）…");
     verifyFields(fields, function(bad){
       if (bad === null) saveState(stateId, "warn", "⚠ 没收到应答：若刚改了热点名/密码，请用新名称重连热点后再刷新核对");
-      else if (bad.length) saveState(stateId, "err", "✗ 保存失败：" + badLabel(bad) + " 未生效 —— 请重连 MoInk 热点后重试");
+      else if (bad.length) saveState(stateId, "err", "✗ 保存失败：" + badLabel(bad) + " 未生效 —— 请重连 EPaper 热点后重试");
       else { saveState(stateId, "ok", "✓ 已保存并生效（热点已切换，请用新名称重连）"); done && done(); }
     });
   });
@@ -2274,7 +2272,7 @@ $("upGo").addEventListener("click", function(){
                                 + "设备设置已重置，热点名与密码保留）";
         return;
       }
-      bad("✗ 上传失败：连接中断（请确认已连接 MoInk 热点）");
+      bad("✗ 上传失败：连接中断（请确认已连接 EPaper 热点）");
     };
     /* 包一层 text/plain Blob：Content-Type 落在简单请求白名单内 → 不触发跨源预检。 */
     xhr.send(new Blob([f], { type: "text/plain" }));
@@ -2308,11 +2306,11 @@ $("saveOffline").addEventListener("click", function(){
   var th = root.querySelector("#thumb"); if (th) th.removeAttribute("src");
   var mm = root.querySelector("#msg"); if (mm) { mm.textContent = ""; mm.className = ""; }
   var html = "<!DOCTYPE html>\n" + root.outerHTML;
-  html = html.replace("</head>", "<script>window.MOINK_BASE=\"http://192.168.4.1\";<\/script></head>");
+  html = html.replace("</head>", "<script>window.EPAPER_BASE=\"http://192.168.4.1\";<\/script></head>");
   var blob = new Blob([html], { type: "text/html" });
   var a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "墨印-离线客户端.html";
+  a.download = "电子墨水屏-离线客户端.html";
   a.click();
   setTimeout(function(){ URL.revokeObjectURL(a.href); }, 10000);
 });

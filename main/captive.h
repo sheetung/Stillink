@@ -1,5 +1,5 @@
-#ifndef MOINK_CAPTIVE_H
-#define MOINK_CAPTIVE_H
+#ifndef EPAPER_CAPTIVE_H
+#define EPAPER_CAPTIVE_H
 
 #include "esp_http_server.h"
 /*
@@ -20,4 +20,4 @@ esp_err_t captive_apple_landing(httpd_req_t *req);
 /* WiFi 客户端断开时清除本次 Apple Success 状态。 */
 void captive_apple_station_disconnected(void);
 
-#endif /* MOINK_CAPTIVE_H */
+#endif /* EPAPER_CAPTIVE_H */

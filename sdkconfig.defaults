@@ -1,14 +1,14 @@
-# 墨印 MoInk (R 系列) sdkconfig defaults — ESP32-C3 SUPERMINI
+# 电子墨水屏 (R 系列) sdkconfig defaults — ESP32-C6（当前测试板：ESP32-C6FH4，4MB Flash）
 # 生产配置：日志降级到 Error、深睡唤醒跳过镜像校验、上电校验保留。
 # 排障时把 LOG 两行改回 INFO/Debug 即可（不要动 eFuse 级选项）。
 
 # ---- flash 尺寸与模式（沿用 M7 已验证的 DIO 40M）----
-CONFIG_IDF_TARGET="esp32c3"
+CONFIG_IDF_TARGET="esp32c6"
 CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
 CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
 CONFIG_ESPTOOLPY_FLASHFREQ_40M=y
 
-# ---- 控制台走 C3 自带 USB-Serial-JTAG（GPIO18/19）----
+# ---- 控制台走 C6 自带 USB-Serial-JTAG（GPIO12/13）----
 CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
 CONFIG_ESP_CONSOLE_SECONDARY_NONE=y
 
@@ -18,7 +18,7 @@ CONFIG_LOG_DEFAULT_LEVEL=1
 
 CONFIG_COMPILER_OPTIMIZATION_SIZE=y
 
-# ---- WiFi 仅 SoftAP（无 STA）；缓冲池保持 IDF 默认 32（不要为了省内存去砍）----
+# ---- WiFi AP+STA（热点 + 路由器配网）；缓冲池保持 IDF 默认 32（不要为了省内存去砍）----
 CONFIG_ESP_WIFI_ENABLED=y
 CONFIG_ESP_PHY_MAX_WIFI_TX_POWER=18
 
@@ -41,4 +41,4 @@ CONFIG_BOOTLOADER_LOG_LEVEL=1
 CONFIG_RTC_CLK_SRC_INT_RC=y
 CONFIG_RTC_CLK_CAL_CYCLES=1024
 
-# Bluetooth/BLE：刻意不启用（C3 无 PSRAM，NimBLE 会吃光堆并拖垮 SoftAP）。
+# Bluetooth/BLE：刻意不启用（C6 无 PSRAM，NimBLE 会吃光堆并拖垮 SoftAP）。

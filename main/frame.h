@@ -1,5 +1,5 @@
-#ifndef MOINK_FRAME_H
-#define MOINK_FRAME_H
+#ifndef EPAPER_FRAME_H
+#define EPAPER_FRAME_H
 
 #include "esp_http_server.h"
 #include <stddef.h>
@@ -44,4 +44,4 @@ int frame_clear_cycles(int cycles);
 /* POST /api/frame 处理器：收头 -> 校验 -> 流式收载荷并算 CRC -> 触发显示。 */
 esp_err_t frame_upload_handler(httpd_req_t *req);
 
-#endif /* MOINK_FRAME_H */
+#endif /* EPAPER_FRAME_H */

@@ -7,10 +7,10 @@ package_bins.py [tag] —— 把编译产物打包成刷机/OTA 用的 bin。
     python tools/package_bins.py r1
 
 产出：
-    moink_<tag>_merged.bin  整包（0x0）：bootloader + partitions + OTA data + app
-    moink_<tag>_app.bin     app 镜像：OTA 上传用（build/moink.bin 的原样拷贝）
+    stillink_<tag>_merged.bin  整包（0x0）：bootloader + partitions + OTA data + app
+    stillink_<tag>_app.bin     app 镜像：OTA 上传用（build/stillink.bin 的原样拷贝）
 
-合并参数沿用已验证配置：esp32c3 / dio / 40m / 4MB。
+合并参数沿用已验证配置：esp32c6 / dio / 40m / 4MB。
 """
 import os
 import sys
@@ -34,21 +34,21 @@ def main():
     boot = os.path.join(BUILD, "bootloader", "bootloader.bin")
     part = os.path.join(BUILD, "partition_table", "partition-table.bin")
     ota_data = os.path.join(BUILD, "ota_data_initial.bin")
-    app = os.path.join(BUILD, "moink.bin")
+    app = os.path.join(BUILD, "stillink.bin")
 
     for p in (boot, part, ota_data, app):
         if not os.path.exists(p):
             print("missing build artifact: %s" % p)
             return 1
 
-    app_out = os.path.join(ROOT, "moink_%s_app.bin" % tag)
-    merged = os.path.join(ROOT, "moink_%s_merged.bin" % tag)
+    app_out = os.path.join(ROOT, "stillink_%s_app.bin" % tag)
+    merged = os.path.join(ROOT, "stillink_%s_merged.bin" % tag)
 
     shutil.copyfile(app, app_out)
     print("app     -> %s (%d B)" % (app_out, os.path.getsize(app_out)))
 
     esptool([
-        "--chip", "esp32c3", "merge-bin",
+        "--chip", "esp32c6", "merge-bin",
         "-o", merged,
         "--flash-mode", "dio",
         "--flash-freq", "40m",

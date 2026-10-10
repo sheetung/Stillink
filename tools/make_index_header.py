@@ -8,7 +8,7 @@
 
 字节原样嵌入（UTF-8），不转义字符串，避免 C 字符串字面量的长度上限。
 
-★ R1.2.0（FB-015）：固化前先断言「页面 meta 版本 == main/version.h 的 MOINK_VERSION」。
+★ R1.2.0（FB-015）：固化前先断言「页面 meta 版本 == main/version.h 的 EPAPER_VERSION」。
    版本号统一成一套之后，两处一旦漂移就又变回两套号 —— 这个断言就是防漂移闸门，
    不一致直接 exit 1，并打印两边实际值。
 """
@@ -22,8 +22,8 @@ SRC = os.path.join(ROOT, "page", "index.html")
 VH = os.path.join(ROOT, "main", "version.h")
 DST = os.path.join(ROOT, "main", "index_html.h")
 
-META_RE = re.compile(r'<meta\s+name="moink-page-version"\s+content="([^"]+)"')
-VER_RE = re.compile(r'#define\s+MOINK_VERSION\s+"([^"]+)"')
+META_RE = re.compile(r'<meta\s+name="epaper-page-version"\s+content="([^"]+)"')
+VER_RE = re.compile(r'#define\s+EPAPER_VERSION\s+"([^"]+)"')
 
 
 def main():
@@ -33,14 +33,14 @@ def main():
     m_page = META_RE.search(text)
     m_hdr = VER_RE.search(open(VH, encoding="utf-8").read())
     if not m_page or not m_hdr:
-        print("!! 版本号取不到：页面 meta=%s / version.h MOINK_VERSION=%s"
+        print("!! 版本号取不到：页面 meta=%s / version.h EPAPER_VERSION=%s"
               % (bool(m_page), bool(m_hdr)))
         return 1
     page_ver, hdr_ver = m_page.group(1), m_hdr.group(1)
     if page_ver != hdr_ver:
         print("!! 版本号不一致，拒绝固化：")
-        print("     page/index.html  <meta moink-page-version> = %s" % page_ver)
-        print("     main/version.h    MOINK_VERSION              = %s" % hdr_ver)
+        print("     page/index.html  <meta epaper-page-version> = %s" % page_ver)
+        print("     main/version.h    EPAPER_VERSION              = %s" % hdr_ver)
         print("   统一版本号之后两处必须相同，改齐再跑。")
         return 1
 

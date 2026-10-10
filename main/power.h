@@ -1,5 +1,5 @@
-#ifndef MOINK_POWER_H
-#define MOINK_POWER_H
+#ifndef EPAPER_POWER_H
+#define EPAPER_POWER_H
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -36,4 +36,4 @@ void power_enter_deep_sleep(void);
 /* 电池电压 mV 粗测（分压 470k:100k；满量程需按板实测标定）。 */
 int power_battery_mv(void);
 
-#endif /* MOINK_POWER_H */
+#endif /* EPAPER_POWER_H */

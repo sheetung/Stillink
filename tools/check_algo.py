@@ -13,7 +13,7 @@ check_algo.py —— 验证「图像算法冻结」：M7 页面与新页面的�
 逐字一致；其余 11 函数维持逐字 MATCH。注：quantize 内的注入块不得含注释
 （本脚本按规范化文本比对，注释会破坏剥离对齐）。
 
-用法：python tools/check_algo.py   （要求 moink/ 与 eink-frame/ 同级）
+用法：python tools/check_algo.py   （要求 epaper/ 与 eink-frame/ 同级）
 """
 import os
 import re

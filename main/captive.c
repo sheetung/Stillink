@@ -87,7 +87,7 @@ static void dns_task(void *arg)
     struct sockaddr_in bind_addr = {
         .sin_family = AF_INET,
         .sin_port = htons(DNS_PORT),
-        .sin_addr.s_addr = htonl(INADDR_ANY),
+        .sin_addr.s_addr = inet_addr("192.168.4.1"),
     };
     if (bind(sock, (struct sockaddr *)&bind_addr, sizeof(bind_addr)) < 0) {
         ESP_LOGE(TAG, "bind :%d failed: %d", DNS_PORT, errno);
@@ -177,12 +177,12 @@ esp_err_t captive_redirect(httpd_req_t *req)
     /* 303 + 非空正文可让 iOS Captive Network Assistant 识别。Location 必须
        使用绝对 URL；Vivo 的 captive WebView 会把相对地址解析成 file:///。 */
     httpd_resp_set_status(req, "303 See Other");
-    httpd_resp_set_hdr(req, "Location", "http://192.168.4.1/?moink_captive=1");
+    httpd_resp_set_hdr(req, "Location", "http://192.168.4.1/?epaper_captive=1");
     httpd_resp_set_hdr(req, "Cache-Control", "no-store");
     httpd_resp_set_hdr(req, "Pragma", "no-cache");
     httpd_resp_set_type(req, "text/html; charset=utf-8");
     return httpd_resp_sendstr(req,
-        "<!doctype html><a href=\"http://192.168.4.1/?moink_captive=1\">Open MoInk</a>");
+        "<!doctype html><a href=\"http://192.168.4.1/?epaper_captive=1\">Open Stillink</a>");
 }
 
 esp_err_t captive_apple_landing(httpd_req_t *req)
@@ -191,7 +191,7 @@ esp_err_t captive_apple_landing(httpd_req_t *req)
        严格的标准 Success。热点保持连接，供 Safari 访问。 */
     char query[64], done[8];
     if (httpd_req_get_url_query_str(req, query, sizeof(query)) == ESP_OK &&
-        httpd_query_key_value(query, "moink_done", done, sizeof(done)) == ESP_OK &&
+        httpd_query_key_value(query, "epaper_done", done, sizeof(done)) == ESP_OK &&
         strcmp(done, "1") == 0) {
         captive_arm_apple_success();
         return captive_apple_done_page(req);
@@ -205,7 +205,7 @@ esp_err_t captive_apple_landing(httpd_req_t *req)
     return httpd_resp_sendstr(req,
         "<!doctype html><html lang=\"zh-CN\"><head><meta charset=\"utf-8\">"
         "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1,viewport-fit=cover\">"
-        "<title>使用 Safari 打开 MoInk</title><style>"
+        "<title>使用 Safari 打开 Stillink</title><style>"
         "*{box-sizing:border-box}body{margin:0;min-height:100vh;display:flex;align-items:center;"
         "justify-content:center;padding:24px;background:#f5f5f7;color:#1d1d1f;font-family:-apple-system,"
         "BlinkMacSystemFont,\"PingFang SC\",sans-serif}.card{width:100%;max-width:430px;background:#fff;"
@@ -217,14 +217,14 @@ esp_err_t captive_apple_landing(httpd_req_t *req)
         "font-size:17px;font-weight:700}.steps{margin-top:18px;padding:14px;text-align:left;border-radius:12px;"
         "background:#fff7df;color:#684f18;font-size:14px;line-height:1.65}.ok{color:#16833d;font-weight:700}"
         "</style></head><body><main class=\"card\"><div class=\"logo\">&#128241;</div>"
-        "<h1>请使用 Safari 打开配置页</h1><p>墨印 · MoInk</p>"
+        "<h1>请使用 Safari 打开配置页</h1><p>电子墨水屏</p>"
         "<span class=\"addr\" id=\"addr\">192.168.4.1</span>"
         "<button id=\"copy\" type=\"button\">复制地址并关闭此页</button>"
         "<p id=\"state\"></p><div class=\"steps\"><b>接下来：</b><br>"
         "1. 点击上方按钮复制地址<br>2. 打开系统自带的 Safari<br>3. 在地址栏粘贴并访问</div>"
         "</main><script>function finish(){document.getElementById('state').className='ok';"
         "document.getElementById('state').textContent='已复制，请打开 Safari 并粘贴访问';"
-        "setTimeout(function(){location.replace('/hotspot-detect.html?moink_done=1');},700)}"
+        "setTimeout(function(){location.replace('/hotspot-detect.html?epaper_done=1');},700)}"
         "function fallback(){var t=document.createElement('textarea');t.value='192.168.4.1';"
         "t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.focus();t.select();"
         "t.setSelectionRange(0,t.value.length);var ok=false;try{ok=document.execCommand('copy')}catch(e){}"

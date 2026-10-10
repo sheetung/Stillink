@@ -4,7 +4,7 @@
 """
 import io, os, sys
 
-ROOT = r"C:\Users\pcing\WorkBuddy\2026-09-15-15-28-42\moink"
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PAGE = os.path.join(ROOT, "page", "index.html")
 V_JS = os.path.join(ROOT, "page", "vendor", "cropper.min.js")
 V_CSS = os.path.join(ROOT, "page", "vendor", "cropper.min.css")
@@ -33,8 +33,8 @@ def span(s, start, end, new, incl_end=False):
 
 # ---------- 1. 版本号 ----------
 html = rep(html,
-    '<meta name="moink-page-version" content="R1.0.11">',
-    '<meta name="moink-page-version" content="R1.0.12">')
+    '<meta name="epaper-page-version" content="R1.0.11">',
+    '<meta name="epaper-page-version" content="R1.0.12">')
 
 # ---------- 2. Cropper CSS 内联 ----------
 html = rep(html, "<style>\n:root{",
@@ -709,7 +709,7 @@ window.addEventListener("resize", function(){ layoutObjs(); });""")
 assert "</script>" in html
 n_closer = html.count("</script>")
 assert n_closer == 2, "script closer count=%d (want 2)" % n_closer
-assert html.count('<meta name="moink-page-version" content="R1.0.12">') == 1
+assert html.count('<meta name="epaper-page-version" content="R1.0.12">') == 1
 assert "window.Cropper" in html or "Cropper" in html
 io.open(PAGE, "w", encoding="utf-8", newline="").write(html)
 print("OK  new size:", os.path.getsize(PAGE), "bytes  closers:", n_closer)

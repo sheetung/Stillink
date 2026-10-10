@@ -1,6 +1,7 @@
 #include "power.h"
 #include "epd_drv.h"
 #include "settings.h"
+#include "wifi_lan.h"
 
 #include "driver/gpio.h"
 #include "esp_adc/adc_oneshot.h"
@@ -68,7 +69,9 @@ uint32_t power_wakeup_causes(void)
 
 bool power_should_sleep(void)
 {
-    const moink_settings_t *s = settings_get();
+    /* LAN access must remain available while connected or provisioning. */
+    if (wifi_lan_keep_awake()) return false;
+    const epaper_settings_t *s = settings_get();
     uint32_t limit = s->sleep_s;
 
     if (s_auto_wake) {

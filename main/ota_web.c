@@ -15,7 +15,7 @@
 
 static const char *TAG = "ota_web";
 
-#define NVS_NS       "moink"
+#define NVS_NS       "epaper"
 #define NVS_WEB_LEN  "web_len"
 #define NVS_WEB_CRC  "web_crc"
 #define NVS_PAGE_VER "page_ver"
@@ -29,8 +29,8 @@ static const char *TAG = "ota_web";
 static char s_buf[WEB_CHUNK];
 static uint8_t s_head[2048];   /* 页面头部快照：版本 meta 在 <head> 顶部，2KB 足够 */
 
-/* 页面版本标记：index.html 头部须含 <meta name="moink-page-version" content="R1.2.0"> */
-#define VER_MARKER    "moink-page-version"
+/* 页面版本标记：index.html 头部须含 <meta name="epaper-page-version" content="R1.2.0"> */
+#define VER_MARKER    "epaper-page-version"
 #define VER_CONTENT   "content=\""
 
 /* ---- CRC32（IEEE 802.3，poly 0xEDB88320 反射）---- */
@@ -143,14 +143,14 @@ static esp_err_t ota_stream(httpd_req_t *req, int pre)
         return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "ota write failed");
 
     /* 最小镜像校验（替代 esp_ota_end 的关键项）：
-       0xE9 魔数 + 芯片型号（扩展头 0x0C 处 chip_id，ESP32-C3=0x0005）+
+       0xE9 魔数 + 芯片型号（扩展头 0x0C 处 chip_id，与编译目标一致）+
        app 描述符 magic 0xABCD5432（偏移 0x20）。
        更深层的段校验交给回滚兜底：新固件 45s 内不确认则自动回滚旧版。 */
     uint8_t hdr[64];
     if (esp_partition_read(part, 0, hdr, sizeof(hdr)) != ESP_OK || hdr[0] != 0xE9)
         return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "ota verify failed");
     uint16_t chip_id = (uint16_t)(hdr[0x0C] | (hdr[0x0D] << 8));
-    if (chip_id != 0x0005 ||     /* ESP32-C3 */
+    if (chip_id != CONFIG_IDF_FIRMWARE_CHIP_ID ||
         hdr[0x20] != 0x32 || hdr[0x21] != 0x54 || hdr[0x22] != 0xCD || hdr[0x23] != 0xAB)
         return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "ota verify failed");
 
@@ -437,7 +437,7 @@ const char *ota_web_page_version(void)
         }
         nvs_close(h);
     }
-    return MOINK_VERSION;   /* 无上传页面 -> 内嵌页版本 */
+    return EPAPER_VERSION;   /* 无上传页面 -> 内嵌页版本 */
 }
 
 esp_err_t ota_web_stream_page(httpd_req_t *req)
