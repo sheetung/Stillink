@@ -4,8 +4,6 @@
 
 Stillink 是基于 ESP32-C6 与华为拆机四色电子墨水屏的网页相框。手机或电脑在浏览器中完成选图、裁剪、风格化与文字排版，再上传到屏幕。图像处理在浏览器本地完成，设备负责接收与刷新；断电后屏幕仍能保留画面。
 
-当前版本 **R1.3.0**，使用原生 **ESP-IDF 6.1** 构建，已从 PlatformIO 迁移。
-
 ## 功能
 
 - 内置网页与热点，无需 App，支持自动弹出控制页和离线客户端导出。
@@ -109,4 +107,4 @@ Stillink 保留上游的版权与许可限制，当前不声明 MIT、Apache 或
 
 ## 致谢
 
-感谢 [MoInk](https://github.com/atunverse/moink) 提供原始工程、网页编辑器与墨水屏实现，Stillink 在其基础上完成 ESP-IDF 迁移、ESP32-C6 适配与局域网配网扩展。感谢 Cropper.js、InkSight 等相关项目的作者；原有第三方版权及来源说明予以保留。
+感谢 [MoInk](https://github.com/atunverse/moink) 提供原始工程、网页编辑器与墨水屏实现，Stillink 在其基础上完成 ESP32-C6 适配与局域网配网扩展。感谢 Cropper.js、InkSight 等相关项目的作者；原有第三方版权及来源说明予以保留。
