@@ -1,5 +1,6 @@
 #include "wifi_lan.h"
 #include "power.h"
+#include "netif_ap.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,6 +33,24 @@ static portMUX_TYPE s_lock = portMUX_INITIALIZER_UNLOCKED;
 static char s_ssid[33];
 static bool s_saved;
 static int s_reason;
+
+/* Keep mode changes in the worker, serialized with scans and connection requests. */
+static void set_hotspot_enabled(bool enabled)
+{
+    xSemaphoreTake(s_radio, portMAX_DELAY);
+    wifi_mode_t mode;
+    wifi_mode_t wanted = enabled ? WIFI_MODE_APSTA : WIFI_MODE_STA;
+    if (esp_wifi_get_mode(&mode) == ESP_OK && mode != wanted) {
+        esp_err_t err = esp_wifi_set_mode(wanted);
+        if (err == ESP_OK) {
+            if (enabled) netif_ap_apply();
+            ESP_LOGI(TAG, "hotspot %s", enabled ? "restored" : "disabled; LAN only");
+        } else {
+            ESP_LOGE(TAG, "change Wi-Fi mode failed: %s", esp_err_to_name(err));
+        }
+    }
+    xSemaphoreGive(s_radio);
+}
 
 static esp_err_t store_credentials(const credentials_t *credentials)
 {
@@ -120,6 +139,7 @@ static void connection_task(void *arg)
         if (xQueueReceive(s_queue, &credentials, have_credentials ? 0 : pdMS_TO_TICKS(30000))) {
             have_credentials = credentials.ssid[0] != '\0';
             new_credentials = have_credentials;
+            set_hotspot_enabled(true);
             xSemaphoreTake(s_radio, portMAX_DELAY);
             esp_wifi_disconnect();
             xSemaphoreGive(s_radio);
@@ -153,9 +173,15 @@ static void connection_task(void *arg)
         }
         xEventGroupClearBits(s_events, CONNECTING);
         if (connected) {
-            while ((xEventGroupGetBits(s_events) & CONNECTED) && !uxQueueMessagesWaiting(s_queue))
+            /* Give the provisioning page ten seconds to show the assigned LAN IP. */
+            int grace = 100;
+            while ((xEventGroupGetBits(s_events) & CONNECTED) && !uxQueueMessagesWaiting(s_queue)) {
+                if (grace > 0 && --grace == 0) set_hotspot_enabled(false);
                 vTaskDelay(pdMS_TO_TICKS(100));
+            }
+            set_hotspot_enabled(true);
         } else {
+            set_hotspot_enabled(true);
             xEventGroupSetBits(s_events, FAILED);
             /* Saved networks reconnect after outages; a rejected new network waits for input. */
             if (new_credentials) have_credentials = false;

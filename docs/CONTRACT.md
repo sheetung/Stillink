@@ -167,7 +167,7 @@
 
 ### 路由器配网（R1.3.0）
 
-- Wi-Fi 使用 AP+STA 双模式；热点仍保留，DNS 劫持仅监听 `192.168.4.1`。
+- 配网使用 AP+STA；获得局域网 IP 并保存凭据后约 10 秒切换为 STA，关闭热点。断网或忘记网络恢复 AP+STA；DNS 劫持仅监听 `192.168.4.1`。
 - `GET /api/wifi/scan` 返回 `networks` 列表（`ssid` / `rssi` / `secured`），连接期间返回 409。
 - `POST /api/wifi/connect` 接收 URL 编码的 `ssid` 与 `password`，返回 202，连接结果由 `GET /api/wifi/status` 获取。
 - 状态值：`idle` / `connecting` / `connected` / `failed`，附带 `ssid` / `ip` / `saved` / `reason`，不包含密码。

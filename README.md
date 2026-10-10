@@ -46,15 +46,15 @@ idf.py -p COM11 flash monitor
 生成整包及 OTA 镜像：
 
 ```powershell
-python tools/package_bins.py R1.3.2
-python tools/flash_device.py --port COM11 --bin stillink_R1.3.2_merged.bin
+python tools/package_bins.py R1.3.3
+python tools/flash_device.py --port COM11 --bin stillink_R1.3.3_merged.bin
 ```
 
-- `build/stillink.bin` / `stillink_R1.3.2_app.bin`：应用镜像，供 OTA 使用。
-- `stillink_R1.3.2_merged.bin`：含启动程序、分区表和应用，USB 烧录地址为 `0x0`。
-- `flash_kit/`：预编译 R1.3.2 镜像、网页和 Windows 一键刷机脚本。
+- `build/stillink.bin` / `stillink_R1.3.3_app.bin`：应用镜像，供 OTA 使用。
+- `stillink_R1.3.3_merged.bin`：含启动程序、分区表和应用，USB 烧录地址为 `0x0`。
+- `flash_kit/`：预编译 R1.3.3 镜像、网页和 Windows 一键刷机脚本。
 
-旧版 R1.2.1 的 OTA 校验固定为 ESP32-C3 芯片标识；当前 C6 板首次升级到 R1.3.2 请用 USB。R1.3.2 已按实际构建目标校验镜像。
+旧版 R1.2.1 的 OTA 校验固定为 ESP32-C3 芯片标识；当前 C6 板首次升级到 R1.3.3 请用 USB。R1.3.3 已按实际构建目标校验镜像。
 
 ## 热点直连与 Wi-Fi 配网
 
@@ -63,7 +63,7 @@ python tools/flash_device.py --port COM11 --bin stillink_R1.3.2_merged.bin
 3. 在设备设置的「Wi-Fi 配网 · 局域网访问」中点击「Wi-Fi 名称」，自动扫描后选择 2.4 GHz 网络并输入密码，点击「连接并保存」。
 4. 获得 IP 后，页面显示局域网链接。手机或电脑连接同一路由器，即可通过该 IP 使用控制页。
 
-热点在配网后仍保留；连接路由器时热点可能切换信道并短暂断开。局域网 IP 由路由器分配，可能变化，可从热点页面查看。
+获得局域网 IP 后，设备保留热点约 10 秒供页面显示地址，随后自动关闭热点，仅通过路由器访问。路由器断开或忘记 Wi-Fi 时自动恢复热点。局域网 IP 由路由器分配，可能变化，也可在路由器客户端列表中查看。
 
 成功连接后才保存凭据；重启自动连接，固件 OTA 后仍保留。连接失败可从热点重新配网。「忘记 Wi-Fi」和恢复出厂会清除配网信息。状态接口不返回密码。
 
@@ -80,7 +80,7 @@ python tools/check_frame.py
 idf.py build
 ```
 
-页面测试覆盖帧打包、页面结构和配网交互，包括扫描结果、凭据编码、连接状态、局域网链接与忘记网络。R1.3.2 已完成 ESP32-C6 编译和页面测试；此前 R1.2.1 已在 COM11 完成 USB 烧录与启动检查，R1.3.2 配网仍需真机连接路由器验证。
+页面测试覆盖帧打包、页面结构和配网交互，包括扫描结果、凭据编码、连接状态、局域网链接与忘记网络。R1.3.3 已完成 ESP32-C6 编译和页面测试；此前 R1.2.1 已在 COM11 完成 USB 烧录与启动检查，R1.3.3 配网仍需真机连接路由器验证。
 
 内部 NVS 命名空间与网页版本标记保留 `epaper` 标识，以保持已有设置和页面升级格式兼容。
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="epaper-page-version" content="R1.3.2">
+<meta name="epaper-page-version" content="R1.3.3">
 <title>Stillink</title>
 <style>
 /* ===== Cropper.js v1.6.2 | MIT | https://github.com/fengyuanchen/cropperjs ===== */
@@ -391,7 +391,7 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
 
     <details>
       <summary>Wi-Fi 配网 · 局域网访问</summary>
-      <p class="hint">先连接设备热点，再扫描并连接家里的 2.4 GHz Wi-Fi。连接成功后，手机或电脑接入同一路由器，即可通过下方局域网地址访问。热点入口仍可使用。</p>
+      <p class="hint">先连接设备热点，再扫描并连接家里的 2.4 GHz Wi-Fi。连接成功后，手机或电脑接入同一路由器，即可通过下方局域网地址访问。获得 IP 后约 10 秒自动关闭设备热点；路由器断开后会恢复热点。</p>
       <div class="row"><label for="staSsid">Wi-Fi 名称</label>
         <div style="position:relative;flex:1;min-width:0">
           <input type="text" id="staSsid" readonly placeholder="点击选择 Wi-Fi" aria-controls="wifiNetworks" aria-expanded="false" style="width:100%;cursor:pointer">
@@ -2112,7 +2112,7 @@ function renderWifiStatus(s){
     var url = "http://" + s.ip + "/";
     $("lanLink").textContent = url;
     $("lanLink").href = url;
-    wifiMessage("已连接 " + s.ssid + "，配置已保存。设备保持在线。");
+    wifiMessage("已连接 " + s.ssid + "，配置已保存。热点将自动关闭，请切换到同一路由器并使用下方局域网地址。");
     $("staPass").value = "";
   } else if (connecting){
     wifiMessage("正在连接 " + (s.ssid || $("staSsid").value) + "…热点切换信道时可能短暂断开，请稍候。");
@@ -2131,7 +2131,7 @@ function refreshWifiStatus(retries){
     if (renderWifiStatus(s)) wifiPollTimer = setTimeout(function(){ refreshWifiStatus(15); }, 1500);
   }).catch(function(){
     if (retries > 0){
-      wifiMessage("等待设备恢复连接…请保持连接设备热点。");
+      wifiMessage("等待设备响应…连接成功后热点会关闭，请切换到路由器 Wi-Fi 并通过设备局域网 IP 访问。");
       wifiPollTimer = setTimeout(function(){ refreshWifiStatus(retries - 1); }, 2000);
     } else {
       $("staSsid").disabled = false;

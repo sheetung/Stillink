@@ -5,7 +5,7 @@
 #include "esp_err.h"
 #include "esp_http_server.h"
 
-/* Uses the AP+STA radio initialized by netif_ap. Keeps the AP available. */
+/* Starts with AP+STA; disables the AP after LAN connection and restores it on loss. */
 void wifi_lan_init(void);
 esp_err_t wifi_lan_connect(const char *ssid, const char *password);
 esp_err_t wifi_lan_forget(void);
