@@ -46,7 +46,7 @@ ok("offline export keeps </script> escaped in injected html", page.indexOf("<\\/
 ok("cropper.js inlined (first script block)", /<script>\s*\n?\/\* ===== Cropper\.js v1\.6\.2/.test(page));
 ok("startup block intact (loadSettings call present)", /loadSettings\(\)/.test(js));
 // R1.0.12 结构检查
-ok("page version meta present (R1.x.y)", /epaper-page-version" content="R1\.\d+\.\d+"/.test(page));
+ok("page version meta present (Vx.y.z)", /epaper-page-version" content="V\d+\.\d+\.\d+"/.test(page));
 // 10. R1.0.18 UI 重构：齿轮入口 / 返回按钮 / 无页签 / 步骤条 / 设备信息网格 / 分栏 / 文案
 ok("R1.0.18 gear + back nav present", page.includes('id="gearBtn"') && page.includes('id="backBtn"'));
 ok("R1.0.18 tab bar removed", page.indexOf('data-t="image"') < 0 && page.indexOf('id="tabs"') < 0);
@@ -216,7 +216,7 @@ ok("R1.2.0 热点密码单字段语义（留空=保持 / 勾选清除=开放，F
 ok("R1.2.0 热点保存按需携带 pass（缺省不发送 = 固件保持）",
    js.indexOf('if ($("apClearPw").checked) fields.pass = "";') >= 0
    && js.indexOf('else if ($("apPass").value) fields.pass = $("apPass").value;') >= 0);
-ok("R1.3.3 版本 meta", page.indexOf('content="R1.3.3"') >= 0);
+ok("V0.0.1 版本 meta", page.indexOf('content="V0.0.1"') >= 0);
 ok("R1.2.1 正式配置页不含 iOS captive 专用渲染逻辑",
    js.indexOf("captiveLitePreview") < 0 && js.indexOf("iosDevice") < 0
    && page.indexOf("iosCaptiveNotice") < 0
@@ -292,7 +292,8 @@ ok("R1.2.0 版本号比较按 主*10000+次*100+修订",
    js.indexOf("+m[1] * 10000 + +m[2] * 100 + +m[3]") >= 0);
 ok("页脚存在 (footer#appFoot)",
    page.indexOf('id="appFoot"') >= 0 && page.indexOf("footer#appFoot") >= 0);
-ok("页脚不含仓库推广链接", !/<footer[\s\S]*?href=[\s\S]*?<\/footer>/.test(page));
+const footer = page.match(/<footer[\s\S]*?<\/footer>/)[0];
+ok("页脚链接 Stillink 与 MoInk 仓库", footer.includes('href="https://github.com/sheetung/Stillink"') && footer.includes('href="https://github.com/atunverse/moink"') && footer.includes(" | "));
 ok("页脚版本号运行时填充 (footVer + meta)",
    page.indexOf('id="footVer"') >= 0 && page.indexOf('meta[name="epaper-page-version"]') >= 0);
 

@@ -50,6 +50,6 @@
  *   - 文本框在localStorage保存导致下次打开时文本仍在问题解决
  */
 #define EPAPER_API_VERSION   2
-#define EPAPER_VERSION       "R1.3.3"
+#define EPAPER_VERSION       "V0.0.1"
 
 #endif /* EPAPER_VERSION_H */
