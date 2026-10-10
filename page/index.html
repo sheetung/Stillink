@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="epaper-page-version" content="R1.3.0">
+<meta name="epaper-page-version" content="R1.3.1">
 <title>Stillink</title>
 <style>
 /* ===== Cropper.js v1.6.2 | MIT | https://github.com/fengyuanchen/cropperjs ===== */
@@ -393,8 +393,8 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
       <summary>Wi-Fi 配网 · 局域网访问</summary>
       <p class="hint">先连接设备热点，再扫描并连接家里的 2.4 GHz Wi-Fi。连接成功后，手机或电脑接入同一路由器，即可通过下方局域网地址访问。热点入口仍可使用。</p>
       <div class="row">
-        <button class="mini" id="scanWifi">扫描 Wi-Fi</button>
-        <select id="wifiNetworks" aria-label="扫描到的 Wi-Fi"><option value="">选择扫描到的网络</option></select>
+        <button class="mini" id="chooseWifi" aria-controls="wifiNetworks" aria-expanded="false">选择网络</button>
+        <select id="wifiNetworks" aria-label="可选 Wi-Fi 网络" size="5" hidden></select>
       </div>
       <div class="row"><label>Wi-Fi 名称</label><input type="text" id="staSsid" maxlength="32" placeholder="扫描选择，也可手动输入"></div>
       <div class="row"><label>Wi-Fi 密码</label><input type="password" id="staPass" maxlength="64" autocomplete="new-password" placeholder="开放网络留空"></div>
@@ -2086,6 +2086,7 @@ function loadSettings(){
    热点改名会立刻踢掉客户端（应答可能收不到），所以回读带重试。 */
 /* ---------- 路由器配网 ---------- */
 var wifiPollTimer = null;
+var wifiScanning = false;
 function wifiMessage(text, failed){
   $("wifiStatus").textContent = text;
   $("wifiStatus").style.color = failed ? "var(--err)" : "";
@@ -2103,7 +2104,7 @@ function wifiRequest(path, options){
 function renderWifiStatus(s){
   if (!$("staSsid").value && s.ssid) $("staSsid").value = s.ssid;
   var connecting = s.status === "connecting";
-  $("scanWifi").disabled = connecting;
+  $("chooseWifi").disabled = connecting || wifiScanning;
   $("connectWifi").disabled = connecting;
   $("lanAddress").hidden = !(s.status === "connected" && s.ip);
   if (s.status === "connected" && s.ip){
@@ -2132,30 +2133,44 @@ function refreshWifiStatus(retries){
       wifiMessage("等待设备恢复连接…请保持连接设备热点。");
       wifiPollTimer = setTimeout(function(){ refreshWifiStatus(retries - 1); }, 2000);
     } else {
-      $("scanWifi").disabled = false;
+      $("chooseWifi").disabled = false;
       $("connectWifi").disabled = false;
       wifiMessage("无法读取 Wi-Fi 状态，请连接设备热点或通过设备 IP 打开页面。", true);
     }
   });
 }
-$("scanWifi").addEventListener("click", function(){
-  $("scanWifi").disabled = true;
+$("chooseWifi").addEventListener("click", function(){
+  if (wifiScanning) return;
+  wifiScanning = true;
+  $("chooseWifi").disabled = true;
+  $("chooseWifi").textContent = "正在查找网络…";
+  $("wifiNetworks").hidden = true;
+  $("chooseWifi").setAttribute("aria-expanded", "false");
   wifiMessage("正在扫描附近的 2.4 GHz Wi-Fi…");
   wifiRequest("/api/wifi/scan").then(function(result){
     var select = $("wifiNetworks");
-    select.replaceChildren(new Option("选择网络（" + result.networks.length + " 条记录）", ""));
+    select.replaceChildren(new Option("请选择 Wi-Fi", ""));
     var seen = Object.create(null);
     result.networks.forEach(function(network){
       if (seen[network.ssid]) return;
       seen[network.ssid] = true;
       select.add(new Option(network.ssid + " · " + network.rssi + " dBm · " + (network.secured ? "加密" : "开放"), network.ssid));
     });
-    wifiMessage(result.networks.length ? "请选择 Wi-Fi，输入密码后连接。" : "未扫描到网络，可重新扫描或手动输入 Wi-Fi 名称。");
+    select.hidden = select.options.length <= 1;
+    $("chooseWifi").setAttribute("aria-expanded", String(!select.hidden));
+    if (!select.hidden) select.focus();
+    wifiMessage(select.hidden ? "未找到网络，请再次点击选择网络或手动输入 Wi-Fi 名称。" : "请选择 Wi-Fi，输入密码后连接。");
   }).catch(function(error){ wifiMessage("扫描失败：" + error.message, true); })
-    .finally(function(){ $("scanWifi").disabled = false; });
+    .finally(function(){ wifiScanning = false; $("chooseWifi").disabled = false; $("chooseWifi").textContent = "选择网络"; });
 });
 $("wifiNetworks").addEventListener("change", function(){
-  if (this.value) $("staSsid").value = this.value;
+  if (this.value){
+    $("staSsid").value = this.value;
+    this.hidden = true;
+    $("chooseWifi").textContent = "选择网络：" + this.value;
+    $("chooseWifi").setAttribute("aria-expanded", "false");
+    $("staPass").focus();
+  }
 });
 $("connectWifi").addEventListener("click", function(){
   var ssid = $("staSsid").value, password = $("staPass").value;
@@ -2165,7 +2180,7 @@ $("connectWifi").addEventListener("click", function(){
     wifiMessage("密码需为 8–63 字符或 64 位十六进制密钥；开放网络留空。", true); return;
   }
   $("connectWifi").disabled = true;
-  $("scanWifi").disabled = true;
+  $("chooseWifi").disabled = true;
   wifiMessage("正在提交配网信息…");
   wifiRequest("/api/wifi/connect", { method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"},
     body:"ssid=" + encodeURIComponent(ssid) + "&password=" + encodeURIComponent(password) })
@@ -2183,7 +2198,7 @@ $("forgetWifi").addEventListener("click", function(){
     $("lanAddress").hidden = true;
     wifiMessage("Wi-Fi 配置已清除。若当前通过局域网访问，请重新连接设备热点。");
   }).catch(function(error){ wifiMessage("忘记 Wi-Fi 失败：" + error.message, true); })
-    .finally(function(){ $("forgetWifi").disabled = false; $("scanWifi").disabled = false; $("connectWifi").disabled = false; });
+    .finally(function(){ $("forgetWifi").disabled = false; $("chooseWifi").disabled = false; $("connectWifi").disabled = false; });
 });
 
 var SETT_LABEL = { panel:"屏幕", hflip:"左右镜像", a1_mode:"A1 驱动",
