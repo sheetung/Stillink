@@ -11,8 +11,8 @@ const path = require("path");
 const vm = require("vm");
 
 const page = fs.readFileSync(path.join(__dirname, "..", "page", "index.html"), "utf8");
-const captive = fs.readFileSync(path.join(__dirname, "..", "src", "captive.c"), "utf8");
-const netifAp = fs.readFileSync(path.join(__dirname, "..", "src", "netif_ap.c"), "utf8");
+const captive = fs.readFileSync(path.join(__dirname, "..", "main", "captive.c"), "utf8");
+const netifAp = fs.readFileSync(path.join(__dirname, "..", "main", "netif_ap.c"), "utf8");
 // R1.0.12 起页面有两个 <script> 块（第 1 块 = 内嵌 Cropper.js，第 2 块 = 主脚本）。
 // \r?\n：兼容 core.autocrlf 检出为 CRLF 的工作区（2026-09-22 修正）。
 const m = page.match(/<script>\r?\n"use strict";\r?\n([\s\S]*?)\r?\n<\/script>/);

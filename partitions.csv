@@ -1,5 +1,5 @@
 # Name,   Type, SubType, Offset,   Size,     Flags
-# NOTE: must stay plain ASCII without a UTF-8 BOM (PIO's parser aborts on BOM).
+# UTF-8 without BOM; use PYTHONUTF8=1 on Windows.
 #
 # MoInk R1.2.0 布局（4 MB flash）—— ★ 本版分区表有变（FB-017 第一部分）：
 #   新增 "store" 原始帧存储分区（轮播存储底座），OTA 槽 1.5M -> 1.25M、

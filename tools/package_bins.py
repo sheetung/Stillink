@@ -7,8 +7,8 @@ package_bins.py [tag] —— 把编译产物打包成刷机/OTA 用的 bin。
     python tools/package_bins.py r1
 
 产出：
-    moink_<tag>_merged.bin  整包（0x0）：bootloader + partitions + app，USB 刷机用
-    moink_<tag>_app.bin     app 镜像：OTA 上传用（firmware.bin 的原样拷贝）
+    moink_<tag>_merged.bin  整包（0x0）：bootloader + partitions + OTA data + app
+    moink_<tag>_app.bin     app 镜像：OTA 上传用（build/moink.bin 的原样拷贝）
 
 合并参数沿用已验证配置：esp32c3 / dio / 40m / 4MB。
 """
@@ -19,7 +19,7 @@ import subprocess
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-BUILD = os.path.join(ROOT, ".pio", "build", "moink")
+BUILD = os.path.join(ROOT, "build")
 
 
 def esptool(args):
@@ -31,11 +31,12 @@ def esptool(args):
 def main():
     tag = sys.argv[1] if len(sys.argv) > 1 else "r1"
 
-    boot = os.path.join(BUILD, "bootloader.bin")
-    part = os.path.join(BUILD, "partitions.bin")
-    app = os.path.join(BUILD, "firmware.bin")
+    boot = os.path.join(BUILD, "bootloader", "bootloader.bin")
+    part = os.path.join(BUILD, "partition_table", "partition-table.bin")
+    ota_data = os.path.join(BUILD, "ota_data_initial.bin")
+    app = os.path.join(BUILD, "moink.bin")
 
-    for p in (boot, part, app):
+    for p in (boot, part, ota_data, app):
         if not os.path.exists(p):
             print("missing build artifact: %s" % p)
             return 1
@@ -47,13 +48,14 @@ def main():
     print("app     -> %s (%d B)" % (app_out, os.path.getsize(app_out)))
 
     esptool([
-        "--chip", "esp32c3", "merge_bin",
+        "--chip", "esp32c3", "merge-bin",
         "-o", merged,
-        "--flash_mode", "dio",
-        "--flash_freq", "40m",
-        "--flash_size", "4MB",
+        "--flash-mode", "dio",
+        "--flash-freq", "40m",
+        "--flash-size", "4MB",
         "0x0", boot,
         "0x8000", part,
+        "0xd000", ota_data,
         "0x10000", app,
     ])
     print("merged  -> %s (%d B)" % (merged, os.path.getsize(merged)))

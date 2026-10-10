@@ -1,7 +1,6 @@
-# ---- PlatformIO / 构建产物 ----
-.pio/
-.pioenvs/
-.piolibdeps/
+# ---- ESP-IDF / 构建产物 ----
+build/
+sdkconfig
 sdkconfig.old
 
 # ---- 固件/页面产物（可由源码重新生成；发布件走 GitHub Releases）----

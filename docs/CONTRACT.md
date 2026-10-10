@@ -175,7 +175,7 @@
   固件升级会**顺带更新控制页并强制重置设置**（热点名与密码保留）；控制页升级只换页面、不重启。
 - **`api`（帧格式契约号）与发布版本号解耦**：只在 §1–§3 帧契约变化时 +1，与 `version` 无关。
 - **防漂移门禁**：固化内嵌页前 `tools/make_index_header.py` 断言
-  `page/index.html` 的 `<meta moink-page-version>` == `src/version.h` 的 `MOINK_VERSION`，
+  `page/index.html` 的 `<meta moink-page-version>` == `main/version.h` 的 `MOINK_VERSION`，
   不一致直接失败（打印两边实际值），从机制上杜绝「页面改了、版本号没跟」。
 - 回归门禁（必须全绿）：
   - `python tools/check_frame.py`（帧契约黄金校验）
@@ -200,7 +200,7 @@
 - **★★ 升级到 R1.2.0 必须整包线刷（`merged.bin` 含新分区表），不能从旧版本 OTA**：
   分区表只能由线刷改写；旧表设备 OTA 本版 app.bin 后可开机（`store` 缺失 →
   `store_slots=0`，其余功能不受影响），但不受支持。自 R1.2.0 起（同分区表）恢复正常 OTA。
-- **store 槽位布局**（`src/store.c`，本版只探测不写入）：8 个固定 **128 KiB** 槽位 +
+- **store 槽位布局**（`main/store.c`，本版只探测不写入）：8 个固定 **128 KiB** 槽位 +
   64 KiB 预留；单槽容纳最大帧 800×600 2bpp = 120,000 B（768×552 = 105,984 B）。
 - **写入策略（为 Flash 寿命预设，第二部分实施）**：轮播图片**整槽轮转写入**
   （新图永远写下一个槽，绝不原地覆写，擦写均匀摊到 8 槽）；轮播游标存 NVS

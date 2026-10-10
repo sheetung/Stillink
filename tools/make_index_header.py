@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""把 page/index.html 内嵌成 src/index_html.h（改页必跑，漏跑会静默打进旧页面）。
+"""把 page/index.html 内嵌成 main/index_html.h（改页必跑，漏跑会静默打进旧页面）。
 
 输出符号：
     static const unsigned char index_html[] = { ... };
@@ -8,7 +8,7 @@
 
 字节原样嵌入（UTF-8），不转义字符串，避免 C 字符串字面量的长度上限。
 
-★ R1.2.0（FB-015）：固化前先断言「页面 meta 版本 == src/version.h 的 MOINK_VERSION」。
+★ R1.2.0（FB-015）：固化前先断言「页面 meta 版本 == main/version.h 的 MOINK_VERSION」。
    版本号统一成一套之后，两处一旦漂移就又变回两套号 —— 这个断言就是防漂移闸门，
    不一致直接 exit 1，并打印两边实际值。
 """
@@ -19,8 +19,8 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 SRC = os.path.join(ROOT, "page", "index.html")
-VH = os.path.join(ROOT, "src", "version.h")
-DST = os.path.join(ROOT, "src", "index_html.h")
+VH = os.path.join(ROOT, "main", "version.h")
+DST = os.path.join(ROOT, "main", "index_html.h")
 
 META_RE = re.compile(r'<meta\s+name="moink-page-version"\s+content="([^"]+)"')
 VER_RE = re.compile(r'#define\s+MOINK_VERSION\s+"([^"]+)"')
@@ -40,7 +40,7 @@ def main():
     if page_ver != hdr_ver:
         print("!! 版本号不一致，拒绝固化：")
         print("     page/index.html  <meta moink-page-version> = %s" % page_ver)
-        print("     src/version.h    MOINK_VERSION              = %s" % hdr_ver)
+        print("     main/version.h    MOINK_VERSION              = %s" % hdr_ver)
         print("   统一版本号之后两处必须相同，改齐再跑。")
         return 1
 

@@ -48,16 +48,25 @@
 详细步骤请看 **[新手入门教程](docs/入门教程.md)**，这里只列关键三步：
 
 ```bash
-# 1. 编译固件（需要 Python + PlatformIO）
-python -m platformio run -e moink
+# 1. 编译固件（需要 ESP-IDF 6.1）
+idf.py build
 
 # 2. USB 刷机（或直接用 flash_kit/ 一键刷机包）
-python tools/flash_moink.py
+idf.py -p COM7 flash monitor
 
 # 3. 手机连接设备热点 MoInk-XXXX，浏览器自动弹出创作页
 ```
 
-也可以免编译直接使用 `flash_kit/` 目录里的一键刷机包（含预编译固件；没装 Python 会引导自动安装），或到 [GitHub Releases](https://github.com/atunverse/moink/releases) 下载刷机包。
+请在已激活 ESP-IDF 6.1 的终端中执行。Windows 本机可先运行：
+
+```powershell
+. C:\Espressif\tools\Microsoft.v6.1.PowerShell_profile.ps1
+$env:PYTHONUTF8="1"
+```
+
+默认芯片为 **ESP32-C3**，不是参考项目的 ESP32-C6。构建时自动生成内嵌页面并校验页面/固件版本。产物为 `build/moink.bin`（OTA）、`build/bootloader/bootloader.bin` 和 `build/partition_table/partition-table.bin`。整包刷机镜像可运行 `python tools/package_bins.py r1.2.1` 生成，再使用 `python tools/flash_moink.py` 刷写。
+
+也可以免编译直接使用 `flash_kit/` 目录里的一键刷机包（含预编译固件；没装 Python 会引导自动安装），或到 [GitHub Releases](https://github.com/sheetung/Moink/releases) 下载刷机包。
 
 ## 📖 使用方法
 
@@ -71,7 +80,7 @@ python tools/flash_moink.py
 
 ```
 moink/
-├── src/                  # 固件源码（ESP-IDF 6.1 + PlatformIO）
+├── main/                  # 固件源码（原生 ESP-IDF 6.1）
 │   ├── main.c            #   主入口：初始化 / 循环 / 睡眠与唤醒
 │   ├── epd_drv.c         #   墨水屏驱动（A0 隔行映射 / A1 顺序直写两档模式）
 │   ├── frame.c           #   帧协议接收与校验（CRC16）
@@ -93,7 +102,8 @@ moink/
 ├── docs/                 # 文档（入门教程 / 契约 / 变更日志）
 ├── legacy_ref/           # 旧版参考实现与 eink-warm 算法真源（只读，不迁移）
 ├── partitions.csv        # 分区表（nvs/ota_0/ota_1/web）
-├── platformio.ini        # PlatformIO 配置（env=moink）
+├── CMakeLists.txt        # ESP-IDF 工程入口（ESP32-C3）
+├── sdkconfig.defaults    # 可复现的默认配置
 └── CHANGELOG → docs/CHANGELOG.md
 ```
 
