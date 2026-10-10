@@ -9,10 +9,10 @@ new vm.Script(script); // Parse the complete page script, including the new cont
 const start = script.indexOf("var wifiPollTimer = null;");
 const end = script.indexOf("var SETT_LABEL", start);
 assert(start >= 0 && end > start);
-assert(!page.includes('id="scanWifi"'), "separate scan button removed");
+assert(!page.includes('id="scanWifi"') && !page.includes('id="chooseWifi"'), "extra buttons removed");
 const elements = Object.create(null);
 const requests = [], responses = [], timers = [];
-for (const id of ["wifiStatus", "staSsid", "staPass", "chooseWifi", "connectWifi", "forgetWifi", "lanAddress", "lanLink", "wifiNetworks"]) {
+for (const id of ["wifiStatus", "staSsid", "staPass", "connectWifi", "forgetWifi", "lanAddress", "lanLink", "wifiNetworks"]) {
   assert(page.includes('id="' + id + '"'));
   elements[id] = { value:"", style:{}, hidden:false, disabled:false, textContent:"", options:[], events:{},
     setAttribute(name, value){ this[name] = value; },
@@ -44,8 +44,8 @@ const click = id => elements[id].events.click.call(elements[id]);
   const quoted = 'Home "Wi-Fi" & kitchen';
   const markup = '<img src=x onerror=alert(1)>';
   respond({networks:[{ssid:quoted, rssi:-40, secured:true}, {ssid:quoted, rssi:-60, secured:true}, {ssid:markup, rssi:-70, secured:false}]});
-  click("chooseWifi");
-  assert.equal(elements.chooseWifi.disabled, true);
+  click("staSsid");
+  assert.equal(elements.staSsid.disabled, true);
   await flush();
   assert.equal(requests.at(-1).url, "/api/wifi/scan");
   assert.equal(elements.wifiNetworks.hidden, false, "selection opens after scan");
@@ -53,7 +53,7 @@ const click = id => elements[id].events.click.call(elements[id]);
   assert.equal(elements.wifiNetworks.options.length, 3, "duplicates are removed");
   assert.equal(elements.wifiNetworks.options[1].value, quoted);
   assert.equal(elements.wifiNetworks.options[2].value, markup, "SSID stays plain option text");
-  assert.equal(elements.chooseWifi.disabled, false);
+  assert.equal(elements.staSsid.disabled, false);
 
   elements.wifiNetworks.value = quoted;
   elements.wifiNetworks.events.change.call(elements.wifiNetworks);
@@ -92,16 +92,16 @@ const click = id => elements[id].events.click.call(elements[id]);
   assert(elements.wifiStatus.textContent.includes("32 字节"));
 
   respond({networks:[]});
-  click("chooseWifi");
+  click("staSsid");
   await flush();
   assert.equal(elements.wifiNetworks.hidden, true, "empty scan keeps choices hidden");
   assert(elements.wifiStatus.textContent.includes("未找到网络"));
 
   respond({}, 409);
-  click("chooseWifi");
+  click("staSsid");
   await flush();
   assert(elements.wifiStatus.textContent.includes("扫描失败"));
-  assert.equal(elements.chooseWifi.disabled, false);
+  assert.equal(elements.staSsid.disabled, false);
 
   respond({status:"idle"});
   elements.staSsid.value = quoted;
