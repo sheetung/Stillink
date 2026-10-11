@@ -6,11 +6,11 @@ set(EPAPER_SRCS
 
 # Regenerate the embedded page on configuration, including after page/version edits.
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/../page/index.html"
-    "${CMAKE_CURRENT_SOURCE_DIR}/version.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../tools/make_index_header.py")
+    "${CMAKE_CURRENT_LIST_DIR}/../page/index.html"
+    "${CMAKE_CURRENT_LIST_DIR}/version.h"
+    "${CMAKE_CURRENT_LIST_DIR}/../tools/make_index_header.py")
 execute_process(
-    COMMAND "${PYTHON}" "${CMAKE_CURRENT_SOURCE_DIR}/../tools/make_index_header.py"
+    COMMAND "${PYTHON}" "${CMAKE_CURRENT_LIST_DIR}/../tools/make_index_header.py"
     RESULT_VARIABLE EPAPER_PAGE_RESULT)
 if(NOT EPAPER_PAGE_RESULT EQUAL 0)
     message(FATAL_ERROR "Stillink embedded page generation failed")
@@ -26,9 +26,9 @@ idf_component_register(
 
 # 显式声明页面头和版本头的编译依赖。
 set_property(SOURCE main.c APPEND PROPERTY OBJECT_DEPENDS
-             "${CMAKE_CURRENT_SOURCE_DIR}/index_html.h")
+             "${CMAKE_CURRENT_LIST_DIR}/index_html.h")
 set_property(SOURCE ${EPAPER_SRCS} APPEND PROPERTY OBJECT_DEPENDS
-             "${CMAKE_CURRENT_SOURCE_DIR}/version.h")
+             "${CMAKE_CURRENT_LIST_DIR}/version.h")
 
 # R1.2.0（FB-015）：控制页一律内嵌（唯一真源 = page/index.html），
 # 原有的 EPAPER_EMBED_PAGE 逃生开关与占位页已删除 —— 设备必须自带控制页，

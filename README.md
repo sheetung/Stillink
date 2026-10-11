@@ -46,15 +46,15 @@ idf.py -p COM11 flash monitor
 生成整包及 OTA 镜像：
 
 ```powershell
-python tools/package_bins.py V0.0.2
-python tools/flash_device.py --port COM11 --bin stillink_V0.0.2_merged.bin
+python tools/package_bins.py V0.0.3
+python tools/flash_device.py --port COM11 --bin stillink_V0.0.3_merged.bin
 ```
 
-- `build/stillink.bin` / `stillink_V0.0.2_app.bin`：应用镜像，供 OTA 使用。
-- `stillink_V0.0.2_merged.bin`：含启动程序、分区表和应用，USB 烧录地址为 `0x0`。
-- `flash_kit/`：预编译 V0.0.2 镜像、网页和 Windows 一键刷机脚本。
+- `build/stillink.bin` / `stillink_V0.0.3_app.bin`：应用镜像，供 OTA 使用。
+- `stillink_V0.0.3_merged.bin`：含启动程序、分区表和应用，USB 烧录地址为 `0x0`。
+- `flash_kit/`：预编译 V0.0.3 镜像、网页和 Windows 一键刷机脚本。
 
-旧版 R1.2.1 的 OTA 校验固定为 ESP32-C3 芯片标识；当前 C6 板首次升级到 V0.0.2 请用 USB。V0.0.2 已按实际构建目标校验镜像。
+旧版 R1.2.1 的 OTA 校验固定为 ESP32-C3 芯片标识；当前 C6 板首次升级到 V0.0.3 请用 USB。V0.0.3 已按实际构建目标校验镜像。
 
 ## 热点直连与 Wi-Fi 配网
 
@@ -87,7 +87,7 @@ python tools/check_frame.py
 idf.py build
 ```
 
-页面测试覆盖帧打包、页面结构和配网交互，包括扫描结果、凭据编码、连接状态、局域网链接与忘记网络。V0.0.2 已完成 ESP32-C6 编译和页面测试；此前 R1.2.1 已在 COM11 完成 USB 烧录与启动检查，V0.0.2 配网仍需真机连接路由器验证。
+页面测试覆盖帧打包、页面结构和配网交互，包括扫描结果、凭据编码、连接状态、局域网链接与忘记网络。V0.0.3 已完成 ESP32-C6 编译和页面测试；此前 R1.2.1 已在 COM11 完成 USB 烧录与启动检查，V0.0.3 配网仍需真机连接路由器验证。
 
 内部 NVS 命名空间与网页版本标记保留 `epaper` 标识，以保持已有设置和页面升级格式兼容。
 

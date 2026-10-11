@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="epaper-page-version" content="V0.0.2">
+<meta name="epaper-page-version" content="V0.0.3">
 <title>Stillink</title>
 <style>
 /* ===== Cropper.js v1.6.2 | MIT | https://github.com/fengyuanchen/cropperjs ===== */
@@ -138,6 +138,16 @@ input[type=file]{ font-size:13px; }
 .row .pair{ display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
 #prev{ display:block; width:100%; max-width:420px; margin:0 auto; border:1px solid var(--line);
        border-radius:10px; background:#fff; }
+@media (min-width:900px){
+  #prevWrap{ margin-top:0; }
+  #pickCard{ display:flex; flex-direction:column; }
+  #drop:not(.has){ height:var(--desktop-image-height,557px); display:flex;
+                   flex-direction:column; justify-content:center; }
+  #pickCard:has(#drop.has) #cropCard{ order:-1; }
+  #cropWrap{ height:var(--desktop-image-height,557px); margin:0 0 10px; }
+  #cropImg{ width:100%; height:100%; object-fit:contain; }
+  #pickCard:not(:has(#drop.has)) #cropWrap{ display:none; }
+}
 #stathint{ font-size:12px; color:var(--mut); text-align:center; margin:4px 0; }
 #msg{ margin:10px 0 0; font-size:13.5px; min-height:20px; }
 #msg.ok{ color:var(--ok); } #msg.err{ color:var(--err); }
@@ -2498,6 +2508,12 @@ applyMode(cfg.mode || DEF.mode);
 setMode(cfg.lastMode ? 1 : 0, true);
 syncSel();
 window.addEventListener("resize", function(){ layoutObjs(); });
+function syncDesktopImageHeight(){
+  var height = $("prev").getBoundingClientRect().height;
+  if (height > 0) $("editorGrid").style.setProperty("--desktop-image-height", height + "px");
+}
+syncDesktopImageHeight();
+new ResizeObserver(syncDesktopImageHeight).observe($("prev"));
 $("tFont").value = cfg.textFont || 0;
 $("tSize").value = cfg.textSize || 100;
 $("tColor").value = cfg.textColor || 0;
