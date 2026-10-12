@@ -22,7 +22,7 @@
 
 ```powershell
 git clone git@github.com:sheetung/Stillink.git
-cd Stillink/extra-services/music-client
+cd Stillink/extra-services/music-client-win
 uv sync --frozen
 uv run --frozen app.py
 ```
@@ -69,7 +69,7 @@ uv run --frozen app.py --port 8790
 
 ```powershell
 # Windows 广播编码测试
-cd extra-services/music-client
+cd extra-services/music-client-win
 uv run --frozen python test_music.py
 ```
 

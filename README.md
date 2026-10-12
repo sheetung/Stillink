@@ -134,7 +134,7 @@ uv run --frozen app.py --host 0.0.0.0 --port 8787
 音乐还需在 Windows 运行广播工具：
 
 ```powershell
-cd Stillink/extra-services/music-client
+cd Stillink/extra-services/music-client-win
 uv sync --frozen
 uv run --frozen app.py
 ```

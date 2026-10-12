@@ -7,7 +7,7 @@
 ```text
 extra-services/
 ├── server/          HTTP 卡片服务、天气模块、UDP 音乐接收器
-└── music-client/    Windows 音乐信息与原始封面广播
+└── music-client-win/    Windows 音乐信息与原始封面广播
 ```
 
 服务器负责字库与卡片渲染，ESP 保存配置并请求二进制图片。部署完成后，功能操作分别见 [天气](weather.md) 和 [音乐](music.md)。
@@ -82,7 +82,7 @@ HTTP 与 UDP 端口、设备地址和接口保持一致，设备无需重新配�
 
 ```powershell
 git clone git@github.com:sheetung/Stillink.git
-cd Stillink/extra-services/music-client
+cd Stillink/extra-services/music-client-win
 uv sync --frozen
 uv run --frozen app.py
 ```
@@ -111,6 +111,6 @@ uv run --frozen python -m unittest test_app test_music
 Windows 广播协议测试：
 
 ```powershell
-cd Stillink/extra-services/music-client
+cd Stillink/extra-services/music-client-win
 uv run --frozen python -m unittest test_music
 ```
