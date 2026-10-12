@@ -190,7 +190,7 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
 .dmark.off{ visibility:hidden; }
 @media (max-width:480px){ .slider label{ width:66px; } }
 
-#weatherPane[hidden],#musicPane[hidden]{display:none}#weatherPane,#musicPane{margin-top:22px}.weatherLayout{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:22px;align-items:start}.weatherPreviewLabel{font-size:12px;color:var(--mut);margin-bottom:12px}.weatherFrame{background:#2b2b28;padding:11px;border-radius:15px;box-shadow:0 10px 24px #30210e12}#weatherScreen,#musicScreen{background:white;aspect-ratio:768/552;overflow:hidden;border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--mut);text-align:center}#weatherScreen img,#musicScreen img{width:100%;height:100%;display:block}#weatherScreen small,#musicScreen small{font-size:12px}.weatherConfig{border:1px solid var(--line);border-radius:12px;padding:18px}.weatherConfig h2{margin-bottom:4px}.weatherEnable{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);margin:18px 0;padding-bottom:12px}.weatherEnable .hint{margin-top:3px}.weatherSwitch{display:block;width:40px;height:24px;position:relative;flex:none;margin-left:7px}.weatherSwitch input{opacity:0;position:absolute;width:100%;height:100%;margin:0;cursor:pointer}.weatherSwitch i{display:block;background:#d8d1c6;border-radius:20px;width:40px;height:24px;pointer-events:none}.weatherSwitch i:after{content:"";position:absolute;left:3px;top:3px;background:white;border-radius:50%;width:18px;height:18px}.weatherSwitch input:checked+i{background:var(--acc2)}.weatherSwitch input:checked+i:after{transform:translateX(16px)}.weatherSwitch input:focus-visible+i{outline:2px solid var(--acc)}.weatherLabel{display:block;color:var(--mut);font-size:12px;margin:17px 0 7px}.weatherLocation{position:relative}#weatherLocation{width:100%}#weatherCities{position:absolute;top:calc(100% + 4px);left:0;right:0;background:white;box-shadow:0 8px 25px #30210e20;border:1px solid var(--line);border-radius:9px;padding:5px;z-index:5;max-height:230px;overflow:auto}#weatherCities button{display:block;width:100%;text-align:left;background:transparent;color:var(--ink);padding:8px;font-size:12px}#weatherCities button:hover{background:var(--bg)}#weatherCities small{display:block;color:var(--mut);font-size:10px}.weatherTimes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.weatherTimes label{font-size:11px;color:var(--mut)}.weatherTimes input{margin-top:5px;display:block;width:100%;min-width:0;padding:8px 3px;font-size:12px;border:1px solid var(--line);border-radius:8px;background:white;color:var(--ink)}.weatherStatus{font-size:12px;background:#f0f6f2;color:var(--acc2);border-radius:9px;padding:11px;margin-top:17px}.weatherStatus.warn{background:#fbf1de;color:#9b762b}.weatherActions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:17px}.weatherActions button{padding:9px 4px;font-size:12px}#weatherMessage{min-height:20px}.weatherFoot{font-size:11px;color:var(--mut);padding-top:12px;border-top:1px solid var(--line);margin-bottom:0}
+#modeWeather[hidden],#modeMusic[hidden],#weatherPane[hidden],#musicPane[hidden]{display:none}#weatherPane,#musicPane{margin-top:22px}.weatherLayout{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:22px;align-items:start}.weatherPreviewLabel{font-size:12px;color:var(--mut);margin-bottom:12px}.weatherFrame{background:#2b2b28;padding:11px;border-radius:15px;box-shadow:0 10px 24px #30210e12}#weatherScreen,#musicScreen{background:white;aspect-ratio:768/552;overflow:hidden;border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--mut);text-align:center}#weatherScreen img,#musicScreen img{width:100%;height:100%;display:block}#weatherScreen small,#musicScreen small{font-size:12px}.weatherConfig{border:1px solid var(--line);border-radius:12px;padding:18px}.weatherConfig h2{margin-bottom:4px}.weatherEnable{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);margin:18px 0;padding-bottom:12px}.weatherEnable .hint{margin-top:3px}.weatherSwitch{display:block;width:40px;height:24px;position:relative;flex:none;margin-left:7px}.weatherSwitch input{opacity:0;position:absolute;width:100%;height:100%;margin:0;cursor:pointer}.weatherSwitch i{display:block;background:#d8d1c6;border-radius:20px;width:40px;height:24px;pointer-events:none}.weatherSwitch i:after{content:"";position:absolute;left:3px;top:3px;background:white;border-radius:50%;width:18px;height:18px}.weatherSwitch input:checked+i{background:var(--acc2)}.weatherSwitch input:checked+i:after{transform:translateX(16px)}.weatherSwitch input:focus-visible+i{outline:2px solid var(--acc)}.weatherLabel{display:block;color:var(--mut);font-size:12px;margin:17px 0 7px}.weatherLocation{position:relative}#weatherLocation{width:100%}#weatherCities{position:absolute;top:calc(100% + 4px);left:0;right:0;background:white;box-shadow:0 8px 25px #30210e20;border:1px solid var(--line);border-radius:9px;padding:5px;z-index:5;max-height:230px;overflow:auto}#weatherCities button{display:block;width:100%;text-align:left;background:transparent;color:var(--ink);padding:8px;font-size:12px}#weatherCities button:hover{background:var(--bg)}#weatherCities small{display:block;color:var(--mut);font-size:10px}.weatherTimes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.weatherTimes label{font-size:11px;color:var(--mut)}.weatherTimes input{margin-top:5px;display:block;width:100%;min-width:0;padding:8px 3px;font-size:12px;border:1px solid var(--line);border-radius:8px;background:white;color:var(--ink)}.weatherStatus{font-size:12px;background:#f0f6f2;color:var(--acc2);border-radius:9px;padding:11px;margin-top:17px}.weatherStatus.warn{background:#fbf1de;color:#9b762b}.weatherActions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:17px}.weatherActions button{padding:9px 4px;font-size:12px}#weatherMessage{min-height:20px}.weatherFoot{font-size:11px;color:var(--mut);padding-top:12px;border-top:1px solid var(--line);margin-bottom:0}
 @media(max-width:760px){.weatherLayout{grid-template-columns:1fr}.weatherTimes input{padding:10px 6px;font-size:13px}.weatherConfig{padding:17px}}
 </style>
 </head>
@@ -227,8 +227,8 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
     <div id="modes">
       <button class="mode on" data-m="0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>拍立得</button>
       <button class="mode" data-m="1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>便签</button>
-      <button class="mode" id="modeWeather"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></svg>天气</button>
-      <button class="mode" id="modeMusic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>音乐</button>
+      <button class="mode" id="modeWeather" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></svg>天气</button>
+      <button class="mode" id="modeMusic" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>音乐</button>
     </div>
     <div id="weatherPane" hidden>
       <div class="weatherLayout">
@@ -236,7 +236,7 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
         <div class="weatherConfig">
           <h2>天气卡片</h2><p class="hint">位置和计划保存在设备中，重启后继续使用。</p>
           <div class="weatherEnable"><div><b>启用天气卡片</b><p class="hint">开启后按设定时间更新天气</p></div><label class="weatherSwitch"><input type="checkbox" id="weatherEnabled" aria-label="启用天气卡片"><i></i></label></div>
-          <div class="weatherLabel" style="display:flex;justify-content:space-between;align-items:center"><label for="weatherService">天气服务地址</label><a href="https://github.com/sheetung/Stillink/blob/main/docs/weather.md" target="_blank" rel="noopener">使用说明</a></div><input id="weatherService" type="url" placeholder="http://服务器地址:8787" style="width:100%"><p class="hint">服务生成图片，设备下载后直接刷新。</p>
+          <p class="hint"><a href="https://github.com/sheetung/Stillink/blob/main/docs/weather.md" target="_blank" rel="noopener">使用说明</a></p>
           <label class="weatherLabel" for="weatherLocation">天气位置</label><div class="weatherLocation"><input id="weatherLocation" type="text" placeholder="输入城市或区县" autocomplete="off" aria-expanded="false" aria-controls="weatherCities"><div id="weatherCities" hidden></div></div><p id="weatherRegion" class="hint">输入位置后，从搜索结果中选择。</p>
           <div class="weatherLabel">每日刷新 · 所在地时间</div><div class="weatherTimes"><label>早晨<input type="time" id="weatherMorning" value="08:00" aria-label="早晨刷新时间"></label><label>中午<input type="time" id="weatherNoon" value="12:00" aria-label="中午刷新时间"></label><label>傍晚<input type="time" id="weatherEvening" value="18:00" aria-label="傍晚刷新时间"></label></div>
           <p class="hint">默认每天 3 次。保存并启用后会立即更新一次。</p>
@@ -252,11 +252,10 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
         <div class="weatherConfig">
           <h2>音乐卡片</h2><p class="hint">Windows 广播当前音乐，设备主动请求并刷新。</p>
           <div class="weatherEnable"><div><b>启用音乐卡片</b><p class="hint">启用时暂停自动天气，关闭后恢复天气计划。</p></div><label class="weatherSwitch"><input type="checkbox" id="musicEnabled" aria-label="启用音乐卡片"><i></i></label></div>
-          <div class="weatherLabel" style="display:flex;justify-content:space-between;align-items:center"><label for="musicService">音乐服务地址</label><a href="https://github.com/sheetung/Stillink/blob/main/docs/music.md" target="_blank" rel="noopener">使用说明</a></div>
-          <input id="musicService" type="text" placeholder="http://服务器地址:8787" style="width:100%"><p class="hint">填写接收 Windows 广播的服务器地址。</p>
+          <p class="hint"><a href="https://github.com/sheetung/Stillink/blob/main/docs/music.md" target="_blank" rel="noopener">使用说明</a></p>
           <p id="musicTrack" class="hint">等待音乐服务。</p>
           <div id="musicStatus" class="weatherStatus" role="status" aria-live="polite">正在读取音乐设置…</div>
-          <div class="weatherActions"><button id="musicSave">连接并保存</button><button class="mini" id="musicPreview">预览卡片</button></div>
+          <div class="weatherActions"><button id="musicSave">保存音乐设置</button><button class="mini" id="musicPreview">预览卡片</button></div>
           <button class="mini" id="musicRefresh" style="width:100%;margin-top:8px" disabled>立即刷新屏幕</button><p id="musicMessage" class="hint" role="status" aria-live="polite"></p>
           <p class="weatherFoot">电脑与设备需在同一网络。Windows 广播工具和服务器持续运行即可，无需在 Windows 指定 ESP 地址。设备只在歌曲变化时刷新，自动刷新间隔至少 60 秒；暂停或恢复不会重复刷新。</p>
         </div>
@@ -459,6 +458,15 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
       <p id="wifiStatus" class="hint" role="status" aria-live="polite">正在读取网络状态…</p>
       <p id="lanAddress" class="hint" hidden>局域网地址：<a id="lanLink" target="_blank" rel="noopener"></a></p>
       <p class="hint">连接路由器后设备保持在线，不进入深度休眠；空闲时自动轻睡，收到网络请求后恢复处理。忘记 Wi-Fi 后恢复原来的休眠设置。重启后会自动连接已保存的网络。</p>
+    </details>
+
+    <details>
+      <summary>额外服务支持</summary>
+      <p class="hint">天气和音乐共用一个服务。服务器生成图片和文字，设备只下载图片，无需保存字库。</p>
+      <div class="row"><label for="supportService">服务地址</label><input id="supportService" type="text" placeholder="http://服务器地址:8787" style="flex:1;min-width:0"></div>
+      <div class="row"><button class="mini" id="saveSupportService">保存服务地址</button><a href="https://github.com/sheetung/Stillink/blob/main/docs/weather.md" target="_blank" rel="noopener">部署说明</a></div>
+      <p class="hint">填写服务器的 HTTP 根地址。保存一次后，天气和音乐页面无需重复填写；重启和固件升级后保留。清空地址并保存会关闭天气与音乐，隐藏对应入口。</p>
+      <span class="savestate" id="supportServiceMessage"></span>
     </details>
 
     <details>
@@ -2566,6 +2574,30 @@ $("space").value = cfg.space;   /* R1.0.26: 色域下拉回填存储值 */
 refreshDefMarks();
 refreshInfo();
 loadSettings();
+/* ---------- 额外服务支持：天气与音乐共用地址 ---------- */
+var supportServiceURL="";
+function showServiceModes(){["modeWeather","modeMusic"].forEach(function(id){$(id).hidden=!supportServiceURL;});if(!supportServiceURL)document.querySelector("#modes button[data-m]").click();}
+(function(){
+  var dirty=false;
+  function request(path,options){return fetch(api(path),options).then(function(r){if(!r.ok)throw new Error("设备请求失败（"+r.status+"）");return r.json();});}
+  function read(){return Promise.all([request("/api/weather"),request("/api/music")]);}
+  read().then(function(states){supportServiceURL=states[0].service_url||states[1].service_url||"";if(!dirty)$("supportService").value=supportServiceURL;showServiceModes();}).catch(function(){$("supportServiceMessage").textContent="无法读取服务配置，请连接设备。";});
+  $("supportService").addEventListener("input",function(){dirty=true;});
+  $("saveSupportService").addEventListener("click",async function(){
+    var url=$("supportService").value.trim().replace(/\/+$/,"");
+    if(url&&(!/^https?:\/\/[^/?#@\s]+(?:\/[^?#@\s]*)?$/.test(url)||new TextEncoder().encode(url).length>=192)){$("supportServiceMessage").textContent="请输入有效的 HTTP 或 HTTPS 服务地址。";return;}
+    $("saveSupportService").disabled=true;
+    try{
+      var states=await read();
+      for(var i=0;i<2;i++)await request(i?"/api/music":"/api/weather",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({enabled:!!url&&states[i].enabled,service_url:url})});
+      states=await read();
+      if(states.some(function(s){return s.service_url!==url;}))throw new Error("服务地址保存未完成，请重试");
+      supportServiceURL=url;showServiceModes();$("supportService").value=url;dirty=false;$("supportServiceMessage").textContent=url?"已保存，天气与音乐入口已开启。":"服务已关闭，天气与音乐入口已隐藏。";
+    }catch(e){$("supportServiceMessage").textContent="保存失败："+e.message;}
+    finally{$("saveSupportService").disabled=false;}
+  });
+})();
+
 /* ---------- 天气卡片：设备配置、服务端渲染、定时下载 ---------- */
 (function(){
   var active=false, selected=null, timer=null, searchTimer=null, searchId=0, dirty=false, saving=false;
@@ -2593,7 +2625,7 @@ loadSettings();
     clearTimeout(timer);if(!active)return;
     request("/api/weather?t="+Date.now()).then(function(state){
       latest=state;renderStatus(state);
-      if(!dirty&&!saving){$("weatherEnabled").checked=!!state.enabled;$("weatherService").value=state.service_url||"";$("weatherLocation").value=state.name||"";selected=state.name?{name:state.name,latitude:state.latitude,longitude:state.longitude}:null;["weatherMorning","weatherNoon","weatherEvening"].forEach(function(id,i){var m=state.times[i];$(id).value=("0"+Math.floor(m/60)).slice(-2)+":"+("0"+m%60).slice(-2);});$("weatherRegion").textContent=state.name?"位置已保存在设备中。":"输入位置后，从搜索结果中选择。";}
+      if(!dirty&&!saving){$("weatherEnabled").checked=!!state.enabled;if(!supportServiceURL)supportServiceURL=state.service_url||"";$("weatherLocation").value=state.name||"";selected=state.name?{name:state.name,latitude:state.latitude,longitude:state.longitude}:null;["weatherMorning","weatherNoon","weatherEvening"].forEach(function(id,i){var m=state.times[i];$(id).value=("0"+Math.floor(m/60)).slice(-2)+":"+("0"+m%60).slice(-2);});$("weatherRegion").textContent=state.name?"位置已保存在设备中。":"输入位置后，从搜索结果中选择。";}
       draw(state);
     }).catch(function(e){$("weatherStatus").textContent="无法读取天气设置，请连接支持天气功能的设备。";$("weatherStatus").classList.add("warn");$("weatherRefresh").disabled=true;})
     .finally(function(){if(active)timer=setTimeout(load,5000);});
@@ -2602,7 +2634,7 @@ loadSettings();
   button.addEventListener("click",function(){selectWeather(true);});
   $("modeMusic").addEventListener("click",function(){selectWeather(false);});
   document.querySelectorAll("#modes button[data-m]").forEach(function(b){b.addEventListener("click",function(){selectWeather(false);});});
-  ["weatherEnabled","weatherService","weatherMorning","weatherNoon","weatherEvening"].forEach(function(id){$(id).addEventListener("change",function(){dirty=true;$("weatherMessage").textContent="设置已修改，请保存到设备。";});});
+  ["weatherEnabled","weatherMorning","weatherNoon","weatherEvening"].forEach(function(id){$(id).addEventListener("change",function(){dirty=true;$("weatherMessage").textContent="设置已修改，请保存到设备。";});});
   $("weatherLocation").addEventListener("input",function(){
     dirty=true;selected=null;clearTimeout(searchTimer);var query=this.value.trim(),seq=++searchId;
     if(!query){closeResults();return;}
@@ -2619,9 +2651,9 @@ loadSettings();
   $("weatherSave").addEventListener("click",function(){
     var enabled=$("weatherEnabled").checked,payload={enabled:enabled};
     try{
-      payload.service_url=$("weatherService").value.trim().replace(/\/+$/,"");
+      payload.service_url=supportServiceURL.replace(/\/+$/,"");
       if(payload.service_url&&(!/^https?:\/\/[^/?#@\s]+(?:\/[^?#@\s]*)?$/.test(payload.service_url)||new TextEncoder().encode(payload.service_url).length>=192))throw new Error("请输入有效的 HTTP 或 HTTPS 服务地址");
-      if(enabled&&!payload.service_url)throw new Error("请填写天气服务地址");
+      if(enabled&&!payload.service_url)throw new Error("请先在设备设置中保存服务地址");
       if(enabled&&!selected)throw new Error("请搜索并选择天气位置");
       if(selected){
         if(new TextEncoder().encode(selected.name).length>=96)throw new Error("位置名称太长");
@@ -2643,7 +2675,7 @@ loadSettings();
 (function(){
   var active=false,dirty=false,saving=false,timer=null,previewKey="";
   function request(path,options){return fetch(api(path),options).then(function(r){if(!r.ok)throw new Error("设备请求失败（"+r.status+"）");return r.json();});}
-  function serviceUrl(){var url=$("musicService").value.trim().replace(/\/+$/,"");if(!/^https?:\/\/[^/?#@\s]+(?:\/[^?#@\s]*)?$/.test(url)||new TextEncoder().encode(url).length>=192)throw new Error("请填写有效的音乐服务地址");return url;}
+  function serviceUrl(){var url=supportServiceURL.replace(/\/+$/,"");if(!/^https?:\/\/[^/?#@\s]+(?:\/[^?#@\s]*)?$/.test(url)||new TextEncoder().encode(url).length>=192)throw new Error("请先在设备设置中保存有效的服务地址");return url;}
   function preview(){
     var url;try{url=serviceUrl();}catch(e){$("musicMessage").textContent=e.message;return Promise.resolve();}
     return fetch(url+"/v1/music.json?t="+Date.now()).then(function(r){if(!r.ok)throw new Error("音乐服务不可用");return r.json();}).then(function(data){
@@ -2657,20 +2689,20 @@ loadSettings();
   function load(){
     clearTimeout(timer);if(!active)return;
     request("/api/music?t="+Date.now()).then(function(state){
-      if(!dirty&&!saving){$("musicEnabled").checked=state.enabled;$("musicService").value=state.service_url||"";}
+      if(!dirty&&!saving){$("musicEnabled").checked=state.enabled;if(!supportServiceURL)supportServiceURL=state.service_url||"";}
       var labels={disabled:"音乐卡片已关闭",waiting_wifi:"等待连接 Wi-Fi",waiting:"等待 Windows 播放音乐",loading:"正在下载音乐卡片并刷新…",ready:"音乐卡片已同步",error:"音乐同步失败，保留原画面"};
       $("musicStatus").textContent=(labels[state.status]||"等待音乐")+(state.error?" · "+state.error:"");$("musicStatus").classList.toggle("warn",state.status==='error'||state.status==='waiting_wifi');
       $("musicRefresh").disabled=!state.enabled||state.status==='loading'||state.status==='waiting_wifi';
-      if($("musicService").value)preview();
+      if(supportServiceURL)preview();
     }).catch(function(){$("musicStatus").textContent="请连接已升级音乐功能的设备。";$("musicRefresh").disabled=true;}).finally(function(){if(active)timer=setTimeout(load,5000);});
   }
   function close(){active=false;$("musicPane").hidden=true;$("modeMusic").classList.remove("on");clearTimeout(timer);}
   $("modeMusic").addEventListener("click",function(){active=true;$("musicPane").hidden=false;$("editorGrid").style.display="none";$("steps").style.display="none";$("modeMusic").classList.add("on");document.querySelectorAll("#modes button[data-m]").forEach(function(b){b.classList.remove("on");});load();});
   $("modeWeather").addEventListener("click",close);document.querySelectorAll("#modes button[data-m]").forEach(function(b){b.addEventListener("click",close);});
-  ["musicEnabled","musicService"].forEach(function(id){$(id).addEventListener("change",function(){dirty=true;$("musicMessage").textContent="设置已修改，请连接并保存。";});});
+  ["musicEnabled"].forEach(function(id){$(id).addEventListener("change",function(){dirty=true;$("musicMessage").textContent="设置已修改，请保存音乐设置。";});});
   $("musicPreview").addEventListener("click",function(){previewKey="";preview();});
   $("musicSave").addEventListener("click",function(){
-    var url;try{url=$("musicService").value.trim()?serviceUrl():"";if($("musicEnabled").checked&&!url)throw new Error("请填写音乐服务地址");}catch(e){$("musicMessage").textContent=e.message;return;}
+    var url;try{url=supportServiceURL?serviceUrl():"";if($("musicEnabled").checked&&!url)throw new Error("请先在设备设置中保存服务地址");}catch(e){$("musicMessage").textContent=e.message;return;}
     saving=true;$("musicSave").disabled=true;
     request("/api/music",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({enabled:$("musicEnabled").checked,service_url:url})}).then(function(){dirty=false;$("musicMessage").textContent="已保存，设备将主动连接音乐服务。";}).catch(function(e){$("musicMessage").textContent=e.message;}).finally(function(){saving=false;$("musicSave").disabled=false;load();});
   });

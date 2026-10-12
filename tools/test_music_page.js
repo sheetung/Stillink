@@ -6,13 +6,14 @@ function el(){return {value:"",checked:false,hidden:false,disabled:false,textCon
 const ids=[...page.matchAll(/id="(music[^" ]*|modeMusic|modeWeather|editorGrid|steps)"/g)].map(m=>m[1]);
 const elements=Object.fromEntries(ids.map(id=>[id,el()])),modes=[el(),el()],queue=[],requests=[];
 const respond=body=>queue.push(body),flush=()=>new Promise(setImmediate),click=id=>elements[id].events.click();
-vm.runInNewContext(source,{$:id=>elements[id],api:p=>p,TextEncoder,Date,JSON,Promise,setTimeout:()=>1,clearTimeout(){},
- document:{querySelectorAll:()=>modes,createElement:()=>el()},fetch:async(url,options)=>{requests.push({url,options});assert(queue.length,url);return {ok:true,json:async()=>queue.shift()};}});
+const context={supportServiceURL:"",$:id=>elements[id],api:p=>p,TextEncoder,Date,JSON,Promise,setTimeout:()=>1,clearTimeout(){},
+ document:{querySelectorAll:()=>modes,createElement:()=>el()},fetch:async(url,options)=>{requests.push({url,options});assert(queue.length,url);return {ok:true,json:async()=>queue.shift()};}};
+vm.runInNewContext(source,context);
 (async()=>{
  respond({enabled:false,service_url:"",status:"disabled"});click("modeMusic");await flush();
  assert.equal(elements.musicPane.hidden,false);assert.equal(elements.editorGrid.style.display,"none");
- elements.musicService.value="bad";elements.musicEnabled.checked=true;const before=requests.length;click("musicSave");await flush();assert.equal(requests.length,before);
- elements.musicService.value="http://192.168.31.12:8787/";
+ context.supportServiceURL="bad";elements.musicEnabled.checked=true;const before=requests.length;click("musicSave");await flush();assert.equal(requests.length,before);
+ context.supportServiceURL="http://192.168.31.12:8787/";
  respond({saved:true});respond({enabled:true,service_url:"http://192.168.31.12:8787",status:"ready"});respond({playing:true,title:"<歌曲>",artist:"歌手",version:"abc"});click("musicSave");await flush();await flush();
  const post=requests.find(r=>r.options?.method==="POST");assert.deepEqual(JSON.parse(post.options.body),{enabled:true,service_url:"http://192.168.31.12:8787"});
  assert.equal(elements.musicScreen.children[0].alt,"<歌曲>专辑卡片");assert.equal(elements.musicScreen.children[0].src,"http://192.168.31.12:8787/v1/music.png?v=abc");

@@ -13,7 +13,7 @@ function element(id) {
 for (const id of [...page.matchAll(/id="(weather[^" ]*|modeWeather|modeMusic|editorGrid|steps)"/g)].map(m=>m[1])) elements[id]=element(id);
 const modes=[element("photo"),element("note")];
 const state={enabled:false,name:"杭州",service_url:"http://192.168.31.12:8787",latitude:30.29,longitude:120.16,times:[480,720,1080],status:"disabled",error:""};
-const context={
+const context={supportServiceURL:"",
   $:id=>elements[id], api:url=>url, console, TextEncoder, Date, Set, Math, JSON, Array,
   setTimeout:(f,ms)=>{timers.push({f,ms});return timers.length;}, clearTimeout:()=>{},
   fetch:async(url,options)=>{requests.push({url,options});assert(responses.length,"Unexpected request: "+url);const response=responses.shift();if(response instanceof Error)throw response;return {ok:response.status<400,text:async()=>response.text||"error",json:async()=>response.body};},
