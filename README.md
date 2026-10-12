@@ -109,7 +109,7 @@ idf.py build
 | `sdkconfig.defaults` / `partitions.csv` | 默认构建配置与 OTA 分区 |
 | `legacy_ref/` | 历史参考代码与算法材料 |
 
-接口与帧格式见 [传输与驱动契约](docs/CONTRACT.md)，详细操作见 [入门教程](docs/入门教程.md)，历史记录见 [CHANGELOG](docs/CHANGELOG.md)。
+接口与帧格式见 [HTTP API 使用说明](docs/API.md)，版本记录见 [CHANGELOG](docs/CHANGELOG.md)。
 
 ## 许可说明
 
