@@ -2,7 +2,6 @@
 
 Run: uv run app.py --host 0.0.0.0 --port 8787 --font /path/to/chinese.ttf
 """
-import argparse
 import binascii
 import io
 import json
@@ -13,13 +12,11 @@ import threading
 import time
 from datetime import datetime, timezone
 from functools import lru_cache
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, urlencode, urlsplit
+from urllib.parse import parse_qs, urlencode
 from urllib.request import Request, urlopen
 
 from PIL import Image, ImageDraw, ImageFont
-from music_receiver import Receiver
 
 WIDTH, HEIGHT = 768, 552
 BLACK, WHITE, YELLOW, RED = 0, 1, 2, 3
@@ -27,7 +24,6 @@ PALETTE = [0, 0, 0, 255, 255, 255, 241, 202, 0, 197, 35, 29] + [0] * (768 - 12)
 FONT_PATH = os.getenv("STILLINK_FONT", "")
 CACHE = {}
 CACHE_LOCK = threading.Lock()
-MUSIC = Receiver()
 
 
 def find_font():
@@ -162,62 +158,29 @@ def pack_frame(image):
     return struct.pack(">2sBBHHIH2s", b"\xa5\x5a", 1, 0, w, h, len(payload), binascii.crc_hqx(payload, 0xffff), b"\0\0") + payload
 
 
-class Handler(BaseHTTPRequestHandler):
-    def send(self, status, content, kind, data=None):
-        self.send_response(status)
-        self.send_header("Content-Type", kind)
-        self.send_header("Content-Length", str(len(content)))
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Cache-Control", "no-store")
-        if data:
-            self.send_header("X-Weather-UTC-Offset", str(data["utc_offset"]))
-            self.send_header("X-Weather-Updated", str(data["updated"]))
-        self.end_headers()
-        self.wfile.write(content)
-
-    def do_GET(self):
-        url = urlsplit(self.path)
-        if url.path in ("/v1/music.json", "/v1/music.png", "/v1/music.bin"):
-            status, body, kind = MUSIC.response(url.path, parse_qs(url.query).get("v", [""])[0])
-            return self.send(status, body, kind)
-        if url.path == "/health":
-            return self.send(200, b'{"status":"ok"}', "application/json")
-        if url.path not in ("/v1/weather.bin", "/v1/weather.png", "/v1/weather.json"):
-            return self.send(404, b'{"error":"Not found"}', "application/json")
-        try:
-            query = parse_qs(url.query)
-            lat, lon = float(query["latitude"][0]), float(query["longitude"][0])
-            name = query.get("name", ["天气"])[0].strip()
-            if not (math.isfinite(lat) and math.isfinite(lon) and abs(lat) <= 90 and abs(lon) <= 180):
-                raise ValueError()
-            if not name or len(name.encode()) >= 96 or any(ord(c) < 32 for c in name): raise ValueError()
-        except (KeyError, ValueError):
-            return self.send(400, b'{"error":"Invalid location"}', "application/json")
-        try:
-            data = fetch_weather(lat, lon)
-            if url.path.endswith(".json"):
-                return self.send(200, json.dumps(data, ensure_ascii=False).encode(), "application/json", data)
-            image = render(name, data)
-            if url.path.endswith(".bin"):
-                return self.send(200, pack_frame(image), "application/octet-stream", data)
-            out = io.BytesIO(); image.save(out, "PNG")
-            self.send(200, out.getvalue(), "image/png", data)
-        except (BrokenPipeError, ConnectionResetError):
-            pass
-        except Exception as exc:
-            print(f"weather upstream/render error: {exc}", flush=True)
-            self.send(502, b'{"error":"Weather provider unavailable"}', "application/json")
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--host", default="127.0.0.1")
-    parser.add_argument("--port", type=int, default=8787)
-    parser.add_argument("--font", default=FONT_PATH)
-    parser.add_argument("--music-port", type=int, default=8790, help="UDP music broadcast receiver port")
-    args = parser.parse_args()
-    FONT_PATH = args.font
-    find_font()
-    MUSIC.start(port=args.music_port)
-    print(f"Stillink weather listening on {args.host}:{args.port}", flush=True)
-    ThreadingHTTPServer((args.host, args.port), Handler).serve_forever()
+def handle(handler, url):
+    if url.path not in ("/v1/weather.bin", "/v1/weather.png", "/v1/weather.json"):
+        return handler.send(404, b'{"error":"Not found"}', "application/json")
+    try:
+        query = parse_qs(url.query)
+        lat, lon = float(query["latitude"][0]), float(query["longitude"][0])
+        name = query.get("name", ["天气"])[0].strip()
+        if not (math.isfinite(lat) and math.isfinite(lon) and abs(lat) <= 90 and abs(lon) <= 180):
+            raise ValueError()
+        if not name or len(name.encode()) >= 96 or any(ord(c) < 32 for c in name): raise ValueError()
+    except (KeyError, ValueError):
+        return handler.send(400, b'{"error":"Invalid location"}', "application/json")
+    try:
+        data = fetch_weather(lat, lon)
+        if url.path.endswith(".json"):
+            return handler.send(200, json.dumps(data, ensure_ascii=False).encode(), "application/json", data)
+        image = render(name, data)
+        if url.path.endswith(".bin"):
+            return handler.send(200, pack_frame(image), "application/octet-stream", data)
+        out = io.BytesIO(); image.save(out, "PNG")
+        handler.send(200, out.getvalue(), "image/png", data)
+    except (BrokenPipeError, ConnectionResetError):
+        pass
+    except Exception as exc:
+        print(f"weather upstream/render error: {exc}", flush=True)
+        handler.send(502, b'{"error":"Weather provider unavailable"}', "application/json")

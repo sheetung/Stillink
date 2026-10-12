@@ -1,9 +1,9 @@
 [Unit]
-Description=Stillink weather binary image service
+Description=Stillink extra card services
 After=network-online.target
 
 [Service]
-WorkingDirectory=%h/Stillink/weather-service
+WorkingDirectory=%h/Stillink/extra-services/server
 ExecStart=%h/.local/bin/uv run --frozen app.py --host 0.0.0.0 --port 8787
 Restart=on-failure
 RestartSec=5

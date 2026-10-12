@@ -93,10 +93,10 @@ Windows 广播播放器的歌曲、歌手、专辑和封面，服务器生成卡
 
 ## 固件构建
 
-安装并激活 **ESP-IDF 6.1**，通过 SSH 获取 V1.2.0：
+安装并激活 **ESP-IDF 6.1**，通过 SSH 获取工程：
 
 ```powershell
-git clone --branch v1.2.0 git@github.com:sheetung/Stillink.git
+git clone git@github.com:sheetung/Stillink.git
 cd Stillink
 idf.py set-target esp32s3
 idf.py build
@@ -119,22 +119,22 @@ python tools/package_bins.py V1.2.0
 
 ## 可选服务部署
 
-天气和音乐共用仓库中的 Python 服务，需要 **Python 3.11+、uv 和中文字体**。Linux 示例：
+天气和音乐共用 `extra-services/server` 中的 Python 服务，需要 **Python 3.11+、uv 和中文字体**。Linux 示例：
 
 ```bash
 sudo apt install git fonts-noto-cjk
-git clone --branch v1.2.0 git@github.com:sheetung/Stillink.git
-cd Stillink/weather-service
+git clone git@github.com:sheetung/Stillink.git
+cd Stillink/extra-services/server
 uv sync --frozen
 uv run --frozen app.py --host 0.0.0.0 --port 8787
 ```
 
-在「设备设置 → 额外服务支持」填写 `http://服务器IP:8787` 并保存。服务默认使用 HTTP `8787` 和音乐 UDP `8790`；常驻运行与 systemd 配置见 [部署说明](docs/weather.md)。天气数据来自 [Open-Meteo](https://open-meteo.com/)，服务需要能访问互联网。
+在「设备设置 → 额外服务支持」填写 `http://服务器IP:8787` 并保存。服务默认使用 HTTP `8787` 和音乐 UDP `8790`；常驻运行与 systemd 配置见 [总部署说明](docs/services.md)。天气数据来自 [Open-Meteo](https://open-meteo.com/)，服务需要能访问互联网。
 
 音乐还需在 Windows 运行广播工具：
 
 ```powershell
-cd Stillink/music-client
+cd Stillink/extra-services/music-client
 uv sync --frozen
 uv run --frozen app.py
 ```
@@ -144,7 +144,8 @@ Windows 与服务器处于同一局域网；广播无法到达时，使用 `--ta
 ## 文档
 
 - [HTTP API 与二进制帧格式](docs/API.md)
-- [天气服务部署与使用](docs/weather.md)
+- [额外服务总部署说明](docs/services.md)
+- [天气卡片使用](docs/weather.md)
 - [Windows 音乐广播与专辑卡片](docs/music.md)
 - [版本更新记录](docs/CHANGELOG.md)
 

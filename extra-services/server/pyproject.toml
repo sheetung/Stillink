@@ -1,7 +1,7 @@
 [project]
-name = "stillink-weather"
+name = "stillink-services"
 version = "1.1.0"
-description = "Weather cards as Stillink binary frames"
+description = "Weather and music cards as Stillink binary frames"
 requires-python = ">=3.11"
 dependencies = ["pillow>=11.3,<13"]
 

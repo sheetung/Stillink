@@ -11,6 +11,7 @@ from urllib.error import HTTPError
 from urllib.request import ProxyHandler, build_opener
 
 from PIL import Image
+import weather
 
 urlopen = build_opener(ProxyHandler({})).open
 
@@ -27,7 +28,7 @@ class WeatherTests(unittest.TestCase):
         image = Image.new("P", (768, 552), 1)
         image.putpixel((0, 0), 3)
         image.putpixel((767, 551), 2)
-        frame = app.pack_frame(image)
+        frame = weather.pack_frame(image)
         magic, ver, panel, w, h, length, crc, reserved = struct.unpack(">2sBBHHIH2s", frame[:16])
         self.assertEqual((magic, ver, panel, w, h, length, reserved), (b"\xa5\x5a", 1, 0, 768, 552, 105984, b"\0\0"))
         self.assertEqual(len(frame), 106000)
@@ -41,21 +42,21 @@ class WeatherTests(unittest.TestCase):
         base = f"http://127.0.0.1:{server.server_port}"
         query = "?latitude=30.29365&longitude=120.16142&name=%E6%9D%AD%E5%B7%9E"
         try:
-            with patch.object(app, "fetch_weather", return_value=DATA) as fetch:
+            with patch.object(weather, "fetch_weather", return_value=DATA) as fetch:
                 with urlopen(base+"/v1/weather.bin"+query) as response:
                     frame = response.read()
                     self.assertEqual(response.headers["X-Weather-UTC-Offset"], "28800")
                     self.assertEqual(response.headers["Content-Type"], "application/octet-stream")
                 with urlopen(base+"/v1/weather.png"+query) as response:
                     image = Image.open(io.BytesIO(response.read()))
-                self.assertEqual(app.pack_frame(image), frame, "Preview and ESP frame must have identical pixels")
+                self.assertEqual(weather.pack_frame(image), frame, "Preview and ESP frame must have identical pixels")
                 self.assertEqual(set(image.tobytes()), {0, 1, 2})
                 before = fetch.call_count
                 for bad in ("?latitude=nan&longitude=120", "?latitude=91&longitude=120", "?latitude=30"):
                     with self.assertRaises(HTTPError) as caught: urlopen(base+"/v1/weather.bin"+bad)
                     self.assertEqual(caught.exception.code, 400)
                 self.assertEqual(fetch.call_count, before)
-            with patch.object(app, "fetch_weather", side_effect=TimeoutError("provider offline")):
+            with patch.object(weather, "fetch_weather", side_effect=TimeoutError("provider offline")):
                 with self.assertRaises(HTTPError) as caught: urlopen(base+"/v1/weather.bin"+query)
                 self.assertEqual(caught.exception.code, 502)
         finally:

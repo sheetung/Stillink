@@ -5,25 +5,16 @@
 ## 分工
 
 - Windows：只读取系统 GSMTC 的歌曲、歌手、专辑和原始封面，通过 UDP 广播。不绘图，也不直接操作 ESP。
-- 服务器：现有天气服务接收 UDP，生成四色专辑卡片，提供音乐状态、PNG 预览和二进制图片。
+- 服务器：额外服务接收 UDP，生成四色专辑卡片，提供音乐状态、PNG 预览和二进制图片。
 - ESP：保存服务地址，每 5 秒检查歌曲版本，仅歌曲变化时下载并刷新，自动刷新间隔至少 60 秒。
 
 浏览器可以关闭。启用音乐时暂停自动天气，关闭音乐后按原计划恢复天气，天气配置不会被清除。暂停或恢复播放不重复刷新；Windows 停止广播 35 秒后，服务视为暂停，屏幕保留最后画面。
 
 ## 服务器
 
-先按 [天气服务部署说明](weather.md) 使用 uv 部署服务，更新到包含音乐功能的版本：
+按 [额外服务部署说明](services.md) 启动共用服务，无需阅读天气文档或配置天气。服务接收 UDP 音乐信息，生成 PNG 预览与 ESP 二进制图片。
 
-```bash
-cd ~/Stillink/weather-service
-git pull --ff-only
-uv sync --frozen
-systemctl --user restart stillink-weather
-```
-
-同一个服务默认监听 HTTP 8787 和 UDP 8790。服务器与 Windows 在同一局域网，服务器应允许 UDP 8790 入站；跨子网或广播无法到达时，Windows 可指定服务器 IP 发送 UDP。手动启动时可用 `--music-port` 修改接收端口。
-
-服务器使用自己的中文字体绘制。Windows 不需要安装 Pillow，封面超过 4 MiB 时仅广播文字，服务器使用占位图。多个 ESP 可共用同一个音乐服务；多台 Windows 同时向该服务广播时，显示最近收到的播放会话。
+默认 HTTP 8787、UDP 8790。多台 ESP 可共用同一服务；多台 Windows 同时广播时，显示最近收到的播放会话。封面超过 4 MiB 时仅广播文字，服务器使用占位图。
 
 ## Windows 广播工具
 
@@ -31,7 +22,7 @@ systemctl --user restart stillink-weather
 
 ```powershell
 git clone git@github.com:sheetung/Stillink.git
-cd Stillink/music-client
+cd Stillink/extra-services/music-client
 uv sync --frozen
 uv run --frozen app.py
 ```
@@ -78,12 +69,12 @@ uv run --frozen app.py --port 8790
 
 ```powershell
 # Windows 广播编码测试
-cd music-client
+cd extra-services/music-client
 uv run --frozen python test_music.py
 ```
 
 ```bash
 # 服务器 UDP 重组、去重、暂停及二进制校验测试
-cd weather-service
+cd extra-services/server
 uv run --frozen python test_music.py
 ```

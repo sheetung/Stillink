@@ -118,7 +118,7 @@ curl.exe http://192.168.4.1/api/wifi/status
 
 ESP 请求 `${service_url}/v1/weather.bin?latitude=...&longitude=...&name=...`，服务返回与 `/api/frame` 相同的 16 字节帧头及 2bpp 数据（固定 768×552），并在 HTTP 响应头提供 `Content-Length`、`X-Weather-Updated` 与 `X-Weather-UTC-Offset`。ESP 流式读取到现有帧缓冲，校验 CRC 后刷新；网络失败、数据截断、CRC 不符均不触发刷新，约 5 分钟后重试。待显示的手动上传优先，天气不会覆盖其帧缓冲。服务端天气缓存 15 分钟。
 
-服务其他接口与 uv 部署见 [天气服务说明](weather.md)。
+服务部署见 [额外服务部署说明](services.md)，天气接口见 [天气卡片说明](weather.md)。
 
 ## 音乐 API
 
