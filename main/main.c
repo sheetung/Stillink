@@ -140,7 +140,8 @@ static esp_err_t page_handler(httpd_req_t *req)
        热更页那条路径在 ota_web_stream_page() 里同样设了 no-store。 */
     httpd_resp_set_type(req, "text/html; charset=utf-8");
     httpd_resp_set_hdr(req, "Cache-Control", "no-store");
-    return httpd_resp_send(req, (const char *)index_html, index_html_len);
+    httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
+    return httpd_resp_send(req, (const char *)index_html_gzip, index_html_gzip_len);
 }
 
 /* ---------------- /api/info ---------------- */
