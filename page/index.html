@@ -235,7 +235,7 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
         <div class="weatherConfig">
           <h2>天气卡片</h2><p class="hint">位置和计划保存在设备中，重启后继续使用。</p>
           <div class="weatherEnable"><div><b>启用天气卡片</b><p class="hint">开启后按设定时间更新天气</p></div><label class="weatherSwitch"><input type="checkbox" id="weatherEnabled" aria-label="启用天气卡片"><i></i></label></div>
-          <label class="weatherLabel" for="weatherService">天气服务地址</label><input id="weatherService" type="url" placeholder="http://服务器地址:8787" style="width:100%"><p class="hint">服务生成图片，设备下载后直接刷新。</p>
+          <div class="weatherLabel" style="display:flex;justify-content:space-between;align-items:center"><label for="weatherService">天气服务地址</label><a href="https://github.com/sheetung/Stillink/blob/main/docs/weather.md" target="_blank" rel="noopener">使用说明</a></div><input id="weatherService" type="url" placeholder="http://服务器地址:8787" style="width:100%"><p class="hint">服务生成图片，设备下载后直接刷新。</p>
           <label class="weatherLabel" for="weatherLocation">天气位置</label><div class="weatherLocation"><input id="weatherLocation" type="text" placeholder="输入城市或区县" autocomplete="off" aria-expanded="false" aria-controls="weatherCities"><div id="weatherCities" hidden></div></div><p id="weatherRegion" class="hint">输入位置后，从搜索结果中选择。</p>
           <div class="weatherLabel">每日刷新 · 所在地时间</div><div class="weatherTimes"><label>早晨<input type="time" id="weatherMorning" value="08:00" aria-label="早晨刷新时间"></label><label>中午<input type="time" id="weatherNoon" value="12:00" aria-label="中午刷新时间"></label><label>傍晚<input type="time" id="weatherEvening" value="18:00" aria-label="傍晚刷新时间"></label></div>
           <p class="hint">默认每天 3 次。保存并启用后会立即更新一次。</p>
