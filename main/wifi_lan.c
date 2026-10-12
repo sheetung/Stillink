@@ -245,6 +245,11 @@ bool wifi_lan_keep_awake(void)
     return s_events && (xEventGroupGetBits(s_events) & (CONNECTED | CONNECTING));
 }
 
+bool wifi_lan_connected(void)
+{
+    return s_events && (xEventGroupGetBits(s_events) & CONNECTED);
+}
+
 /* SSIDs may contain quotes/control bytes; escape before inserting into JSON. */
 static void json_escape(char *out, const char *text)
 {

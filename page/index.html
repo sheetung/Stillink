@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="epaper-page-version" content="V1.0.0">
+<meta name="epaper-page-version" content="V1.1.0">
 <title>Stillink</title>
 <style>
 /* ===== Cropper.js v1.6.2 | MIT | https://github.com/fengyuanchen/cropperjs ===== */
@@ -189,6 +189,9 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
 .dmark{ display:inline-block; margin-left:6px; font-size:11px; color:var(--acc2); }
 .dmark.off{ visibility:hidden; }
 @media (max-width:480px){ .slider label{ width:66px; } }
+
+#weatherPane[hidden]{display:none}#weatherPane{margin-top:22px}.weatherLayout{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:22px;align-items:start}.weatherPreviewLabel{font-size:12px;color:var(--mut);margin-bottom:12px}.weatherFrame{background:#2b2b28;padding:11px;border-radius:15px;box-shadow:0 10px 24px #30210e12}#weatherScreen{background:white;aspect-ratio:768/552;overflow:hidden;border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--mut);text-align:center}#weatherScreen img{width:100%;height:100%;display:block}#weatherScreen small{font-size:12px}.weatherConfig{border:1px solid var(--line);border-radius:12px;padding:18px}.weatherConfig h2{margin-bottom:4px}.weatherEnable{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);margin:18px 0;padding-bottom:12px}.weatherEnable .hint{margin-top:3px}.weatherSwitch{display:block;width:40px;height:24px;position:relative;flex:none;margin-left:7px}.weatherSwitch input{opacity:0;position:absolute;width:100%;height:100%;margin:0;cursor:pointer}.weatherSwitch i{display:block;background:#d8d1c6;border-radius:20px;width:40px;height:24px;pointer-events:none}.weatherSwitch i:after{content:"";position:absolute;left:3px;top:3px;background:white;border-radius:50%;width:18px;height:18px}.weatherSwitch input:checked+i{background:var(--acc2)}.weatherSwitch input:checked+i:after{transform:translateX(16px)}.weatherSwitch input:focus-visible+i{outline:2px solid var(--acc)}.weatherLabel{display:block;color:var(--mut);font-size:12px;margin:17px 0 7px}.weatherLocation{position:relative}#weatherLocation{width:100%}#weatherCities{position:absolute;top:calc(100% + 4px);left:0;right:0;background:white;box-shadow:0 8px 25px #30210e20;border:1px solid var(--line);border-radius:9px;padding:5px;z-index:5;max-height:230px;overflow:auto}#weatherCities button{display:block;width:100%;text-align:left;background:transparent;color:var(--ink);padding:8px;font-size:12px}#weatherCities button:hover{background:var(--bg)}#weatherCities small{display:block;color:var(--mut);font-size:10px}.weatherTimes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.weatherTimes label{font-size:11px;color:var(--mut)}.weatherTimes input{margin-top:5px;display:block;width:100%;min-width:0;padding:8px 3px;font-size:12px;border:1px solid var(--line);border-radius:8px;background:white;color:var(--ink)}.weatherStatus{font-size:12px;background:#f0f6f2;color:var(--acc2);border-radius:9px;padding:11px;margin-top:17px}.weatherStatus.warn{background:#fbf1de;color:#9b762b}.weatherActions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:17px}.weatherActions button{padding:9px 4px;font-size:12px}#weatherMessage{min-height:20px}.weatherFoot{font-size:11px;color:var(--mut);padding-top:12px;border-top:1px solid var(--line);margin-bottom:0}
+@media(max-width:760px){.weatherLayout{grid-template-columns:1fr}.weatherTimes input{padding:10px 6px;font-size:13px}.weatherConfig{padding:17px}}
 </style>
 </head>
 <body>
@@ -224,6 +227,23 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
     <div id="modes">
       <button class="mode on" data-m="0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>拍立得</button>
       <button class="mode" data-m="1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>便签</button>
+      <button class="mode" id="modeWeather"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></svg>天气</button>
+    </div>
+    <div id="weatherPane" hidden>
+      <div class="weatherLayout">
+        <div><div class="weatherPreviewLabel">天气卡片 · 768 × 552</div><div class="weatherFrame"><div id="weatherScreen"><p>选择位置，启用天气卡片。<br><small>连接 Wi-Fi 且可访问互联网后更新。</small></p></div></div><p class="hint">黑 · 白 · 黄 · 红 · 数据来源 <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a></p></div>
+        <div class="weatherConfig">
+          <h2>天气卡片</h2><p class="hint">位置和计划保存在设备中，重启后继续使用。</p>
+          <div class="weatherEnable"><div><b>启用天气卡片</b><p class="hint">开启后按设定时间更新天气</p></div><label class="weatherSwitch"><input type="checkbox" id="weatherEnabled" aria-label="启用天气卡片"><i></i></label></div>
+          <label class="weatherLabel" for="weatherService">天气服务地址</label><input id="weatherService" type="url" placeholder="http://服务器地址:8787" style="width:100%"><p class="hint">服务生成图片，设备下载后直接刷新。</p>
+          <label class="weatherLabel" for="weatherLocation">天气位置</label><div class="weatherLocation"><input id="weatherLocation" type="text" placeholder="输入城市或区县" autocomplete="off" aria-expanded="false" aria-controls="weatherCities"><div id="weatherCities" hidden></div></div><p id="weatherRegion" class="hint">输入位置后，从搜索结果中选择。</p>
+          <div class="weatherLabel">每日刷新 · 所在地时间</div><div class="weatherTimes"><label>早晨<input type="time" id="weatherMorning" value="08:00" aria-label="早晨刷新时间"></label><label>中午<input type="time" id="weatherNoon" value="12:00" aria-label="中午刷新时间"></label><label>傍晚<input type="time" id="weatherEvening" value="18:00" aria-label="傍晚刷新时间"></label></div>
+          <p class="hint">默认每天 3 次。保存并启用后会立即更新一次。</p>
+          <div id="weatherStatus" class="weatherStatus" role="status" aria-live="polite">正在读取天气设置…</div>
+          <div class="weatherActions"><button id="weatherSave">保存天气设置</button><button class="mini" id="weatherRefresh" disabled>立即刷新</button></div><p id="weatherMessage" class="hint" role="status" aria-live="polite"></p>
+          <p class="weatherFoot">关闭后停止自动刷新。断网或请求失败时保留原画面，联网后继续更新。使用拍立得或便签时，可先关闭天气以保留手动画面。</p>
+        </div>
+      </div>
     </div>
     <div id="steps"><span class="on">① 选图</span><i>→</i><span>② 裁剪调整</span><i>→</i><span>③ 上传</span></div>
 
@@ -1399,7 +1419,7 @@ function setMode(m, silent){
     selIdx = -1;
     if (modeChanged) txtEl.value = "";
   }
-  document.querySelectorAll("#modes button").forEach(function(b){
+  document.querySelectorAll("#modes button[data-m]").forEach(function(b){
     b.classList.toggle("on", +b.dataset.m === MODE);
   });
   var imageMode = (MODE === 0);
@@ -1418,7 +1438,7 @@ function setMode(m, silent){
   schedulePreview(false);
   updateSteps();
 }
-document.querySelectorAll("#modes button").forEach(function(b){
+document.querySelectorAll("#modes button[data-m]").forEach(function(b){
   b.addEventListener("click", function(){ setMode(+b.dataset.m); });
 });
 
@@ -2529,6 +2549,78 @@ $("space").value = cfg.space;   /* R1.0.26: 色域下拉回填存储值 */
 refreshDefMarks();
 refreshInfo();
 loadSettings();
+/* ---------- 天气卡片：设备配置、服务端渲染、定时下载 ---------- */
+(function(){
+  var active=false, selected=null, timer=null, searchTimer=null, searchId=0, dirty=false, saving=false;
+  var pane=$("weatherPane"), button=$("modeWeather"), latest=null;
+  var previewKey="";
+  function draw(state){
+    if(!state.data||!state.service_url)return;
+    var key=[state.service_url,state.name,state.latitude,state.longitude,state.data.updated].join("|");
+    if(key===previewKey)return;
+    previewKey=key;
+    var img=document.createElement("img");img.alt=state.name+"天气卡片";
+    img.src=state.service_url+"/v1/weather.png?latitude="+state.latitude+"&longitude="+state.longitude+"&name="+encodeURIComponent(state.name)+"&updated="+state.data.updated;
+    img.addEventListener("error",function(){previewKey="";$("weatherScreen").textContent="预览暂不可用，请确认浏览器可以访问天气服务。";});
+    $("weatherScreen").replaceChildren(img);
+  }
+  function request(path,options){return fetch(api(path),options).then(function(r){if(!r.ok)return r.text().then(function(t){throw new Error(t||"设备请求失败");});return r.json();});}
+  function closeResults(){$("weatherCities").hidden=true;$("weatherLocation").setAttribute("aria-expanded","false");}
+  function renderStatus(state){
+    var labels={disabled:"天气卡片已关闭",waiting_wifi:"等待连接 Wi-Fi",waiting_time:"正在校准设备时间…",waiting:"等待获取天气…",loading:"正在获取天气并刷新屏幕…",ready:"天气已更新 · 网络可用",error:"天气更新失败，保留原画面"};
+    $("weatherStatus").textContent=(labels[state.status]||"等待天气数据")+(state.status==='error'&&state.error?' · '+state.error:'');
+    $("weatherStatus").classList.toggle("warn",state.status==='error'||state.status==='waiting_wifi');
+    $("weatherRefresh").disabled=!state.enabled||state.status==='waiting_wifi'||state.status==='loading'||state.status==='waiting_time';
+  }
+  function load(){
+    clearTimeout(timer);if(!active)return;
+    request("/api/weather?t="+Date.now()).then(function(state){
+      latest=state;renderStatus(state);
+      if(!dirty&&!saving){$("weatherEnabled").checked=!!state.enabled;$("weatherService").value=state.service_url||"";$("weatherLocation").value=state.name||"";selected=state.name?{name:state.name,latitude:state.latitude,longitude:state.longitude}:null;["weatherMorning","weatherNoon","weatherEvening"].forEach(function(id,i){var m=state.times[i];$(id).value=("0"+Math.floor(m/60)).slice(-2)+":"+("0"+m%60).slice(-2);});$("weatherRegion").textContent=state.name?"位置已保存在设备中。":"输入位置后，从搜索结果中选择。";}
+      draw(state);
+    }).catch(function(e){$("weatherStatus").textContent="无法读取天气设置，请连接支持天气功能的设备。";$("weatherStatus").classList.add("warn");$("weatherRefresh").disabled=true;})
+    .finally(function(){if(active)timer=setTimeout(load,5000);});
+  }
+  function selectWeather(on){active=on;pane.hidden=!on;$("editorGrid").style.display=on?"none":"";$("steps").style.display=on?"none":"";button.classList.toggle("on",on);if(on){document.querySelectorAll("#modes button[data-m]").forEach(function(b){b.classList.remove("on");});load();}else clearTimeout(timer);}
+  button.addEventListener("click",function(){selectWeather(true);});
+  document.querySelectorAll("#modes button[data-m]").forEach(function(b){b.addEventListener("click",function(){selectWeather(false);});});
+  ["weatherEnabled","weatherService","weatherMorning","weatherNoon","weatherEvening"].forEach(function(id){$(id).addEventListener("change",function(){dirty=true;$("weatherMessage").textContent="设置已修改，请保存到设备。";});});
+  $("weatherLocation").addEventListener("input",function(){
+    dirty=true;selected=null;clearTimeout(searchTimer);var query=this.value.trim(),seq=++searchId;
+    if(!query){closeResults();return;}
+    $("weatherRegion").textContent="正在搜索位置…";
+    searchTimer=setTimeout(function(){
+      fetch("https://geocoding-api.open-meteo.com/v1/search?name="+encodeURIComponent(query)+"&count=6&language=zh&format=json").then(function(r){if(!r.ok)throw new Error("位置服务不可用");return r.json();}).then(function(j){
+        if(seq!==searchId)return;var results=j.results||[];$("weatherCities").replaceChildren();
+        results.forEach(function(city){var b=document.createElement("button");b.type="button";b.textContent=city.name;var small=document.createElement("small");small.textContent=[city.admin1,city.admin2,city.country].filter(Boolean).join(" · ");b.appendChild(small);b.addEventListener("click",function(){selected={name:city.name,latitude:city.latitude,longitude:city.longitude};$("weatherLocation").value=city.name;$("weatherRegion").textContent=small.textContent;closeResults();$("weatherMessage").textContent="位置已选择，保存后更新天气。";});$("weatherCities").appendChild(b);});
+        $("weatherCities").hidden=!results.length;$("weatherLocation").setAttribute("aria-expanded",!!results.length);$("weatherRegion").textContent=results.length?"请选择对应的城市或区县。":"没有找到该位置，可尝试城市名或英文名称。";
+      }).catch(function(e){if(seq===searchId){closeResults();$("weatherRegion").textContent="搜索失败，请确认当前手机或电脑可以上网。";}});
+    },350);
+  });
+  document.addEventListener("click",function(e){if(!e.target.closest(".weatherLocation"))closeResults();});
+  $("weatherSave").addEventListener("click",function(){
+    var enabled=$("weatherEnabled").checked,payload={enabled:enabled};
+    try{
+      payload.service_url=$("weatherService").value.trim().replace(/\/+$/,"");
+      if(payload.service_url&&(!/^https?:\/\/[^/?#@\s]+(?:\/[^?#@\s]*)?$/.test(payload.service_url)||new TextEncoder().encode(payload.service_url).length>=192))throw new Error("请输入有效的 HTTP 或 HTTPS 服务地址");
+      if(enabled&&!payload.service_url)throw new Error("请填写天气服务地址");
+      if(enabled&&!selected)throw new Error("请搜索并选择天气位置");
+      if(selected){
+        if(new TextEncoder().encode(selected.name).length>=96)throw new Error("位置名称太长");
+        payload.name=selected.name;payload.latitude=selected.latitude;payload.longitude=selected.longitude;
+        payload.times=["weatherMorning","weatherNoon","weatherEvening"].map(function(id){var t=$(id).value;if(!/^\d{2}:\d{2}$/.test(t))throw new Error("请设置完整的刷新时间");return +t.slice(0,2)*60 + +t.slice(3);});
+        if(!(payload.times[0]<payload.times[1]&&payload.times[1]<payload.times[2]))throw new Error("请按早晨、中午、傍晚的顺序设置时间");
+      }
+    }catch(e){$("weatherMessage").textContent=e.message;return;}
+    saving=true;$("weatherSave").disabled=true;$("weatherMessage").textContent="正在保存…";
+    request("/api/weather",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}).then(function(){dirty=false;$("weatherMessage").textContent=enabled?"已保存，设备将立即获取天气并刷新屏幕。":"已保存，天气卡片已关闭。";}).catch(function(e){$("weatherMessage").textContent="保存失败："+e.message;}).finally(function(){saving=false;$("weatherSave").disabled=false;load();});
+  });
+  $("weatherRefresh").addEventListener("click",function(){
+    $("weatherRefresh").disabled=true;
+    request("/api/weather/refresh",{method:"POST"}).then(function(){$("weatherMessage").textContent="已请求更新，天气获取与墨水屏刷新需要一点时间。";load();}).catch(function(e){$("weatherMessage").textContent="刷新失败："+e.message;load();});
+  });
+})();
+
 </script>
 </body>
 </html>

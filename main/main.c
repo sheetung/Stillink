@@ -2,7 +2,7 @@
  * 电子墨水屏 — 固件主装配（R 系列，重构版）
  *
  * 职责一句话：固件只做「热点 / 接收 / 刷图 / 休眠 / 唤醒 / OTA」，画面全部由页面
- * 在浏览器里合成。支持热点配网及局域网访问，没有固件端图像处理。
+ * 在浏览器或天气服务中合成。支持热点配网及局域网访问，没有固件端图像处理。
  *
  * 模块分工：
  *   epd_drv   锁定屏驱动（A0/A1，RST=GPIO3），不改
@@ -50,6 +50,7 @@
 #include "power.h"
 #include "ota_web.h"
 #include "store.h"
+#include "weather.h"
 
 #include "index_html.h"     /* 由 tools/make_index_header.py 固化，改页必重跑 */
 
@@ -57,7 +58,7 @@ static const char *TAG = "main";
 
 #define HOLD_RESET_S    5          /* 长按恢复出厂 */
 #define HTTPD_STACK     4096
-#define HTTPD_MAX_URI   20
+#define HTTPD_MAX_URI   28
 
 /* ---------------- 请求小工具 ---------------- */
 
@@ -400,6 +401,7 @@ static httpd_handle_t start_server(void)
 
     ota_web_register(server);
     wifi_lan_register(server);
+    weather_register(server);
 
     /* 必须在所有业务路由之后注册：OS 探测路径此前直接 404，根本进不了首页。
        兜底 GET 同时覆盖带查询参数的探测与厂商自定义路径。 */
@@ -497,6 +499,7 @@ void app_main(void)
     frame_init();
     netif_ap_init();
     captive_dns_start();
+    weather_init();
 
     if (start_server() == NULL) {
         ESP_LOGE(TAG, "HTTP server failed to start");

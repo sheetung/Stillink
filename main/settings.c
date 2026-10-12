@@ -1,6 +1,7 @@
 #include "settings.h"
 #include "epd_drv.h"
 #include "wifi_lan.h"
+#include "weather.h"
 
 #include "nvs.h"
 #include "nvs_flash.h"
@@ -199,6 +200,7 @@ esp_err_t settings_set_ap(const char *ssid, const char *pass)
 void settings_factory_reset(void)
 {
     wifi_lan_forget();
+    weather_factory_reset();
     /* R1.2.0（FB-015）：整个命名空间一起擦 —— 「恢复出厂」就该回到出厂状态。
        旧实现刻意保留 web_len/web_crc/page_ver（页面热更标记），理由是「页面是
        系统资产」；现在恢复出厂连热更页面一起清掉、回到内嵌页，才是预期行为。 */

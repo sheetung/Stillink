@@ -9,6 +9,7 @@ Stillink 是基于 ESP32-S3 与华为拆机四色电子墨水屏的网页相框�
 - 内置网页与热点，无需 App，支持自动弹出控制页和离线客户端导出。
 - 图片裁剪、四色抖动、留白与文字编辑，支持 A0 / A1 屏幕配置。
 - 扫描 2.4 GHz Wi-Fi，连接并保存配网信息，通过局域网 IP 访问。
+- 天气卡片：位置搜索、设备独立更新，默认早中晚刷新三次。
 - 上传画面、网页热更新与 OTA 固件升级。
 - 画面与设备设置保存，定时唤醒和空闲休眠。
 
@@ -46,19 +47,19 @@ idf.py -p COM13 flash monitor
 生成整包及 OTA 镜像：
 
 ```powershell
-python tools/package_bins.py V1.0.0
-python tools/flash_device.py --port COM13 --bin stillink_V1.0.0_merged.bin
+python tools/package_bins.py V1.1.0
+python tools/flash_device.py --port COM13 --bin stillink_V1.1.0_merged.bin
 ```
 
-- `build/stillink.bin` / `stillink_V1.0.0_app.bin`：应用镜像，供 OTA 使用。
-- `stillink_V1.0.0_merged.bin`：含启动程序、分区表和应用，USB 烧录地址为 `0x0`。
+- `build/stillink.bin` / `stillink_V1.1.0_app.bin`：应用镜像，供 OTA 使用。
+- `stillink_V1.1.0_merged.bin`：含启动程序、分区表和应用，USB 烧录地址为 `0x0`。
 - `flash_kit/`：预编译 V1.0.0 镜像、网页和 Windows 一键刷机脚本。
 
 当前仅支持 ESP32-S3。电池采样使用 GPIO2，唤醒按键使用 GPIO5；固件不依赖 PSRAM。已有本地构建目录时，可继续使用独立的 S3 构建目录：
 
 ```powershell
 idf.py -B build/s3 -DIDF_TARGET=esp32s3 -DSDKCONFIG=build/s3/sdkconfig build
-python tools/package_bins.py V1.0.0 --build-dir build/s3
+python tools/package_bins.py V1.1.0 --build-dir build/s3
 ```
 
 ## 热点直连与 Wi-Fi 配网
@@ -80,6 +81,14 @@ python tools/package_bins.py V1.0.0 --build-dir build/s3
 
 设备接口可直接由 Python、curl 或自己的网页调用，无需打开内置控制页。热点地址为 `http://192.168.4.1`；配网后使用设备的局域网 IP。接口列表、参数及示例见 [HTTP API 使用说明](docs/API.md)。图片上传使用四色二进制帧，不能直接 POST JPG/PNG。
 
+## 天气卡片
+
+先按 [天气服务部署说明](weather-service/README.md) 在服务器使用 uv 启动服务。在「拍立得 → 便签 → 天气」中填写服务地址，搜索城市或区县，从结果中选择位置，开启「启用天气卡片」并保存。设备连接 Wi-Fi 且可访问互联网后自行获取天气并刷新屏幕；浏览器可以关闭。默认按所在地时间 08:00、12:00、18:00 更新，时间可调整，保存并启用后立即更新一次，也支持手动刷新。
+
+卡片显示温度、天气、风速、湿度、当天降水概率及未来三天预报。设备仅保存服务地址、位置和计划，不保存字库，重启与 OTA 后保留。关闭天气后停止自动更新；断网或服务请求失败保留原画面，失败后约 5 分钟重试。自动天气会替换屏幕画面，如需保留照片或便签，请先关闭天气。
+
+数据来源为 [Open-Meteo](https://open-meteo.com/)，免费公开接口适用于非商业用途，商业使用需另行取得授权。城市搜索由当前手机或电脑联网完成，天气获取、中文字体和四色图片渲染由服务器完成。ESP32-S3 定时请求二进制图片，校验帧头、长度和 CRC 后直接刷新屏幕；PNG 预览使用相同图片。设备使用 NTP 校时并校验 HTTPS 证书；未完成校时会等待，不跳过证书验证。
+
 ## 电池电压校准
 
 电池检测使用 GPIO2：电池正极经 470kΩ 接 GPIO2，GPIO2 经 100kΩ 接地，电池与开发板共地。供电需另接合适的稳压及充电电路，不可把锂电池直接接到 3.3V 引脚。
@@ -92,6 +101,7 @@ python tools/package_bins.py V1.0.0 --build-dir build/s3
 node tools/smoke_page.js
 node tools/test_wifi_page.js
 node tools/test_battery_page.js
+node tools/test_weather_page.js
 python tools/check_frame.py
 idf.py build
 ```

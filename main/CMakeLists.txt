@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 set(EPAPER_SRCS
     "main.c" "epd_drv.c" "settings.c" "netif_ap.c" "captive.c"
-    "ota_web.c" "frame.c" "power.c" "store.c" "wifi_lan.c")
+    "ota_web.c" "frame.c" "power.c" "store.c" "wifi_lan.c" "weather.c")
 
 # Regenerate the embedded page on configuration, including after page/version edits.
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
@@ -21,7 +21,7 @@ idf_component_register(
     INCLUDE_DIRS "."
     PRIV_REQUIRES esp_driver_gpio esp_driver_spi nvs_flash esp_wifi esp_netif esp_event
                   esp_http_server esp_adc esp_hw_support esp_pm
-                  app_update spi_flash esp_partition esp_timer lwip
+                  app_update spi_flash esp_partition esp_timer lwip esp_http_client mbedtls
 )
 
 # 显式声明页面头和版本头的编译依赖。

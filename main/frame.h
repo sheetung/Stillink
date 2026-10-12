@@ -2,6 +2,7 @@
 #define EPAPER_FRAME_H
 
 #include "esp_http_server.h"
+#include "esp_http_client.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -31,6 +32,10 @@
 
 /* 分配帧缓冲并创建同步量。 */
 void frame_init(void);
+
+/* Stream a service frame into the existing buffer, validate CRC, then display.
+   Called after HTTP response headers; allow() rejects an obsolete configuration. */
+int frame_download_display(esp_http_client_handle_t client, bool (*allow)(void *), void *context);
 
 /* 阻塞等待一帧就绪（由上传处理器触发）。 */
 void frame_wait(void);

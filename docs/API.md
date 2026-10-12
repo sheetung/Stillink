@@ -19,9 +19,12 @@
 | POST | `/api/wifi/forget` | 清除路由器凭据，恢复热点 |
 | POST | `/api/upload` | 应用固件 BIN 或控制页 HTML，按内容自动识别 |
 | POST | `/api/web/clear` | 清除上传的控制页，恢复内嵌页面 |
+| GET | `/api/weather` | 天气配置、状态和最近获取的数据 |
+| POST | `/api/weather` | JSON，保存天气配置 |
+| POST | `/api/weather/refresh` | 无请求体，启用且联网时返回 HTTP 202 |
 | POST | `/api/factory` | 恢复出厂设置并重启 |
 
-POST 设置和配网使用 `application/x-www-form-urlencoded`，不是 JSON；省略设置字段表示保持原值。跨域调用支持 `GET`、`POST`、`OPTIONS` 和 `Content-Type` 请求头。
+`/api/weather` 使用 JSON；其他 POST 设置和配网使用 `application/x-www-form-urlencoded`，不是 JSON；省略设置字段表示保持原值。跨域调用支持 `GET`、`POST`、`OPTIONS` 和 `Content-Type` 请求头。
 
 ## 查询与设置
 
@@ -96,3 +99,21 @@ curl.exe http://192.168.4.1/api/wifi/status
 ```
 
 `status` 为 `idle`、`connecting`、`connected` 或 `failed`。获得 IP 后，热点约 10 秒后关闭，后续请求换用返回的局域网 IP。扫描期间可能短暂影响热点通信；正在连接时扫描返回 HTTP 409，需要稍后重试。
+
+## 天气 API
+
+`GET /api/weather` 返回 `enabled`、`service_url`（天气服务根地址）、`name`、`latitude`、`longitude`、`times`（当天分钟数，默认 `[480,720,1080]`）、`status`、`error`、`source`；成功刷新后附带 `data.updated` 和 `data.utc_offset`。状态包括 `disabled`、`waiting_wifi`、`waiting_time`、`waiting`、`loading`、`ready`、`error`。完整天气数据和 PNG 预览由天气服务提供，ESP 不保存字库。
+
+`POST /api/weather` 使用 `application/json`。示例：
+
+```json
+{"enabled":true,"service_url":"http://192.168.31.12:8787","name":"杭州","latitude":30.29365,"longitude":120.16142,"times":[480,720,1080]}
+```
+
+`enabled` 必须是布尔值；完整位置配置须含名称、经纬度和三个递增的当天分钟数。服务地址支持 HTTP / HTTPS，最长 191 字节，不含查询参数或 fragment。首次启用需填写服务地址和位置。只关闭可发送 `{"enabled":false}`，其他配置保留；地址也可以单独修改。保存成功返回 `{"saved":true}`，错误配置返回 400，保存失败不会更新当前配置。
+
+`POST /api/weather/refresh` 将更新排队，HTTP 202 表示已接受，实际完成需轮询天气状态；未启用或未连接路由器返回 HTTP 409。天气配置使用独立 NVS 命名空间，重启与 OTA 不清除，恢复出厂时清除。
+
+ESP 请求 `${service_url}/v1/weather.bin?latitude=...&longitude=...&name=...`，服务返回与 `/api/frame` 相同的 16 字节帧头及 2bpp 数据（固定 768×552），并在 HTTP 响应头提供 `Content-Length`、`X-Weather-Updated` 与 `X-Weather-UTC-Offset`。ESP 流式读取到现有帧缓冲，校验 CRC 后刷新；网络失败、数据截断、CRC 不符均不触发刷新，约 5 分钟后重试。待显示的手动上传优先，天气不会覆盖其帧缓冲。服务端天气缓存 15 分钟。
+
+服务其他接口与 uv 部署见 [天气服务说明](../weather-service/README.md)。

@@ -14,6 +14,7 @@ static const char *TAG = "frame";
 static uint8_t *s_fb = NULL;
 static SemaphoreHandle_t s_fb_mutex = NULL;
 static SemaphoreHandle_t s_frame_ready = NULL;
+static bool s_pending = false;
 
 /* 最近一次被接受的帧几何（768x552 或 A1 原生 800x600），显示时交给驱动。 */
 static uint16_t s_fw = EPD_A1_W, s_fh = EPD_A1_H;
@@ -56,10 +57,56 @@ int frame_display_now(void)
     if (xSemaphoreTake(s_fb_mutex, portMAX_DELAY) != pdTRUE) return -1;
     power_panel_busy(true);
     int r = epd_display_2bpp_wh(s_fb, s_fw, s_fh);
-    xSemaphoreGive(s_fb_mutex);
     if (r == 0) epd_panel_deep_sleep();
     power_panel_busy(false);
+    s_pending = false;
+    xSemaphoreGive(s_fb_mutex);
     return r;
+}
+
+static bool read_exact(esp_http_client_handle_t client, uint8_t *out, size_t size)
+{
+    size_t got = 0;
+    while (got < size) {
+        int n = esp_http_client_read(client, (char *)out + got, size - got > 2048 ? 2048 : size - got);
+        if (n <= 0) return false;
+        got += n;
+        power_activity();
+    }
+    return true;
+}
+
+int frame_download_display(esp_http_client_handle_t client, bool (*allow)(void *), void *context)
+{
+    uint8_t hdr[FRAME_HDR_LEN];
+    if (!read_exact(client, hdr, sizeof(hdr))) return -2;
+    uint16_t width = (hdr[4] << 8) | hdr[5], height = (hdr[6] << 8) | hdr[7];
+    uint32_t len = ((uint32_t)hdr[8] << 24) | ((uint32_t)hdr[9] << 16) | ((uint32_t)hdr[10] << 8) | hdr[11];
+    if (hdr[0] != FRAME_MAGIC0 || hdr[1] != FRAME_MAGIC1 ||
+        (hdr[2] != FRAME_FMT_VERSION && hdr[2] != FRAME_FMT_VERSION_NATIVE) ||
+        !epd_frame_geom_ok(width, height, len) || len > EPD_MAX_BUF_LEN ||
+        (width & 3) || len != (uint32_t)(width / 4) * height ||
+        esp_http_client_get_content_length(client) != FRAME_HDR_LEN + len) return -2;
+    if (xSemaphoreTake(s_fb_mutex, pdMS_TO_TICKS(1000)) != pdTRUE) return -1;
+    /* An accepted upload has priority; do not replace its pending buffer. */
+    if (s_pending) {
+        xSemaphoreGive(s_fb_mutex);
+        return -1;
+    }
+    if (!read_exact(client, s_fb, len) || crc16_update(0xFFFF, s_fb, len) != ((hdr[12] << 8) | hdr[13])) {
+        xSemaphoreGive(s_fb_mutex);
+        return -2;
+    }
+    if (!allow(context)) { xSemaphoreGive(s_fb_mutex); return -3; }
+    s_fw = width;
+    s_fh = height;
+    power_panel_busy(true);
+    int result = epd_display_2bpp_wh(s_fb, s_fw, s_fh);
+    if (result == 0) epd_panel_deep_sleep();
+    power_panel_busy(false);
+    xSemaphoreGive(s_fb_mutex);
+    power_activity();
+    return result;
 }
 
 /* R1.0.8：残影清理与显示/传图共用同一 SPI 与 row 缓冲，必须持同一把锁，
@@ -121,6 +168,10 @@ esp_err_t frame_upload_handler(httpd_req_t *req)
     if (xSemaphoreTake(s_fb_mutex, pdMS_TO_TICKS(5000)) != pdTRUE) {
         return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "busy");
     }
+    if (s_pending) {
+        xSemaphoreGive(s_fb_mutex);
+        return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "busy");
+    }
 
     size_t off = 0;
     uint16_t crc = 0xFFFF;
@@ -132,19 +183,23 @@ esp_err_t frame_upload_handler(httpd_req_t *req)
         crc = crc16_update(crc, s_fb + off, (size_t)n);
         off += (size_t)n;
     }
-    xSemaphoreGive(s_fb_mutex);
-
-    if (err != 0)
+    if (err != 0) {
+        xSemaphoreGive(s_fb_mutex);
         return httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "body truncated");
-    if (crc != crc_hdr)
+    }
+    if (crc != crc_hdr) {
+        xSemaphoreGive(s_fb_mutex);
         return httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "CRC mismatch");
+    }
 
     ESP_LOGI(TAG, "frame accepted: %ux%u (%lu bytes), CRC ok",
              width, height, (unsigned long)len);
 
     s_fw = width;                             /* 显示任务据此选写入路径 */
     s_fh = height;
+    s_pending = true;
     xSemaphoreGive(s_frame_ready);            /* 唤醒显示任务 */
+    xSemaphoreGive(s_fb_mutex);
     httpd_resp_set_type(req, "text/plain");
     return httpd_resp_sendstr(req, "OK");
 }

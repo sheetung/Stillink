@@ -1,5 +1,6 @@
 # ---- ESP-IDF / 构建产物 ----
 build/
+managed_components/
 sdkconfig
 sdkconfig.old
 
@@ -30,6 +31,7 @@ docs/未实施项说明-*.md
 docs/问题跟踪.md
 
 # ---- 临时/调试产物 ----
+previews/
 tools/_*
 !tools/_exif_test.jpg
 !tools/_r110_regress.js
