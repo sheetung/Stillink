@@ -4,6 +4,9 @@
 #include "wifi_lan.h"
 
 #include "driver/gpio.h"
+#if CONFIG_IDF_TARGET_ESP32S3
+#include "driver/rtc_io.h"
+#endif
 #include "esp_adc/adc_oneshot.h"
 #include "esp_sleep.h"
 #include "esp_wifi.h"
@@ -25,6 +28,7 @@ static const char *TAG = "power";
 #define BAT_MV_MAX         4600
 
 static adc_oneshot_unit_handle_t s_adc;
+static adc_channel_t s_bat_channel;
 static TickType_t s_last_activity;
 static bool s_auto_wake = false;
 
@@ -39,7 +43,10 @@ void power_init(void)
     };
     ESP_ERROR_CHECK(gpio_config(&btn));
 
-    /* GPIO0 = ADC1_CH0（ADC2 与 WiFi 共用，不可用）。 */
+    /* Resolve the ADC1 channel from the target-specific battery pin. */
+    adc_unit_t unit;
+    ESP_ERROR_CHECK(adc_oneshot_io_to_channel(EPD_PIN_BAT_ADC, &unit, &s_bat_channel));
+    ESP_ERROR_CHECK(unit == ADC_UNIT_1 ? ESP_OK : ESP_ERR_INVALID_ARG);
     adc_oneshot_unit_init_cfg_t u = {
         .unit_id = ADC_UNIT_1,
         .ulp_mode = ADC_ULP_MODE_DISABLE,
@@ -49,7 +56,7 @@ void power_init(void)
         .atten = ADC_ATTEN_DB_12,
         .bitwidth = ADC_BITWIDTH_12,
     };
-    ESP_ERROR_CHECK(adc_oneshot_config_channel(s_adc, ADC_CHANNEL_0, &c));
+    ESP_ERROR_CHECK(adc_oneshot_config_channel(s_adc, s_bat_channel, &c));
 
     power_activity();
 }
@@ -93,8 +100,15 @@ void power_enter_deep_sleep(void)
     gpio_pullup_en((gpio_num_t)EPD_PIN_WAKE_BTN);
     gpio_pulldown_dis((gpio_num_t)EPD_PIN_WAKE_BTN);
     gpio_set_direction((gpio_num_t)EPD_PIN_WAKE_BTN, GPIO_MODE_INPUT);
+#if CONFIG_IDF_TARGET_ESP32S3
+    ESP_ERROR_CHECK(rtc_gpio_pullup_en((gpio_num_t)EPD_PIN_WAKE_BTN));
+    ESP_ERROR_CHECK(rtc_gpio_pulldown_dis((gpio_num_t)EPD_PIN_WAKE_BTN));
+    ESP_ERROR_CHECK(esp_sleep_enable_ext1_wakeup_io(
+        1ULL << EPD_PIN_WAKE_BTN, ESP_EXT1_WAKEUP_ANY_LOW));
+#else
     ESP_ERROR_CHECK(esp_sleep_enable_gpio_wakeup_on_hp_periph_powerdown(
         1ULL << EPD_PIN_WAKE_BTN, ESP_GPIO_WAKEUP_GPIO_LOW));
+#endif
 
     uint32_t wake_s = settings_get()->wake_s;
     if (wake_s > 0) {
@@ -116,7 +130,7 @@ int power_battery_mv(void)
     static int s_valid = 0;
 
     int raw = 0;
-    if (adc_oneshot_read(s_adc, ADC_CHANNEL_0, &raw) != ESP_OK) { s_valid = 0; return -1; }
+    if (adc_oneshot_read(s_adc, s_bat_channel, &raw) != ESP_OK) { s_valid = 0; return -1; }
     int mv = (int)((int64_t)raw * BAT_FULLSCALE_MV * BAT_DIV_NUM / BAT_ADC_MAX / BAT_DIV_DEN);
 
     if (mv < BAT_MV_MIN || mv > BAT_MV_MAX) { s_valid = 0; return -1; }

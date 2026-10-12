@@ -1,0 +1,2 @@
+# ESP32-S3 native USB Serial/JTAG, using the common 4MB OTA partition layout.
+CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y

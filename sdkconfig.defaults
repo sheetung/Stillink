@@ -3,7 +3,6 @@
 # 排障时把 LOG 两行改回 INFO/Debug 即可（不要动 eFuse 级选项）。
 
 # ---- flash 尺寸与模式（沿用 M7 已验证的 DIO 40M）----
-CONFIG_IDF_TARGET="esp32c6"
 CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
 CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
 CONFIG_ESPTOOLPY_FLASHFREQ_40M=y

@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
+#include "sdkconfig.h"
 
 /*
  * JDY79668 协议四色电子墨水屏驱动（K/W/R/Y，2bpp，4 像素/字节）。
@@ -67,7 +68,11 @@ extern const epd_profile_t EPD_PROFILES[EPD_PANEL_COUNT];
 #define EPD_PIN_RST      3
 #define EPD_PIN_BUSY     10
 #define EPD_PIN_WAKE_BTN 5
+#if CONFIG_IDF_TARGET_ESP32S3
+#define EPD_PIN_BAT_ADC  2  /* S3 ADC1_CH1; GPIO0 is not an ADC pin. */
+#else
 #define EPD_PIN_BAT_ADC  0
+#endif
 
 /* 初始化 SPI 总线 + GPIO。成功返回 0。 */
 int epd_init(void);

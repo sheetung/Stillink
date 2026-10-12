@@ -12,6 +12,7 @@ unpacked/
 releases/
 # flash_kit 是一键刷机工具包，bin 是其内容，保留入库
 !flash_kit/*.bin
+!flash_kit/esp32s3/*.bin
 
 # ---- 本地备份与历史版本（保留在磁盘，不入库）----
 backups/

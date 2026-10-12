@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-package_bins.py [tag] —— 把编译产物打包成刷机/OTA 用的 bin。
+package_bins.py [tag] [--build-dir build] —— 把编译产物打包成刷机/OTA 用的 bin。
 
 用受管 venv 的解释器运行（里面装了 esptool 5.4）：
     python tools/package_bins.py r1
@@ -10,12 +10,14 @@ package_bins.py [tag] —— 把编译产物打包成刷机/OTA 用的 bin。
     stillink_<tag>_merged.bin  整包（0x0）：bootloader + partitions + OTA data + app
     stillink_<tag>_app.bin     app 镜像：OTA 上传用（build/stillink.bin 的原样拷贝）
 
-合并参数沿用已验证配置：esp32c6 / dio / 40m / 4MB。
+芯片类型从构建目录的 project_description.json 读取；合并使用 dio / 40m / 4MB。
 """
 import os
 import sys
 import shutil
 import subprocess
+import argparse
+import json
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -29,7 +31,15 @@ def esptool(args):
 
 
 def main():
-    tag = sys.argv[1] if len(sys.argv) > 1 else "r1"
+    global BUILD
+    parser = argparse.ArgumentParser()
+    parser.add_argument("tag", nargs="?", default="r1")
+    parser.add_argument("--build-dir", default=BUILD)
+    args = parser.parse_args()
+    tag = args.tag
+    BUILD = os.path.abspath(args.build_dir)
+    with open(os.path.join(BUILD, "project_description.json"), encoding="utf-8") as f:
+        chip = json.load(f)["target"]
 
     boot = os.path.join(BUILD, "bootloader", "bootloader.bin")
     part = os.path.join(BUILD, "partition_table", "partition-table.bin")
@@ -48,7 +58,7 @@ def main():
     print("app     -> %s (%d B)" % (app_out, os.path.getsize(app_out)))
 
     esptool([
-        "--chip", "esp32c6", "merge-bin",
+        "--chip", chip, "merge-bin",
         "-o", merged,
         "--flash-mode", "dio",
         "--flash-freq", "40m",

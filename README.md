@@ -56,6 +56,20 @@ python tools/flash_device.py --port COM11 --bin stillink_V0.0.3_merged.bin
 
 旧版 R1.2.1 的 OTA 校验固定为 ESP32-C3 芯片标识；当前 C6 板首次升级到 V0.0.3 请用 USB。V0.0.3 已按实际构建目标校验镜像。
 
+## ESP32-S3 烧录
+
+支持 ESP32-S3（当前测试板：4 MB Flash、2 MB PSRAM）。屏幕引脚与 C6 相同；电池检测改为 **GPIO2 / ADC1_CH1**，唤醒按键仍接 **GPIO5 → GND**。GPIO0 在 S3 上不是 ADC 引脚。当前固件不依赖 PSRAM。
+
+使用独立构建目录及配置，避免覆盖 C6：
+
+```powershell
+idf.py -B build/s3 -DIDF_TARGET=esp32s3 -DSDKCONFIG=build/s3/sdkconfig build
+python tools/package_bins.py V0.0.3_esp32s3 --build-dir build/s3
+python tools/flash_device.py --port COM13 --bin stillink_V0.0.3_esp32s3_merged.bin
+```
+
+串口按实际设备修改。S3 预编译镜像位于 `flash_kit/esp32s3/`，与 C6 镜像分开保存；OTA 镜像也必须与芯片型号对应。
+
 ## 热点直连与 Wi-Fi 配网
 
 1. 上电后连接默认开放热点 `Stillink-XXXX`，打开自动弹出的控制页，或访问 `http://192.168.4.1`。

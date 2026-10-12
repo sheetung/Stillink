@@ -90,7 +90,7 @@ def main():
         print("hint   : if it hangs at 'Stub running...', unplug/replug USB and retry with --no-stub")
 
     cmd = [sys.executable, "-m", "esptool",
-           "--chip", "esp32c6",
+           "--chip", "auto",
            "--port", port,
            "--baud", str(args.baud)]
     if args.no_stub:
