@@ -14,11 +14,12 @@
 
 ## Linux / uv 部署
 
-需要 Python 3.11+、[uv](https://docs.astral.sh/uv/) 和中文字体，服务要能访问 Open-Meteo。已有 uv 时直接使用，无需 Docker。
+需要 Python 3.11+、[uv](https://docs.astral.sh/uv/) 和中文字体，服务要能访问 Open-Meteo。已有 uv 时直接使用，无需 Docker。以下通过 SSH 下载仓库，需先配置 GitHub SSH 公钥；示例安装在当前用户的 `~/Stillink`，也可选择其他目录。
 
 ```bash
-sudo apt install fonts-noto-cjk
-cd /home/ubt/pyProject/stillink-weather
+sudo apt install git fonts-noto-cjk
+git clone git@github.com:sheetung/Stillink.git ~/Stillink
+cd ~/Stillink/weather-service
 uv sync --frozen
 uv run --frozen python test_app.py
 uv run --frozen app.py --host 0.0.0.0 --port 8787
@@ -26,17 +27,24 @@ uv run --frozen app.py --host 0.0.0.0 --port 8787
 
 其他字体通过 `STILLINK_FONT=/绝对路径/font.ttf` 或 `--font` 指定。首次启动会检查字体，缺失时明确报错。系统字体不随仓库分发。
 
-[服务目录](../weather-service/) 随附的 `stillink-weather.service` 是 ubt 用户的 systemd 服务：
+[服务目录](../weather-service/) 随附当前用户的 systemd 服务模板 `stillink-weather.service`。模板中的 `%h` 代表当前用户的主目录，默认使用 `~/Stillink/weather-service` 和 `~/.local/bin/uv`。如果安装目录或 `command -v uv` 返回的路径不同，请先修改模板的 `WorkingDirectory` 和 `ExecStart`。
 
 ```bash
 mkdir -p ~/.config/systemd/user
 cp stillink-weather.service ~/.config/systemd/user/
 systemctl --user daemon-reload
 systemctl --user enable --now stillink-weather
-sudo loginctl enable-linger ubt
+sudo loginctl enable-linger "$(id -un)"
 ```
 
-其他用户或安装路径需修改 unit 中的绝对路径。日志：`journalctl --user -u stillink-weather -f`。更新代码后执行 `uv sync --frozen` 和 `systemctl --user restart stillink-weather`。
+日志：`journalctl --user -u stillink-weather -f`。更新服务：
+
+```bash
+cd ~/Stillink/weather-service
+git pull --ff-only
+uv sync --frozen
+systemctl --user restart stillink-weather
+```
 
 在设备的「天气」页填入服务根地址，例如 `http://192.168.31.12:8787`，选择位置、启用并保存。默认当地时间 08:00、12:00、18:00 下载并刷新。服务必须持续运行且设备能够访问该地址；公网部署建议通过反向代理提供 HTTPS，ESP 使用可信证书验证。HTTPS 控制页预览也需使用 HTTPS 服务地址。
 

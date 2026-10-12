@@ -3,8 +3,8 @@ Description=Stillink weather binary image service
 After=network-online.target
 
 [Service]
-WorkingDirectory=/home/ubt/pyProject/stillink-weather
-ExecStart=/home/ubt/.local/bin/uv run --frozen app.py --host 0.0.0.0 --port 8787
+WorkingDirectory=%h/Stillink/weather-service
+ExecStart=%h/.local/bin/uv run --frozen app.py --host 0.0.0.0 --port 8787
 Restart=on-failure
 RestartSec=5
 Environment=PYTHONUNBUFFERED=1
