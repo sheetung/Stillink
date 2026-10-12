@@ -2,15 +2,27 @@
 import argparse
 import asyncio
 import json
+import base64
+import socket
+from dataclasses import dataclass
 import sys
 import time
-from pathlib import Path
-from urllib.error import HTTPError
-from urllib.request import ProxyHandler, Request, build_opener
 
-from card import Track, pack_frame, render_card
+from protocol import packets
 
-OPENER = build_opener(ProxyHandler({}))
+@dataclass
+class Track:
+    title: str
+    artist: str = ""
+    album: str = ""
+    player: str = ""
+    cover: bytes = b""
+    playing: bool = True
+    number: int = 0
+
+    @property
+    def key(self):
+        return self.player, self.title, self.artist, self.album, self.number
 
 
 class WindowsMedia:
@@ -57,108 +69,72 @@ class WindowsMedia:
         return track
 
 
-class SyncState:
-    """Coalesce rapid track changes; pause/resume does not refresh the screen."""
-    def __init__(self, interval=60, settle=3):
-        self.interval, self.settle = interval, settle
-        self.candidate = None; self.since = 0
-        self.sent = None; self.last_sent = float("-inf"); self.retry_at = 0
-
-    def due(self, track, now):
-        if not track or not track.playing:
-            self.candidate = None
-            return False
-        if track.key != self.candidate:
-            self.candidate, self.since = track.key, now
-        return (track.key != self.sent and now - self.since >= self.settle and
-                now - self.last_sent >= self.interval and now >= self.retry_at)
-
-    def success(self, track, now):
-        self.sent, self.last_sent, self.retry_at = track.key, now, 0
-
-    def failed(self, now):
-        self.retry_at = now + 30
+def announcement(track):
+    if not track:
+        return json.dumps(dict(playing=False,title="",artist="",album="",player="",cover="")).encode()
+    return json.dumps(dict(playing=track.playing,title=track.title,artist=track.artist,album=track.album,player=track.player,
+        cover=base64.b64encode(track.cover if len(track.cover)<=4*1024*1024 else b"").decode()),ensure_ascii=False).encode()
 
 
-def device_request(base, path, payload=None, kind="application/json"):
-    request = Request(base + path, data=payload,
-                      headers={"Content-Type": kind} if payload is not None else {})
-    with OPENER.open(request, timeout=20) as response:
-        return response.read()
-
-
-def check_device(base, disable_weather):
-    device_request(base, "/api/info")
-    try:
-        weather = json.loads(device_request(base, "/api/weather"))
-    except HTTPError as exc:
-        if exc.code == 404: return
-        raise
-    if weather.get("enabled"):
-        if not disable_weather:
-            raise RuntimeError("请先在设备网页关闭自动天气，或使用 --disable-weather，避免天气覆盖音乐卡片")
-        device_request(base, "/api/weather", b'{"enabled":false}')
-        print("已关闭设备自动天气；退出工具后可在网页重新开启。", flush=True)
-
-
-def upload(base, track, font_path, preview):
-    card = render_card(track, font_path)
-    if preview: card.save(preview, "PNG")
-    result = device_request(base, "/api/frame", pack_frame(card), "application/octet-stream")
-    if result.strip() != b"OK": raise RuntimeError(f"设备未接受图片：{result.decode(errors='replace')}")
+async def send(sock,target,body):
+    # Repeat the burst once; the receiver merges reordered/duplicated chunks.
+    chunks=packets(body)
+    for repeat in range(2):
+        for packet in chunks:
+            sock.sendto(packet,target)
+            await asyncio.sleep(0.001)
 
 
 async def run(args):
-    media = WindowsMedia(); await media.start()
+    media=WindowsMedia();await media.start()
     if args.inspect:
-        track = await media.read(args.player)
-        print(json.dumps(None if not track else dict(title=track.title, artist=track.artist, album=track.album,
-              player=track.player, playing=track.playing, cover_bytes=len(track.cover)), ensure_ascii=False))
+        track=await media.read(args.player)
+        print(json.dumps(None if not track else dict(title=track.title,artist=track.artist,album=track.album,
+              player=track.player,playing=track.playing,cover_bytes=len(track.cover)),ensure_ascii=False))
         return
-    base = args.device.rstrip("/")
-    if not base.startswith(("http://", "https://")): base = "http://" + base
-    await asyncio.to_thread(check_device, base, args.disable_weather)
-    state = SyncState(args.interval)
-    print("音乐同步已启动，等待播放器。Ctrl+C 退出。", flush=True)
-    while True:
-        try:
-            track = await media.read(args.player, with_cover=False)
-            if args.once:
-                if not track or not track.playing: raise RuntimeError("没有正在播放的音乐，请先开始播放")
-            if args.once or state.due(track, time.monotonic()):
-                full = await media.read(args.player)
-                if full and full.playing and full.key == track.key:
-                    await asyncio.to_thread(upload, base, full, args.font, args.preview)
-                    state.success(full, time.monotonic())
-                    print(f"图片已接收：{full.title} · {full.artist}（设备随后刷新）", flush=True)
-                    if args.once: return
-        except Exception as exc:
-            if args.once: raise
-            state.failed(time.monotonic())
-            print(f"同步失败，30 秒后重试：{exc}", flush=True)
-            await asyncio.sleep(30)
-        await asyncio.sleep(3)
+    sock=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+    sock.setsockopt(socket.SOL_SOCKET,socket.SO_BROADCAST,1)
+    target=(args.target,args.port)
+    last_key=None;cached=None;last_body=None;last_sent=float("-inf")
+    print(f"Windows 音乐广播已启动：UDP {args.target}:{args.port}。Ctrl+C 退出。",flush=True)
+    try:
+        while True:
+            try:
+                track=await media.read(args.player,with_cover=False)
+                if track:
+                    if track.key!=last_key or not cached.cover:
+                        cached=await media.read(args.player)
+                        if not cached or cached.key!=track.key:
+                            await asyncio.sleep(3);continue
+                        last_key=track.key
+                    cached.playing=track.playing
+                else:
+                    cached=None;last_key=None
+                body=announcement(cached)
+                if body!=last_body or time.monotonic()-last_sent>=10:
+                    await send(sock,target,body)
+                    last_body=body;last_sent=time.monotonic()
+                    if cached:print(f"已广播：{cached.title} · {cached.artist}",flush=True)
+                if args.once:return
+            except Exception as exc:
+                if args.once:raise
+                print(f"广播失败：{exc}",flush=True)
+            await asyncio.sleep(3)
+    finally:sock.close()
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Windows 音乐信息 → Stillink 专辑卡片")
-    parser.add_argument("--device", help="设备 IP 或 HTTP 地址")
-    parser.add_argument("--player", default="", help="播放器 ID 包含的文字；默认选当前播放会话")
-    parser.add_argument("--interval", type=int, default=60, help="最小刷新间隔秒数，至少 30，默认 60")
-    parser.add_argument("--disable-weather", action="store_true", help="关闭设备自动天气后同步音乐")
-    parser.add_argument("--inspect", action="store_true", help="只显示当前系统媒体信息，不操作设备")
-    parser.add_argument("--once", action="store_true", help="上传当前歌曲后退出")
-    parser.add_argument("--preview", type=Path, help="保存最新卡片的 PNG 预览")
-    parser.add_argument("--font", default="", help="中文字体路径，默认使用微软雅黑")
-    args = parser.parse_args()
-    if not args.inspect and not args.device: parser.error("请提供 --device，或使用 --inspect")
-    if args.interval < 30: parser.error("--interval 至少为 30 秒")
-    try: asyncio.run(run(args))
-    except KeyboardInterrupt: pass
-    except Exception as exc:
-        print(f"错误：{exc}", file=sys.stderr); return 1
+    parser=argparse.ArgumentParser(description="Windows 音乐信息和封面 UDP 广播")
+    parser.add_argument("--target",default="255.255.255.255",help="广播地址，或接收服务器的 IP")
+    parser.add_argument("--port",type=int,default=8790,help="服务器 UDP 接收端口，默认 8790")
+    parser.add_argument("--player",default="",help="播放器 ID 包含的文字")
+    parser.add_argument("--inspect",action="store_true",help="只显示当前系统媒体信息，不发送广播")
+    parser.add_argument("--once",action="store_true",help="只广播一次后退出")
+    args=parser.parse_args()
+    try:asyncio.run(run(args))
+    except KeyboardInterrupt:pass
+    except Exception as exc:print(f"错误：{exc}",file=sys.stderr);return 1
     return 0
 
 
-if __name__ == "__main__":
-    raise SystemExit(main())
+if __name__=="__main__":raise SystemExit(main())

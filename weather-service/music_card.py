@@ -1,4 +1,4 @@
-"""Server-free music card renderer and Stillink binary frame encoder."""
+"""Music service card renderer and Stillink binary frame encoder."""
 import binascii
 import io
 import struct

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 set(EPAPER_SRCS
     "main.c" "epd_drv.c" "settings.c" "netif_ap.c" "captive.c"
-    "ota_web.c" "frame.c" "power.c" "store.c" "wifi_lan.c" "weather.c")
+    "ota_web.c" "frame.c" "power.c" "store.c" "wifi_lan.c" "weather.c" "music.c")
 
 # Regenerate the embedded page on configuration, including after page/version edits.
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS

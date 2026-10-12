@@ -1,4 +1,5 @@
 #include "weather.h"
+#include "music.h"
 #include "wifi_lan.h"
 #include "frame.h"
 #include "power.h"
@@ -250,7 +251,7 @@ static void worker(void *unused)
         bool due = !s_has_data || s_requested || slot > s_last_slot;
         bool retry_ready = !s_retry || (int32_t)(xTaskGetTickCount() - s_retry) >= 0;
         /* NTP must establish time before certificate validity checks. */
-        if (!s_config.enabled || !wifi_lan_connected() || now < 1700000000 || !due || !retry_ready) { xSemaphoreGive(s_lock); continue; }
+        if (!s_config.enabled || music_enabled() || !wifi_lan_connected() || now < 1700000000 || !due || !retry_ready) { xSemaphoreGive(s_lock); continue; }
         *config = s_config;
         unsigned revision = s_revision;
         s_requested = false;

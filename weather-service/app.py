@@ -19,6 +19,7 @@ from urllib.parse import parse_qs, urlencode, urlsplit
 from urllib.request import Request, urlopen
 
 from PIL import Image, ImageDraw, ImageFont
+from music_receiver import Receiver
 
 WIDTH, HEIGHT = 768, 552
 BLACK, WHITE, YELLOW, RED = 0, 1, 2, 3
@@ -26,6 +27,7 @@ PALETTE = [0, 0, 0, 255, 255, 255, 241, 202, 0, 197, 35, 29] + [0] * (768 - 12)
 FONT_PATH = os.getenv("STILLINK_FONT", "")
 CACHE = {}
 CACHE_LOCK = threading.Lock()
+MUSIC = Receiver()
 
 
 def find_font():
@@ -175,6 +177,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         url = urlsplit(self.path)
+        if url.path in ("/v1/music.json", "/v1/music.png", "/v1/music.bin"):
+            status, body, kind = MUSIC.response(url.path, parse_qs(url.query).get("v", [""])[0])
+            return self.send(status, body, kind)
         if url.path == "/health":
             return self.send(200, b'{"status":"ok"}', "application/json")
         if url.path not in ("/v1/weather.bin", "/v1/weather.png", "/v1/weather.json"):
@@ -209,8 +214,10 @@ if __name__ == "__main__":
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8787)
     parser.add_argument("--font", default=FONT_PATH)
+    parser.add_argument("--music-port", type=int, default=8790, help="UDP music broadcast receiver port")
     args = parser.parse_args()
     FONT_PATH = args.font
     find_font()
+    MUSIC.start(port=args.music_port)
     print(f"Stillink weather listening on {args.host}:{args.port}", flush=True)
     ThreadingHTTPServer((args.host, args.port), Handler).serve_forever()

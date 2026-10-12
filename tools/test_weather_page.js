@@ -2,7 +2,7 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs"), path = require("node:path"), vm = require("node:vm");
 const page = fs.readFileSync(path.join(__dirname, "../page/index.html"), "utf8");
-const source = page.slice(page.indexOf("/* ---------- 天气卡片："), page.lastIndexOf("</script>"));
+const source = page.slice(page.indexOf("/* ---------- 天气卡片："), page.indexOf("/* ---------- 音乐卡片："));
 const elements = {}, requests = [], responses = [], timers = [];
 function element(id) {
   return {id, value:"", checked:false, disabled:false, hidden:false, textContent:"", innerHTML:"", style:{}, children:[], events:{},
@@ -10,7 +10,7 @@ function element(id) {
     addEventListener(k,f){this.events[k]=f;}, replaceChildren(...children){this.children=children;},
     appendChild(child){this.children.push(child);} };
 }
-for (const id of [...page.matchAll(/id="(weather[^" ]*|modeWeather|editorGrid|steps)"/g)].map(m=>m[1])) elements[id]=element(id);
+for (const id of [...page.matchAll(/id="(weather[^" ]*|modeWeather|modeMusic|editorGrid|steps)"/g)].map(m=>m[1])) elements[id]=element(id);
 const modes=[element("photo"),element("note")];
 const state={enabled:false,name:"杭州",service_url:"http://192.168.31.12:8787",latitude:30.29,longitude:120.16,times:[480,720,1080],status:"disabled",error:""};
 const context={

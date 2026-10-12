@@ -1,65 +1,89 @@
-# Windows 音乐专辑卡片
+# 音乐广播与专辑卡片
 
-音乐工具运行在播放音乐的 Windows 10 / 11 电脑上，使用系统 GSMTC 媒体会话接口读取歌曲、歌手、专辑名和封面。卡片在电脑本地生成，通过设备现有的 `/api/frame` 接口上传，无需天气服务器，也无需更改或重新烧录 ESP 固件。
+音乐入口位于「拍立得 → 便签 → 天气 → 音乐」，可填写服务地址、预览、启用或关闭、保存配置及立即刷新。
 
-## 安装与使用
+## 分工
 
-需要 [uv](https://docs.astral.sh/uv/) 和接入系统媒体控件的播放器。播放器提供哪些字段，卡片就能显示哪些；缺少封面时显示占位图，缺少专辑信息时显示提示。未接入系统媒体控件的播放器无法读取。
+- Windows：只读取系统 GSMTC 的歌曲、歌手、专辑和原始封面，通过 UDP 广播。不绘图，也不直接操作 ESP。
+- 服务器：现有天气服务接收 UDP，生成四色专辑卡片，提供音乐状态、PNG 预览和二进制图片。
+- ESP：保存服务地址，每 5 秒检查歌曲版本，仅歌曲变化时下载并刷新，自动刷新间隔至少 60 秒。
 
-通过 SSH 下载仓库（已下载则在现有仓库执行 `git pull --ff-only`）：
+浏览器可以关闭。启用音乐时暂停自动天气，关闭音乐后按原计划恢复天气，天气配置不会被清除。暂停或恢复播放不重复刷新；Windows 停止广播 35 秒后，服务视为暂停，屏幕保留最后画面。
+
+## 服务器
+
+先按 [天气服务部署说明](weather.md) 使用 uv 部署服务，更新到包含音乐功能的版本：
+
+```bash
+cd ~/Stillink/weather-service
+git pull --ff-only
+uv sync --frozen
+systemctl --user restart stillink-weather
+```
+
+同一个服务默认监听 HTTP 8787 和 UDP 8790。服务器与 Windows 在同一局域网，服务器应允许 UDP 8790 入站；跨子网或广播无法到达时，Windows 可指定服务器 IP 发送 UDP。手动启动时可用 `--music-port` 修改接收端口。
+
+服务器使用自己的中文字体绘制。Windows 不需要安装 Pillow，封面超过 4 MiB 时仅广播文字，服务器使用占位图。多个 ESP 可共用同一个音乐服务；多台 Windows 同时向该服务广播时，显示最近收到的播放会话。
+
+## Windows 广播工具
+
+需要 Windows 10 / 11、[uv](https://docs.astral.sh/uv/) 以及接入系统媒体控件的播放器。通过 SSH 下载仓库（已有仓库执行 `git pull --ff-only`）：
 
 ```powershell
 git clone git@github.com:sheetung/Stillink.git
 cd Stillink/music-client
 uv sync --frozen
+uv run --frozen app.py
 ```
 
-先开始播放音乐，只读检查当前系统媒体信息：
+默认广播到 `255.255.255.255:8790`，切歌或播放状态变化时广播，每 10 秒重复一次作为心跳。按 `Ctrl+C` 停止。原始封面和歌曲信息组成 JSON，按 1200 字节分片，附带 SHA256；接收端重组、校验并合并重复广播。
+
+可选参数：
 
 ```powershell
+# 只读查看当前 Windows 媒体会话，不广播
 uv run --frozen app.py --inspect
+
+# 指定接收服务器；仍使用 UDP，不上传 ESP
+uv run --frozen app.py --target 192.168.31.12
+
+# 指定播放器（匹配 --inspect 返回的 player ID）
+uv run --frozen app.py --player Spotify
+
+# 自定义 UDP 端口，需与服务器一致
+uv run --frozen app.py --port 8790
 ```
 
-连接与设备相同的网络，在设备网页关闭自动天气，然后启动同步。以下 IP 请替换为你的设备地址：
+播放器提供哪些信息就显示哪些；缺少封面时显示占位图。未接入系统媒体控件的播放器无法读取。
 
-```powershell
-uv run --frozen app.py --device http://192.168.31.13
-```
+## 网页与 ESP
 
-也可以明确指定关闭天气后启动：
+1. 启动服务器和 Windows 广播工具，开始播放音乐。
+2. 打开设备网页的「音乐」入口。
+3. 填写接收广播服务器的 HTTP 根地址，如 `http://192.168.31.12:8787`，不是 Windows 地址或 UDP 端口。
+4. 点击「预览卡片」可查看服务器的当前图片。
+5. 打开启用开关，点击「连接并保存」。ESP 会主动请求并刷新；服务地址与开关在重启和 OTA 后保留。
 
-```powershell
-uv run --frozen app.py --device http://192.168.31.13 --disable-weather
-```
+手动「立即刷新屏幕」可重新显示当前歌曲。下载失败时保留原画面，约 30 秒后重试。图片为 768×552 四色帧，包含 CRC16 和 180° 打包，与已有 A0/A1 上传协议一致。
 
-自动天气开启时，工具默认提示并停止，避免定时天气覆盖音乐画面。`--disable-weather` 会将天气开关保存为关闭；退出音乐工具后，可在网页重新开启天气。
+## 服务接口
 
-工具每 3 秒检查一次当前播放会话，歌曲稳定至少 3 秒后上传。切歌才更新，暂停、恢复、播放进度变化都不触发更新；最小刷新间隔默认 60 秒，快速连续切歌会合并为最后一首。上传失败约 30 秒后重试。按 `Ctrl+C` 退出，屏幕保留最后的卡片。
+- `GET /v1/music.json`：`playing`、`version`、`title`、`artist`、`album`。
+- `GET /v1/music.png?v=版本`：PNG 预览。
+- `GET /v1/music.bin?v=版本`：ESP 直接使用的二进制帧。
 
-## 可选参数
-
-```powershell
-# 仅上传当前正在播放的歌曲，随后退出
-uv run --frozen app.py --device 192.168.31.13 --once
-
-# 选择播放器；匹配 --inspect 返回的 player ID，不区分大小写
-uv run --frozen app.py --device 192.168.31.13 --player Spotify
-
-# 每次上传时保存同一张卡片的 PNG 预览
-uv run --frozen app.py --device 192.168.31.13 --preview music.png
-
-# 调整最小刷新间隔，不能小于 30 秒
-uv run --frozen app.py --device 192.168.31.13 --interval 120
-```
-
-默认选择当前正在播放的媒体会话；多个播放器同时播放时，可用 `--player` 指定来源。默认字体为 Windows 微软雅黑，也可用 `--font` 指定字体文件。
-
-图片固定 768×552，兼容现有 A0 / A1 接收格式，带 CRC16 校验和 180° 打包。封面转换为黑、白、黄、红四色并抖动，文字单独绘制保持清晰。HTTP 成功表示设备已接收图片，实际墨水屏刷新还需要时间。
+未收到歌曲时图片返回 204；指定版本已变化时返回 409，避免把另一首歌曲的图片当作旧版本。图片只在服务器内存中保存，不写入磁盘。
 
 ## 测试
 
 ```powershell
+# Windows 广播编码测试
+cd music-client
 uv run --frozen python test_music.py
 ```
 
-检查切歌合并、暂停恢复、刷新间隔、失败重试、天气开关冲突、图片色码和二进制帧方向。
+```bash
+# 服务器 UDP 重组、去重、暂停及二进制校验测试
+cd weather-service
+uv run --frozen python test_music.py
+```

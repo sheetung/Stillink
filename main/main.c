@@ -51,6 +51,7 @@
 #include "ota_web.h"
 #include "store.h"
 #include "weather.h"
+#include "music.h"
 
 #include "index_html.h"     /* 由 tools/make_index_header.py 固化，改页必重跑 */
 
@@ -402,6 +403,7 @@ static httpd_handle_t start_server(void)
     ota_web_register(server);
     wifi_lan_register(server);
     weather_register(server);
+    music_register(server);
 
     /* 必须在所有业务路由之后注册：OS 探测路径此前直接 404，根本进不了首页。
        兜底 GET 同时覆盖带查询参数的探测与厂商自定义路径。 */
@@ -500,6 +502,7 @@ void app_main(void)
     netif_ap_init();
     captive_dns_start();
     weather_init();
+    music_init();
 
     if (start_server() == NULL) {
         ESP_LOGE(TAG, "HTTP server failed to start");
