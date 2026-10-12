@@ -1,0 +1,109 @@
+"""Server-free music card renderer and Stillink binary frame encoder."""
+import binascii
+import io
+import struct
+from dataclasses import dataclass
+from functools import lru_cache
+from pathlib import Path
+
+from PIL import Image, ImageDraw, ImageFont, ImageOps
+
+WIDTH, HEIGHT = 768, 552
+PALETTE = [0, 0, 0, 255, 255, 255, 255, 255, 0, 255, 0, 0] + [0] * (768 - 12)
+
+
+@dataclass
+class Track:
+    title: str
+    artist: str = ""
+    album: str = ""
+    player: str = ""
+    cover: bytes = b""
+    playing: bool = True
+    number: int = 0
+
+    @property
+    def key(self):
+        return self.player, self.title, self.artist, self.album, self.number
+
+
+@lru_cache(maxsize=20)
+def font(size, path=""):
+    candidates = [path, "C:/Windows/Fonts/msyh.ttc", "C:/Windows/Fonts/simhei.ttf",
+                  "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"]
+    for candidate in candidates:
+        if candidate and Path(candidate).is_file():
+            return ImageFont.truetype(candidate, size)
+    raise RuntimeError("未找到中文字体，请通过 --font 指定字体文件")
+
+
+def wrap_text(draw, text, face, width, max_lines):
+    lines, current = [], ""
+    for char in text.replace("\n", " "):
+        if current and draw.textlength(current + char, font=face) > width:
+            lines.append(current); current = ""
+        current += char
+    if current: lines.append(current)
+    if len(lines) > max_lines:
+        lines = lines[:max_lines]
+        while lines[-1] and draw.textlength(lines[-1] + "…", font=face) > width:
+            lines[-1] = lines[-1][:-1]
+        lines[-1] += "…"
+    return lines
+
+
+def render_card(track, font_path=""):
+    # Text uses palette pixels directly; only the cover is dithered.
+    image = Image.new("P", (WIDTH, HEIGHT), 1); image.putpalette(PALETTE)
+    draw = ImageDraw.Draw(image)
+    def text(x, y, value, size=18, fill=0):
+        draw.text((x, y), value, font=font(size, font_path), fill=fill, anchor="lt")
+
+    text(32, 25, "正在播放", 19)
+    text(640, 28, "STILLINK", 15)
+    draw.line((32, 62, 736, 62), fill=0, width=2)
+    cover_box = (32, 92, 392, 452)
+    artwork = None
+    if track.cover:
+        try:
+            with Image.open(io.BytesIO(track.cover)) as source:
+                rgba = ImageOps.exif_transpose(source).convert("RGBA")
+                background = Image.new("RGBA", rgba.size, "white"); background.alpha_composite(rgba)
+                artwork = ImageOps.fit(background.convert("RGB"), (360, 360), method=Image.Resampling.LANCZOS)
+        except (OSError, ValueError):
+            pass
+    if artwork is not None:
+        palette = Image.new("P", (1, 1)); palette.putpalette(PALETTE)
+        # Pillow may choose duplicated black entries in the 256-entry palette.
+        indexed = artwork.quantize(palette=palette, dither=Image.Dither.FLOYDSTEINBERG)
+        indexed = indexed.point([i if i < 4 else 0 for i in range(256)])
+        image.paste(indexed, cover_box[:2])
+    else:
+        draw.rectangle(cover_box, fill=2, outline=0, width=2)
+        draw.ellipse((133, 193, 291, 351), fill=0)
+        draw.ellipse((192, 252, 232, 292), fill=1)
+        text(163, 388, "暂无封面", 16)
+    text(424, 99, "NOW PLAYING", 13)
+    y = 139
+    for line in wrap_text(draw, track.title, font(33, font_path), 312, 3):
+        text(424, y, line, 33); y += 46
+    y += 20
+    for line in wrap_text(draw, track.artist or "未知歌手", font(21, font_path), 312, 2):
+        text(424, y, line, 21); y += 32
+    y = max(y + 23, 341)
+    text(424, y, "专辑", 13); y += 25
+    for line in wrap_text(draw, track.album or "未提供专辑信息", font(17, font_path), 312, 2):
+        text(424, y, line, 17); y += 26
+    draw.line((32, 486, 736, 486), fill=0, width=2)
+    text(32, 508, "音乐 · 把喜欢的旋律，放在身边", 15)
+    return image
+
+
+def pack_frame(image):
+    if image.size != (WIDTH, HEIGHT): raise ValueError("Expected 768x552 card")
+    pixels = image.transpose(Image.Transpose.ROTATE_180).tobytes()
+    if any(value > 3 for value in pixels): raise ValueError("Expected four-colour pixels")
+    payload = bytes((pixels[i] << 6) | (pixels[i+1] << 4) | (pixels[i+2] << 2) | pixels[i+3]
+                    for i in range(0, len(pixels), 4))
+    return struct.pack(">2sBBHHIHH", b"\xa5\x5a", 1, 0, WIDTH, HEIGHT, len(payload),
+                       binascii.crc_hqx(payload, 0xffff), 0) + payload
