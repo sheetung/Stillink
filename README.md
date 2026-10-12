@@ -1,24 +1,84 @@
 # Stillink
 
-把喜欢的瞬间，放在身边。
+**把喜欢的瞬间，放在身边。**
 
-Stillink 是基于 ESP32-S3 与华为拆机四色电子墨水屏的网页相框。手机或电脑在浏览器中完成选图、裁剪、风格化与文字排版，再上传到屏幕。图像处理在浏览器本地完成，设备负责接收与刷新；断电后屏幕仍能保留画面。
+基于 ESP32-S3 与四色电子墨水屏的网页相框。打开浏览器，就能把照片、便签、天气和正在听的音乐放到桌面；断电后，画面依然保留。
 
-## 功能
+[快速上手](#快速上手) · [固件构建](#固件构建) · [服务部署](#可选服务部署) · [HTTP API](docs/API.md) · [更新记录](docs/CHANGELOG.md)
 
-- 内置网页与热点，无需 App，支持自动弹出控制页和离线客户端导出。
-- 图片裁剪、四色抖动、留白与文字编辑，支持 A0 / A1 屏幕配置。
-- 扫描 2.4 GHz Wi-Fi，连接并保存配网信息，通过局域网 IP 访问。
-- 天气卡片：位置搜索、设备独立更新，默认早中晚刷新三次。
-- 音乐卡片：Windows UDP 广播、服务器绘图，网页预览并配置设备主动下载，见 [使用说明](docs/music.md)。
-- 上传画面、网页热更新与 OTA 固件升级。
-- 画面与设备设置保存，定时唤醒和空闲休眠。
+## 特色
+
+- **无需 App**：手机、电脑都能操作，支持热点直连与局域网访问。
+- **四色墨水屏**：黑、白、黄、红，支持 A0 / A1 屏幕配置。
+- **浏览器编辑**：裁剪、旋转、调色、留白和文字排版，本地预览后上传。
+- **联网常在线**：连接 Wi-Fi 后空闲轻睡，仍可接收 HTTP 请求；离线支持深睡与按键唤醒。
+- **按需扩展**：天气、音乐共用可选服务，部署并配置后才显示入口。
+- **方便维护**：网页上传固件或控制页，支持 HTTP API 和电池电压校准。
+
+## 功能展示
+
+以下为网页操作截图与示例预览，墨水屏效果以实物为准。
+
+### 拍立得
+
+选图、裁剪和旋转，搭配四色风格、留白与文字，把照片变成桌面卡片。
+
+![拍立得：选图裁剪与四色预览](docs/images/photo.png)
+
+### 便签
+
+写下提醒、待办或喜欢的句子。文字可以拖动、旋转，调整字体、大小、颜色与底色。
+
+![便签：文字排版与预览](docs/images/note.png)
+
+### 天气
+
+选择城市或区县，查看当前天气和未来三天预报。默认每天 08:00、12:00、18:00 自动更新，也可自定义时间或手动刷新。[使用说明](docs/weather.md)
+
+![天气：卡片预览、位置与更新计划](docs/images/weather.png)
+
+### 音乐
+
+Windows 广播播放器的歌曲、歌手、专辑和封面，服务器生成卡片，设备在切歌时自动更新。支持接入系统媒体控件的 QQ 音乐、Spotify 等播放器；缺少封面时显示唱片占位图。[使用说明](docs/music.md)
+
+![音乐：歌曲信息、卡片预览与同步开关](docs/images/music.png)
+
+### 配网与局域网访问
+
+点击 Wi-Fi 名称自动扫描，连接后保存配置并关闭设备热点。接入同一路由器，即可通过设备 IP 操作。
+
+![设备设置：Wi-Fi 配网与局域网地址](docs/images/wifi.png)
+
+### 额外服务支持
+
+天气与音乐只需配置一次共用服务地址。为节省 ESP 的 Flash 和内存，字库与卡片渲染放在服务器，设备直接下载二进制图片。未配置服务时，只显示拍立得和便签。
+
+![设备设置：共用服务地址](docs/images/services.png)
+
+### 屏幕与电源设置
+
+切换 A0 / A1 屏幕，设置离线休眠和定时唤醒，并按实测电压校准电池读数。
+
+![设备设置：电池校准、休眠与屏幕](docs/images/settings.png)
+
+### 网页升级
+
+在设备设置中上传 `.bin` 升级固件，或上传 `.html` 热更新控制页；也可清理残影、恢复内置页面。
+
+![系统维护：固件与控制页升级](docs/images/maintenance.png)
+
+## 快速上手
+
+1. 烧录固件，连接设备热点 `Stillink-XXXX`，打开 `http://192.168.4.1`。
+2. 在「拍立得」选图，或在「便签」编辑文字，预览后点击「上传并刷新屏幕」。
+3. 如需局域网访问，在「设备设置 → Wi-Fi 配网」选择家中的 2.4 GHz 网络并连接。
+4. 如需天气或音乐，部署下方服务，在「设备设置 → 额外服务支持」保存 HTTP 根地址，再打开对应功能。
 
 ## 硬件与接线
 
-默认目标为 **ESP32-S3，4 MB Flash、2 MB PSRAM**，使用原生 USB Serial/JTAG 下载。屏幕可见区为 **768 × 552**，颜色为黑、白、黄、红。不同拆机批次需在设备设置中选择对应的屏幕配置。
+**ESP32-S3 · 4 MB Flash · 768 × 552 四色墨水屏**。固件不依赖 PSRAM，通过原生 USB Serial/JTAG 下载。
 
-| 信号 | ESP32-S3 引脚 |
+| 屏幕信号 | ESP32-S3 |
 | --- | --- |
 | SCK | GPIO4 |
 | MOSI | GPIO6 |
@@ -27,119 +87,71 @@ Stillink 是基于 ESP32-S3 与华为拆机四色电子墨水屏的网页相框�
 | RST | GPIO3 |
 | BUSY | GPIO10 |
 | 唤醒按键 | GPIO5，按下接 GND |
-| 电池采样 | GPIO2 / ADC1_CH1，470kΩ : 100kΩ 分压 |
+| 电池采样 | GPIO2，470kΩ : 100kΩ 分压 |
 
-唤醒按键需单独连接，板载 BOOT（GPIO0）不是此功能按键。电池电压需按实际电路校准。接线定义位于 `main/epd_drv.h`。
+唤醒键需单独连接；电池需经合适的稳压及充电电路供电。在设备设置中选择 A0 / A1，并按万用表读数校准电池电压。
 
-## 编译与 USB 烧录
+## 固件构建
 
-安装并激活 ESP-IDF 6.1 环境后，通过 SSH 获取工程：
+安装并激活 **ESP-IDF 6.1**，通过 SSH 获取 V1.2.0：
 
 ```powershell
-git clone git@github.com:sheetung/Stillink.git
+git clone --branch v1.2.0 git@github.com:sheetung/Stillink.git
 cd Stillink
 idf.py set-target esp32s3
 idf.py build
 idf.py -p COM13 flash monitor
 ```
 
-`COM13` 是当前测试板端口，请按实际设备修改。构建自动从 `page/index.html` 生成内嵌页面，并检查页面与固件版本是否一致。
-
-生成整包及 OTA 镜像：
+将 `COM13` 换成实际串口。生成 USB 整包与 OTA 应用镜像：
 
 ```powershell
-python tools/package_bins.py V1.1.0
-python tools/flash_device.py --port COM13 --bin stillink_V1.1.0_merged.bin
+python tools/package_bins.py V1.2.0
 ```
 
-- `build/stillink.bin` / `stillink_V1.1.0_app.bin`：应用镜像，供 OTA 使用。
-- `stillink_V1.1.0_merged.bin`：含启动程序、分区表和应用，USB 烧录地址为 `0x0`。
-- `flash_kit/`：预编译 V1.0.0 镜像、网页和 Windows 一键刷机脚本。
-
-当前仅支持 ESP32-S3。电池采样使用 GPIO2，唤醒按键使用 GPIO5；固件不依赖 PSRAM。已有本地构建目录时，可继续使用独立的 S3 构建目录：
-
-```powershell
-idf.py -B build/s3 -DIDF_TARGET=esp32s3 -DSDKCONFIG=build/s3/sdkconfig build
-python tools/package_bins.py V1.1.0 --build-dir build/s3
-```
-
-## 热点直连与 Wi-Fi 配网
-
-1. 上电后连接默认开放热点 `Stillink-XXXX`，打开自动弹出的控制页，或访问 `http://192.168.4.1`。
-2. 选择图片、裁剪、调整风格与文字，预览后上传画面。
-3. 在设备设置的「Wi-Fi 配网 · 局域网访问」中点击「Wi-Fi 名称」，自动扫描后选择 2.4 GHz 网络并输入密码，点击「连接并保存」。
-4. 获得 IP 后，页面显示局域网链接。手机或电脑连接同一路由器，即可通过该 IP 使用控制页。
-
-获得局域网 IP 后，设备保留热点约 10 秒供页面显示地址，随后自动关闭热点，仅通过路由器访问。路由器断开或忘记 Wi-Fi 时自动恢复热点。局域网 IP 由路由器分配，可能变化，也可在路由器客户端列表中查看。
-
-成功连接后才保存凭据；重启自动连接，固件 OTA 后仍保留。连接失败可从热点重新配网。「忘记 Wi-Fi」和恢复出厂会清除配网信息。状态接口不返回密码。
-
-连接局域网或正在连接时设备不进入深度休眠。热点关闭后启用自动轻睡与 Wi-Fi 省电，保持连接和 HTTP 服务，网络请求到来时恢复处理；响应延迟受路由器的 DTIM 周期影响。热点或配网模式不启用自动轻睡。断网后会尝试重连；忘记 Wi-Fi 后恢复原休眠策略。深睡期间网页不可访问，可通过 GPIO5 按键或配置的定时唤醒恢复使用。USB 调试连接可能阻止实际轻睡，功耗需在实际供电方式下测量。
-
-直接以 `file://` 打开网页可进行本地编辑与预览；要操作设备，请访问热点 / 局域网控制页，或使用从设备页面导出的离线客户端。
-
-## HTTP API
-
-设备接口可直接由 Python、curl 或自己的网页调用，无需打开内置控制页。热点地址为 `http://192.168.4.1`；配网后使用设备的局域网 IP。接口列表、参数及示例见 [HTTP API 使用说明](docs/API.md)。图片上传使用四色二进制帧，不能直接 POST JPG/PNG。
-
-## 额外服务支持
-
-ESP 的 Flash 和内存有限，中文字体、天气处理和音乐封面绘制会占用较多空间，因此这些功能由独立服务完成。服务器获取数据、加载字库并生成四色二进制图片；ESP 只保存配置、下载图片和刷新屏幕，无需内置字库或图片渲染库。拍立得和便签仍可直接使用。
-
-天气和音乐共用仓库中的 `weather-service`。先按 [部署说明](docs/weather.md) 启动服务，再在「设备设置 → 额外服务支持」保存一次 HTTP 根地址。未配置服务时隐藏天气和音乐入口；保存后显示对应页面，无需分别填写地址。地址在重启及 OTA 后保留，清空并保存会关闭相关功能并隐藏入口。入口显示依据已保存的配置，服务暂时离线时仍保留入口和屏幕画面。
-
-音乐另需运行 Windows UDP 广播工具，向服务发送歌曲信息与原始封面，详见 [音乐使用说明](docs/music.md)。Windows 仅负责广播，服务器负责渲染，ESP 通过 HTTP 请求图片。
-
-## 天气卡片
-
-先按 [天气服务部署说明](docs/weather.md) 在服务器使用 uv 启动服务。配置共用服务后，在「天气」中搜索城市或区县，从结果中选择位置，开启「启用天气卡片」并保存。设备连接 Wi-Fi 且可访问互联网后自行获取天气并刷新屏幕；浏览器可以关闭。默认按所在地时间 08:00、12:00、18:00 更新，时间可调整，保存并启用后立即更新一次，也支持手动刷新。
-
-卡片显示温度、天气、风速、湿度、当天降水概率及未来三天预报。设备仅保存服务地址、位置和计划，不保存字库，重启与 OTA 后保留。关闭天气后停止自动更新；断网或服务请求失败保留原画面，失败后约 5 分钟重试。自动天气会替换屏幕画面，如需保留照片或便签，请先关闭天气。
-
-数据来源为 [Open-Meteo](https://open-meteo.com/)，免费公开接口适用于非商业用途，商业使用需另行取得授权。城市搜索由当前手机或电脑联网完成，天气获取、中文字体和四色图片渲染由服务器完成。ESP32-S3 定时请求二进制图片，校验帧头、长度和 CRC 后直接刷新屏幕；PNG 预览使用相同图片。设备使用 NTP 校时并校验 HTTPS 证书；未完成校时会等待，不跳过证书验证。
-
-## 电池电压校准
-
-电池检测使用 GPIO2：电池正极经 470kΩ 接 GPIO2，GPIO2 经 100kΩ 接地，电池与开发板共地。供电需另接合适的稳压及充电电路，不可把锂电池直接接到 3.3V 引脚。
-
-在设备设置展开「电池电压校准」，等电池读数稳定后，输入万用表测得的实际电压（例如 4.10 V），点击「保存校准」。设备会按当前读数计算校正系数；再次校准会考虑已有系数。未检测到电池或偏差过大时不保存。支持恢复默认，校准在重启与 OTA 后保留，恢复出厂会清除。单点校准仅改善电压显示，不等于精确电量估算。
-
-## 开发与验证
-
-```powershell
-node tools/smoke_page.js
-node tools/test_wifi_page.js
-node tools/test_battery_page.js
-node tools/test_weather_page.js
-python tools/check_frame.py
-idf.py build
-```
-
-页面测试覆盖帧打包、页面结构、Wi-Fi 配网交互和电池校准。联网轻睡的 HTTP 可达性需在实际设备和路由器上验证，功耗需使用电流表测量。
-
-内部 NVS 命名空间与网页版本标记保留 `epaper` 标识，以保持已有设置和页面升级格式兼容。
-
-| 路径 | 内容 |
+| 文件 | 用途 |
 | --- | --- |
-| `main/` | ESP-IDF 固件、屏幕驱动、网络、存储与电源管理 |
-| `page/index.html` | 当前网页源文件 |
-| `tools/` | 页面生成、测试、打包与刷机工具 |
-| `flash_kit/` | Windows 刷机包 |
-| `sdkconfig.defaults` / `partitions.csv` | 默认构建配置与 OTA 分区 |
-| `legacy_ref/` | 历史参考代码与算法材料 |
+| `stillink_V1.2.0_merged.bin` | 首次 USB 烧录，写入地址 `0x0` |
+| `stillink_V1.2.0_app.bin` | 已有相同分区表的 S3 设备，通过网页 OTA 升级 |
+| `page/index.html` | 单独热更新控制页 |
 
-接口与帧格式见 [HTTP API 使用说明](docs/API.md)，版本记录见 [CHANGELOG](docs/CHANGELOG.md)。
+固件 OTA 会重置屏幕与休眠等设备设置；Wi-Fi、天气、音乐和电池校准配置保留。升级后确认屏幕设置。
 
-## 许可说明
+## 可选服务部署
 
-截至 2026-10-10，MoInk 上游提交 `17f2f3b76e1400b685db2b3a108ed1aec2cb17b4` 未提供 LICENSE，README 的许可说明为：
+天气和音乐共用仓库中的 Python 服务，需要 **Python 3.11+、uv 和中文字体**。Linux 示例：
 
-> 私有项目，版权保留。如需开源请先补充 LICENSE 并检查 `legacy_ref/` 中第三方素材的授权情况。
+```bash
+sudo apt install git fonts-noto-cjk
+git clone --branch v1.2.0 git@github.com:sheetung/Stillink.git
+cd Stillink/weather-service
+uv sync --frozen
+uv run --frozen app.py --host 0.0.0.0 --port 8787
+```
 
-Stillink 保留上游的版权与许可限制，当前不声明 MIT、Apache 或其他开源许可。仓库公开不代表已获得开源授权；采用与上游相同的开源协议，需先由上游明确协议或取得授权。
+在「设备设置 → 额外服务支持」填写 `http://服务器IP:8787` 并保存。服务默认使用 HTTP `8787` 和音乐 UDP `8790`；常驻运行与 systemd 配置见 [部署说明](docs/weather.md)。天气数据来自 [Open-Meteo](https://open-meteo.com/)，服务需要能访问互联网。
 
-内嵌 Cropper.js 保留作者 Chen Fengyuan 的 MIT 许可声明；其他第三方代码与 `legacy_ref/` 材料以各自原始授权为准。
+音乐还需在 Windows 运行广播工具：
+
+```powershell
+cd Stillink/music-client
+uv sync --frozen
+uv run --frozen app.py
+```
+
+Windows 与服务器处于同一局域网；广播无法到达时，使用 `--target 服务器IP`。完整参数见 [音乐说明](docs/music.md)。启用音乐会暂停自动天气，关闭音乐后恢复天气计划。
+
+## 文档
+
+- [HTTP API 与二进制帧格式](docs/API.md)
+- [天气服务部署与使用](docs/weather.md)
+- [Windows 音乐广播与专辑卡片](docs/music.md)
+- [版本更新记录](docs/CHANGELOG.md)
+
+## 许可
+
+沿用 MoInk 上游的版权与许可限制；上游尚未提供明确的开源协议。Cropper.js 等第三方代码保留各自的许可声明。
 
 ## 致谢
 
-感谢 [MoInk](https://github.com/atunverse/moink) 提供原始工程、网页编辑器与墨水屏实现，Stillink 在其基础上完成 ESP32-S3 适配与局域网配网扩展。感谢 Cropper.js、InkSight 等相关项目的作者；原有第三方版权及来源说明予以保留。
+感谢 [MoInk](https://github.com/atunverse/moink) 提供原始工程、网页编辑器与墨水屏实现，也感谢 Cropper.js、InkSight 等相关项目的作者。
