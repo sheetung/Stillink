@@ -58,8 +58,8 @@ extern const epd_profile_t EPD_PROFILES[EPD_PANEL_COUNT];
 /*
  * 引脚映射（R 系列：RST 自旧项目 GPIO2 改到 GPIO3）
  *   SCK=4  MOSI=6  CS=7  DC=1  RST=3  BUSY=10
- *   唤醒键 : GPIO5 -> GND（C6 深睡唤醒域 GPIO0..7 内的 GPIO5，另接按键，非板载 BOOT GPIO9；兼做长按恢复出厂）
- *   电池 ADC : GPIO0（ADC1_CH0——ADC2 与 WiFi 共用不可用）
+ *   唤醒键 : GPIO5 -> GND（外接按键，兼做长按恢复出厂）
+ *   电池 ADC : GPIO2（ADC1_CH1）
  */
 #define EPD_PIN_SCK      4
 #define EPD_PIN_MOSI     6
@@ -68,11 +68,7 @@ extern const epd_profile_t EPD_PROFILES[EPD_PANEL_COUNT];
 #define EPD_PIN_RST      3
 #define EPD_PIN_BUSY     10
 #define EPD_PIN_WAKE_BTN 5
-#if CONFIG_IDF_TARGET_ESP32S3
 #define EPD_PIN_BAT_ADC  2  /* S3 ADC1_CH1; GPIO0 is not an ADC pin. */
-#else
-#define EPD_PIN_BAT_ADC  0
-#endif
 
 /* 初始化 SPI 总线 + GPIO。成功返回 0。 */
 int epd_init(void);

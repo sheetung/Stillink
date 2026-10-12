@@ -2,7 +2,7 @@
 
 把喜欢的瞬间，放在身边。
 
-Stillink 是基于 ESP32-C6 与华为拆机四色电子墨水屏的网页相框。手机或电脑在浏览器中完成选图、裁剪、风格化与文字排版，再上传到屏幕。图像处理在浏览器本地完成，设备负责接收与刷新；断电后屏幕仍能保留画面。
+Stillink 是基于 ESP32-S3 与华为拆机四色电子墨水屏的网页相框。手机或电脑在浏览器中完成选图、裁剪、风格化与文字排版，再上传到屏幕。图像处理在浏览器本地完成，设备负责接收与刷新；断电后屏幕仍能保留画面。
 
 ## 功能
 
@@ -14,9 +14,9 @@ Stillink 是基于 ESP32-C6 与华为拆机四色电子墨水屏的网页相框�
 
 ## 硬件与接线
 
-默认目标为 **ESP32-C6FH4，4 MB Flash**，使用原生 USB Serial/JTAG 下载。屏幕可见区为 **768 × 552**，颜色为黑、白、黄、红。不同拆机批次需在设备设置中选择对应的屏幕配置。
+默认目标为 **ESP32-S3，4 MB Flash、2 MB PSRAM**，使用原生 USB Serial/JTAG 下载。屏幕可见区为 **768 × 552**，颜色为黑、白、黄、红。不同拆机批次需在设备设置中选择对应的屏幕配置。
 
-| 信号 | ESP32-C6 引脚 |
+| 信号 | ESP32-S3 引脚 |
 | --- | --- |
 | SCK | GPIO4 |
 | MOSI | GPIO6 |
@@ -25,9 +25,9 @@ Stillink 是基于 ESP32-C6 与华为拆机四色电子墨水屏的网页相框�
 | RST | GPIO3 |
 | BUSY | GPIO10 |
 | 唤醒按键 | GPIO5，按下接 GND |
-| 电池采样 | GPIO0 / ADC1_CH0，470kΩ : 100kΩ 分压 |
+| 电池采样 | GPIO2 / ADC1_CH1，470kΩ : 100kΩ 分压 |
 
-唤醒按键需单独连接，板载 BOOT（GPIO9）不是此功能按键。电池电压需按实际电路校准。接线定义位于 `main/epd_drv.h`。
+唤醒按键需单独连接，板载 BOOT（GPIO0）不是此功能按键。电池电压需按实际电路校准。接线定义位于 `main/epd_drv.h`。
 
 ## 编译与 USB 烧录
 
@@ -36,39 +36,30 @@ Stillink 是基于 ESP32-C6 与华为拆机四色电子墨水屏的网页相框�
 ```powershell
 git clone git@github.com:sheetung/Stillink.git
 cd Stillink
-idf.py set-target esp32c6
+idf.py set-target esp32s3
 idf.py build
-idf.py -p COM11 flash monitor
+idf.py -p COM13 flash monitor
 ```
 
-`COM11` 是当前测试板端口，请按实际设备修改。构建自动从 `page/index.html` 生成内嵌页面，并检查页面与固件版本是否一致。
+`COM13` 是当前测试板端口，请按实际设备修改。构建自动从 `page/index.html` 生成内嵌页面，并检查页面与固件版本是否一致。
 
 生成整包及 OTA 镜像：
 
 ```powershell
-python tools/package_bins.py V0.0.3
-python tools/flash_device.py --port COM11 --bin stillink_V0.0.3_merged.bin
+python tools/package_bins.py V1.0.0
+python tools/flash_device.py --port COM13 --bin stillink_V1.0.0_merged.bin
 ```
 
-- `build/stillink.bin` / `stillink_V0.0.3_app.bin`：应用镜像，供 OTA 使用。
-- `stillink_V0.0.3_merged.bin`：含启动程序、分区表和应用，USB 烧录地址为 `0x0`。
-- `flash_kit/`：预编译 V0.0.3 镜像、网页和 Windows 一键刷机脚本。
+- `build/stillink.bin` / `stillink_V1.0.0_app.bin`：应用镜像，供 OTA 使用。
+- `stillink_V1.0.0_merged.bin`：含启动程序、分区表和应用，USB 烧录地址为 `0x0`。
+- `flash_kit/`：预编译 V1.0.0 镜像、网页和 Windows 一键刷机脚本。
 
-旧版 R1.2.1 的 OTA 校验固定为 ESP32-C3 芯片标识；当前 C6 板首次升级到 V0.0.3 请用 USB。V0.0.3 已按实际构建目标校验镜像。
-
-## ESP32-S3 烧录
-
-支持 ESP32-S3（当前测试板：4 MB Flash、2 MB PSRAM）。屏幕引脚与 C6 相同；电池检测改为 **GPIO2 / ADC1_CH1**，唤醒按键仍接 **GPIO5 → GND**。GPIO0 在 S3 上不是 ADC 引脚。当前固件不依赖 PSRAM。
-
-使用独立构建目录及配置，避免覆盖 C6：
+当前仅支持 ESP32-S3。电池采样使用 GPIO2，唤醒按键使用 GPIO5；固件不依赖 PSRAM。已有本地构建目录时，可继续使用独立的 S3 构建目录：
 
 ```powershell
 idf.py -B build/s3 -DIDF_TARGET=esp32s3 -DSDKCONFIG=build/s3/sdkconfig build
-python tools/package_bins.py V0.0.3_esp32s3 --build-dir build/s3
-python tools/flash_device.py --port COM13 --bin stillink_V0.0.3_esp32s3_merged.bin
+python tools/package_bins.py V1.0.0 --build-dir build/s3
 ```
-
-串口按实际设备修改。S3 预编译镜像位于 `flash_kit/esp32s3/`，与 C6 镜像分开保存；OTA 镜像也必须与芯片型号对应。
 
 ## 热点直连与 Wi-Fi 配网
 
@@ -81,13 +72,17 @@ python tools/flash_device.py --port COM13 --bin stillink_V0.0.3_esp32s3_merged.b
 
 成功连接后才保存凭据；重启自动连接，固件 OTA 后仍保留。连接失败可从热点重新配网。「忘记 Wi-Fi」和恢复出厂会清除配网信息。状态接口不返回密码。
 
-连接局域网或正在连接时设备不自动休眠，断网后会尝试重连；忘记 Wi-Fi 后恢复原休眠策略。深睡期间网页不可访问，可通过 GPIO5 按键或配置的定时唤醒恢复使用。
+连接局域网或正在连接时设备不进入深度休眠。热点关闭后启用自动轻睡与 Wi-Fi 省电，保持连接和 HTTP 服务，网络请求到来时恢复处理；响应延迟受路由器的 DTIM 周期影响。热点或配网模式不启用自动轻睡。断网后会尝试重连；忘记 Wi-Fi 后恢复原休眠策略。深睡期间网页不可访问，可通过 GPIO5 按键或配置的定时唤醒恢复使用。USB 调试连接可能阻止实际轻睡，功耗需在实际供电方式下测量。
 
 直接以 `file://` 打开网页可进行本地编辑与预览；要操作设备，请访问热点 / 局域网控制页，或使用从设备页面导出的离线客户端。
 
+## HTTP API
+
+设备接口可直接由 Python、curl 或自己的网页调用，无需打开内置控制页。热点地址为 `http://192.168.4.1`；配网后使用设备的局域网 IP。接口列表、参数及示例见 [HTTP API 使用说明](docs/API.md)。图片上传使用四色二进制帧，不能直接 POST JPG/PNG。
+
 ## 电池电压校准
 
-电池检测使用 GPIO0：电池正极经 470kΩ 接 GPIO0，GPIO0 经 100kΩ 接地，电池与开发板共地。供电需另接合适的稳压及充电电路，不可把锂电池直接接到 3.3V 引脚。
+电池检测使用 GPIO2：电池正极经 470kΩ 接 GPIO2，GPIO2 经 100kΩ 接地，电池与开发板共地。供电需另接合适的稳压及充电电路，不可把锂电池直接接到 3.3V 引脚。
 
 在设备设置展开「电池电压校准」，等电池读数稳定后，输入万用表测得的实际电压（例如 4.10 V），点击「保存校准」。设备会按当前读数计算校正系数；再次校准会考虑已有系数。未检测到电池或偏差过大时不保存。支持恢复默认，校准在重启与 OTA 后保留，恢复出厂会清除。单点校准仅改善电压显示，不等于精确电量估算。
 
@@ -101,7 +96,7 @@ python tools/check_frame.py
 idf.py build
 ```
 
-页面测试覆盖帧打包、页面结构和配网交互，包括扫描结果、凭据编码、连接状态、局域网链接与忘记网络。V0.0.3 已完成 ESP32-C6 编译和页面测试；此前 R1.2.1 已在 COM11 完成 USB 烧录与启动检查，V0.0.3 配网仍需真机连接路由器验证。
+页面测试覆盖帧打包、页面结构、Wi-Fi 配网交互和电池校准。联网轻睡的 HTTP 可达性需在实际设备和路由器上验证，功耗需使用电流表测量。
 
 内部 NVS 命名空间与网页版本标记保留 `epaper` 标识，以保持已有设置和页面升级格式兼容。
 
@@ -128,4 +123,4 @@ Stillink 保留上游的版权与许可限制，当前不声明 MIT、Apache 或
 
 ## 致谢
 
-感谢 [MoInk](https://github.com/atunverse/moink) 提供原始工程、网页编辑器与墨水屏实现，Stillink 在其基础上完成 ESP32-C6 适配与局域网配网扩展。感谢 Cropper.js、InkSight 等相关项目的作者；原有第三方版权及来源说明予以保留。
+感谢 [MoInk](https://github.com/atunverse/moink) 提供原始工程、网页编辑器与墨水屏实现，Stillink 在其基础上完成 ESP32-S3 适配与局域网配网扩展。感谢 Cropper.js、InkSight 等相关项目的作者；原有第三方版权及来源说明予以保留。

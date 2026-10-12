@@ -54,9 +54,11 @@ void frame_wait(void)
 int frame_display_now(void)
 {
     if (xSemaphoreTake(s_fb_mutex, portMAX_DELAY) != pdTRUE) return -1;
+    power_panel_busy(true);
     int r = epd_display_2bpp_wh(s_fb, s_fw, s_fh);
     xSemaphoreGive(s_fb_mutex);
     if (r == 0) epd_panel_deep_sleep();
+    power_panel_busy(false);
     return r;
 }
 
@@ -65,7 +67,9 @@ int frame_display_now(void)
 int frame_clear_cycles(int cycles)
 {
     if (xSemaphoreTake(s_fb_mutex, portMAX_DELAY) != pdTRUE) return -1;
+    power_panel_busy(true);
     int r = epd_clear_cycles(cycles);
+    power_panel_busy(false);
     xSemaphoreGive(s_fb_mutex);
     if (r == 0) power_activity();
     return r;
@@ -73,6 +77,7 @@ int frame_clear_cycles(int cycles)
 
 esp_err_t frame_upload_handler(httpd_req_t *req)
 {
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     power_activity();   /* R1.0.8：上传期间不许空闲休眠 */
     /* R1.1.0：先按最大合法载荷粗筛（A1 原生 800x600 = 120000），细筛在读头后
        按 hdr 里的宽高做——A1 允许 768x552 与 800x600 两种帧。 */

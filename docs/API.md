@@ -1,0 +1,81 @@
+# Stillink HTTP API
+
+接口与内置网页使用同一套设备服务。热点直连时基础地址为 `http://192.168.4.1`；连接路由器后换成设备的局域网 IP，调用端与设备需在可互通的网络中。接口当前无需 Token，设备深睡或断电时不可访问。
+
+连接路由器后不会因 `sleep_s` 超时进入深睡。热点关闭后，设备在空闲时自动轻睡，保持 Wi-Fi 连接并恢复处理网络请求；不需要先发送额外的唤醒请求。响应延迟取决于路由器的 DTIM 周期。未连接路由器时仍按 `sleep_s` 进入深睡，需按键或定时唤醒。
+
+## 接口列表
+
+| 方法 | 路径 | 请求与响应 |
+| --- | --- | --- |
+| GET | `/api/info` | 版本、屏幕配置、堆内存、电池毫伏值、休眠时间等 JSON |
+| GET | `/api/settings` | 当前设置 JSON |
+| POST | `/api/settings` | URL 编码表单，成功返回 `OK` |
+| POST | `/api/frame` | 四色二进制帧，接收成功返回 `OK`，后台开始刷新 |
+| POST | `/api/clear` | 空请求体，执行两次黑白残影清理，完成返回 `OK` |
+| GET | `/api/wifi/status` | `status`、`ssid`、`ip`、`saved`、`reason` JSON |
+| GET | `/api/wifi/scan` | `networks` 数组，每项含 `ssid`、`rssi`、`secured` |
+| POST | `/api/wifi/connect` | 表单 `ssid`、`password`，接受后返回 HTTP 202 |
+| POST | `/api/wifi/forget` | 清除路由器凭据，恢复热点 |
+| POST | `/api/upload` | 应用固件 BIN 或控制页 HTML，按内容自动识别 |
+| POST | `/api/web/clear` | 清除上传的控制页，恢复内嵌页面 |
+| POST | `/api/factory` | 恢复出厂设置并重启 |
+
+POST 设置和配网使用 `application/x-www-form-urlencoded`，不是 JSON；省略设置字段表示保持原值。跨域调用支持 `GET`、`POST`、`OPTIONS` 和 `Content-Type` 请求头。
+
+## 查询与设置
+
+Windows PowerShell 使用 `curl.exe`：
+
+```powershell
+curl.exe http://192.168.4.1/api/info
+curl.exe http://192.168.4.1/api/settings
+curl.exe -X POST http://192.168.4.1/api/settings --data "sleep_s=180"
+```
+
+常用设置字段：`panel`（0=A0，1=A1）、`hflip`（0/1）、`a1_mode`（1/2，仅 A1）、`sleep_s`（空闲休眠秒数，0=关闭）、`wake_s`（定时唤醒秒数，0=关闭）、`bat_cal_ppm`（电池校准系数，默认 1000000）。热点配置使用 `ssid`、`pass`；路由器配网使用独立的 Wi-Fi 接口。屏幕参数在空闲时修改，刷新中不要切换型号。
+
+JavaScript 示例：
+
+```javascript
+const base = 'http://192.168.4.1'; // 或局域网 IP
+const response = await fetch(`${base}/api/info`);
+if (!response.ok) throw new Error(await response.text());
+console.log(await response.json());
+
+const saved = await fetch(`${base}/api/settings`, {
+  method: 'POST',
+  body: new URLSearchParams({ sleep_s: '180' }),
+});
+if (!saved.ok) throw new Error(await saved.text());
+```
+
+浏览器自身的 HTTPS 混合内容、局域网访问权限限制仍适用；命令行与 Python 客户端不受浏览器跨域规则影响。
+
+## 上传图像
+
+`POST /api/frame` 接收 **16 字节帧头 + 2bpp 载荷**，Content-Type 为 `application/octet-stream`。JPG/PNG 必须先缩放、转换为黑白黄红四色并按协议打包。A0 使用 768×552，载荷 105984 字节；完整格式、CRC16 和图像方向见 [传输与驱动契约](CONTRACT.md)。
+
+已有打包帧文件时：
+
+```powershell
+curl.exe -X POST http://192.168.4.1/api/frame -H "Content-Type: application/octet-stream" --data-binary "@frame.bin"
+```
+
+仓库已提供无需第三方依赖的 Python 示例，会生成并上传黑、白、黄、红四色条带：
+
+```powershell
+python tools/test_frame_post.py 192.168.4.1
+```
+
+这个示例会实际更换屏幕画面。HTTP 200 `OK` 仅表示帧已接收并通过 CRC，不代表物理刷新成功；目前没有查询刷新结果的独立接口。错误包括 HTTP 400（帧格式、尺寸或 CRC 不正确）和 HTTP 500 `busy`（上一轮刷新仍占用缓冲）。等待刷新结束后再传下一帧。
+
+## 路由器配网
+
+```powershell
+curl.exe http://192.168.4.1/api/wifi/scan
+curl.exe -X POST http://192.168.4.1/api/wifi/connect --data-urlencode "ssid=你的WiFi" --data-urlencode "password=你的密码"
+curl.exe http://192.168.4.1/api/wifi/status
+```
+
+`status` 为 `idle`、`connecting`、`connected` 或 `failed`。获得 IP 后，热点约 10 秒后关闭，后续请求换用返回的局域网 IP。扫描期间可能短暂影响热点通信；正在连接时扫描返回 HTTP 409，需要稍后重试。

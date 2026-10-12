@@ -20,7 +20,7 @@ idf_component_register(
     SRCS ${EPAPER_SRCS}
     INCLUDE_DIRS "."
     PRIV_REQUIRES esp_driver_gpio esp_driver_spi nvs_flash esp_wifi esp_netif esp_event
-                  esp_http_server esp_adc esp_hw_support
+                  esp_http_server esp_adc esp_hw_support esp_pm
                   app_update spi_flash esp_partition esp_timer lwip
 )
 

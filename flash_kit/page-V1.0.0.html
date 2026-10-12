@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="epaper-page-version" content="V0.0.3">
+<meta name="epaper-page-version" content="V1.0.0">
 <title>Stillink</title>
 <style>
 /* ===== Cropper.js v1.6.2 | MIT | https://github.com/fengyuanchen/cropperjs ===== */
@@ -421,7 +421,7 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
       <div class="row"><button class="mini" id="connectWifi">连接并保存</button><button class="mini" id="forgetWifi">忘记 Wi-Fi</button></div>
       <p id="wifiStatus" class="hint" role="status" aria-live="polite">正在读取网络状态…</p>
       <p id="lanAddress" class="hint" hidden>局域网地址：<a id="lanLink" target="_blank" rel="noopener"></a></p>
-      <p class="hint">连接路由器后设备保持在线，不自动休眠；忘记 Wi-Fi 后恢复原来的休眠设置。重启后会自动连接已保存的网络。</p>
+      <p class="hint">连接路由器后设备保持在线，不进入深度休眠；空闲时自动轻睡，收到网络请求后恢复处理。忘记 Wi-Fi 后恢复原来的休眠设置。重启后会自动连接已保存的网络。</p>
     </details>
 
     <details>

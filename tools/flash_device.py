@@ -3,7 +3,7 @@
 """
 flash_device.py —— 命令行刷机（整包 merged.bin @ 0x0）。
 
-本板走 C6 芯片自带 USB-Serial/JTAG（VID 0x303a / PID 0x1001）。浏览器网页烧录器
+本板走 S3 芯片自带 USB-Serial/JTAG（VID 0x303a / PID 0x1001）。浏览器网页烧录器
 （esptool.js / WebSerial）在这个板上会卡死在 `Stub running...`（一个字节都写不进，
 芯片停在 stub，表现为不出热点 + 按键无反应），所以必须走本脚本。
 
@@ -26,7 +26,7 @@ import subprocess
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 
-# 真实 USB 设备的 VID 优先级（C6 原生 USB 最优先）
+# 真实 USB 设备的 VID 优先级（S3 原生 USB 最优先）
 VID_PRIORITY = {0x303A: 0, 0x1A86: 1, 0x10C4: 2, 0x0403: 3}
 
 
@@ -90,7 +90,7 @@ def main():
         print("hint   : if it hangs at 'Stub running...', unplug/replug USB and retry with --no-stub")
 
     cmd = [sys.executable, "-m", "esptool",
-           "--chip", "auto",
+           "--chip", "esp32s3",
            "--port", port,
            "--baud", str(args.baud)]
     if args.no_stub:

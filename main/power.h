@@ -17,6 +17,12 @@
 /* 配置唤醒键输入 + 电池 ADC。 */
 void power_init(void);
 
+/* Automatic light sleep is allowed only after switching to LAN-only mode. */
+void power_set_lan_light_sleep(bool enabled);
+
+/* Keep GPIO outputs active throughout a panel update, including BUSY waits. */
+void power_panel_busy(bool busy);
+
 /* 重置空闲计时（任何上传 / 请求都调用）。 */
 void power_activity(void);
 

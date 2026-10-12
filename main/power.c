@@ -4,11 +4,10 @@
 #include "wifi_lan.h"
 
 #include "driver/gpio.h"
-#if CONFIG_IDF_TARGET_ESP32S3
 #include "driver/rtc_io.h"
-#endif
 #include "esp_adc/adc_oneshot.h"
 #include "esp_sleep.h"
+#include "esp_pm.h"
 #include "esp_wifi.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
@@ -31,9 +30,34 @@ static adc_oneshot_unit_handle_t s_adc;
 static adc_channel_t s_bat_channel;
 static TickType_t s_last_activity;
 static bool s_auto_wake = false;
+static bool s_lan_light_sleep = false;
+static esp_pm_lock_handle_t s_panel_lock;
+
+void power_panel_busy(bool busy)
+{
+    ESP_ERROR_CHECK(busy ? esp_pm_lock_acquire(s_panel_lock) :
+                          esp_pm_lock_release(s_panel_lock));
+}
+
+void power_set_lan_light_sleep(bool enabled)
+{
+    esp_pm_config_t config = {
+        .max_freq_mhz = CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ,
+        .min_freq_mhz = CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ,
+        .light_sleep_enable = enabled,
+    };
+    ESP_ERROR_CHECK(esp_pm_configure(&config));
+    if (enabled != s_lan_light_sleep) {
+        s_lan_light_sleep = enabled;
+        ESP_LOGI(TAG, "LAN automatic light sleep %s", enabled ? "enabled" : "disabled");
+    }
+}
 
 void power_init(void)
 {
+    /* Keep AP/provisioning awake; the LAN worker enables automatic sleep in STA mode. */
+    power_set_lan_light_sleep(false);
+    ESP_ERROR_CHECK(esp_pm_lock_create(ESP_PM_NO_LIGHT_SLEEP, 0, "panel", &s_panel_lock));
     gpio_config_t btn = {
         .pin_bit_mask = 1ULL << EPD_PIN_WAKE_BTN,
         .mode = GPIO_MODE_INPUT,
@@ -100,15 +124,10 @@ void power_enter_deep_sleep(void)
     gpio_pullup_en((gpio_num_t)EPD_PIN_WAKE_BTN);
     gpio_pulldown_dis((gpio_num_t)EPD_PIN_WAKE_BTN);
     gpio_set_direction((gpio_num_t)EPD_PIN_WAKE_BTN, GPIO_MODE_INPUT);
-#if CONFIG_IDF_TARGET_ESP32S3
     ESP_ERROR_CHECK(rtc_gpio_pullup_en((gpio_num_t)EPD_PIN_WAKE_BTN));
     ESP_ERROR_CHECK(rtc_gpio_pulldown_dis((gpio_num_t)EPD_PIN_WAKE_BTN));
     ESP_ERROR_CHECK(esp_sleep_enable_ext1_wakeup_io(
         1ULL << EPD_PIN_WAKE_BTN, ESP_EXT1_WAKEUP_ANY_LOW));
-#else
-    ESP_ERROR_CHECK(esp_sleep_enable_gpio_wakeup_on_hp_periph_powerdown(
-        1ULL << EPD_PIN_WAKE_BTN, ESP_GPIO_WAKEUP_GPIO_LOW));
-#endif
 
     uint32_t wake_s = settings_get()->wake_s;
     if (wake_s > 0) {

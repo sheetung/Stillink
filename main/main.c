@@ -145,6 +145,7 @@ static esp_err_t page_handler(httpd_req_t *req)
 
 static esp_err_t info_handler(httpd_req_t *req)
 {
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     power_activity();
     const epaper_settings_t *s = settings_get();
     char buf[512];
@@ -174,6 +175,7 @@ static esp_err_t info_handler(httpd_req_t *req)
 
 static esp_err_t settings_get_handler(httpd_req_t *req)
 {
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     power_activity();
     const epaper_settings_t *s = settings_get();
     char buf[384];
@@ -204,6 +206,7 @@ static void ap_apply_timer_cb(void *arg)
 
 static esp_err_t settings_post_handler(httpd_req_t *req)
 {
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     power_activity();
     char body[512];
     read_body(req, body, sizeof(body));
@@ -285,6 +288,7 @@ static esp_err_t settings_post_handler(httpd_req_t *req)
 
 static esp_err_t clear_handler(httpd_req_t *req)
 {
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     power_activity();
     int cycles = 2;
     char v[16];
@@ -301,6 +305,7 @@ static esp_err_t clear_handler(httpd_req_t *req)
 
 static esp_err_t factory_handler(httpd_req_t *req)
 {
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     settings_factory_reset();
     httpd_resp_set_type(req, "text/plain");
     httpd_resp_sendstr(req, "OK");

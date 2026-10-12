@@ -38,12 +38,17 @@ static int s_reason;
 static void set_hotspot_enabled(bool enabled)
 {
     xSemaphoreTake(s_radio, portMAX_DELAY);
+    if (enabled) power_set_lan_light_sleep(false);
     wifi_mode_t mode;
     wifi_mode_t wanted = enabled ? WIFI_MODE_APSTA : WIFI_MODE_STA;
     if (esp_wifi_get_mode(&mode) == ESP_OK && mode != wanted) {
         esp_err_t err = esp_wifi_set_mode(wanted);
         if (err == ESP_OK) {
             if (enabled) netif_ap_apply();
+            if (!enabled) {
+                ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_MIN_MODEM));
+                power_set_lan_light_sleep(true);
+            }
             ESP_LOGI(TAG, "hotspot %s", enabled ? "restored" : "disabled; LAN only");
         } else {
             ESP_LOGE(TAG, "change Wi-Fi mode failed: %s", esp_err_to_name(err));
@@ -283,6 +288,7 @@ static esp_err_t status_handler(httpd_req_t *req)
 
 static esp_err_t scan_handler(httpd_req_t *req)
 {
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     power_activity();
     if ((xEventGroupGetBits(s_events) & CONNECTING) || xSemaphoreTake(s_radio, 0) != pdTRUE) {
         httpd_resp_set_status(req, "409 Conflict");
@@ -321,7 +327,6 @@ static esp_err_t scan_handler(httpd_req_t *req)
     free(records);
     httpd_resp_set_type(req, "application/json");
     httpd_resp_set_hdr(req, "Cache-Control", "no-store");
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     err = httpd_resp_sendstr(req, response);
     free(response);
     return err;

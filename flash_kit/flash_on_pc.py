@@ -3,7 +3,7 @@
 """
 flash_on_pc.py —— 异地一键刷机助手（供 Stillink一键刷机.bat 调用，也可命令行单独运行）。
 
-本板是 ESP32-C6 原生 USB-Serial/JTAG（VID 0x303a / PID 0x1001）。
+本板是 ESP32-S3 原生 USB-Serial/JTAG（VID 0x303a / PID 0x1001）。
 不要用浏览器网页烧录器（WebSerial）——会卡死在 "Stub running..."，一个字节都写不进。
 
 用法：
@@ -19,7 +19,7 @@ import os
 import subprocess
 import sys
 
-# 真实 USB 设备 VID 优先级（C6 原生 USB-JTAG 最优先；无 VID 的蓝牙虚拟口会被跳过）
+# 真实 USB 设备 VID 优先级（S3 原生 USB-JTAG 最优先；无 VID 的蓝牙虚拟口会被跳过）
 VID_PRIORITY = {0x303A: 0, 0x1A86: 1, 0x10C4: 2, 0x0403: 3}
 
 
@@ -78,7 +78,7 @@ def main():
     print()
 
     cmd = [sys.executable, "-m", "esptool",
-           "--chip", "esp32c6",
+           "--chip", "esp32s3",
            "--port", port,
            "--baud", str(a.baud)]
     if a.no_stub:
@@ -91,12 +91,12 @@ def main():
         print()
         print("[OK] 刷机完成！设备即将重启。")
         print("     手机 Wi-Fi 连接热点 Stillink-XXXX（默认开放），自动弹出控制页；")
-        print("     或浏览器打开 http://192.168.4.1 。固件版本应显示 R1.2.1。")
+        print("     或浏览器打开 http://192.168.4.1 。固件版本应显示 V1.0.0。")
     else:
         print()
         print("[失败] esptool 退出码 %d。" % r.returncode)
         if not a.no_stub:
-            print("若日志卡在 'Stub running...'（C3 USB-JTAG 已知问题），请：")
+            print("若日志卡在 'Stub running...'，请：")
             print("  1. 拔插一次 USB 线")
             print("  2. 再运行: python %s --no-stub" % os.path.basename(__file__))
         print("其他排查：换一根能传数据的 USB 线；设备管理器里确认出现串口。")
