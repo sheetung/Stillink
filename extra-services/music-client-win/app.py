@@ -1,4 +1,4 @@
-"""Read Windows GSMTC sessions and upload only when the playing track changes."""
+"""Read Windows GSMTC sessions and broadcast metadata and original artwork."""
 import argparse
 import asyncio
 import json
@@ -9,6 +9,7 @@ import sys
 import time
 
 from protocol import packets
+from runtime import BackgroundInstance, load_config, setup_background_log
 
 @dataclass
 class Track:
@@ -98,7 +99,7 @@ async def run(args):
     last_key=None;cached=None;last_body=None;last_sent=float("-inf")
     print(f"Windows 音乐广播已启动：UDP {args.target}:{args.port}。Ctrl+C 退出。",flush=True)
     try:
-        while True:
+        while not args.instance or not args.instance.stopping():
             try:
                 track=await media.read(args.player,with_cover=False)
                 if track:
@@ -124,16 +125,28 @@ async def run(args):
 
 
 def main():
+    setup_background_log()
     parser=argparse.ArgumentParser(description="Windows 音乐信息和封面 UDP 广播")
-    parser.add_argument("--target",default="255.255.255.255",help="广播地址，或接收服务器的 IP")
-    parser.add_argument("--port",type=int,default=8790,help="服务器 UDP 接收端口，默认 8790")
-    parser.add_argument("--player",default="",help="播放器 ID 包含的文字")
     parser.add_argument("--inspect",action="store_true",help="只显示当前系统媒体信息，不发送广播")
     parser.add_argument("--once",action="store_true",help="只广播一次后退出")
+    parser.add_argument("--stop",action="store_true",help="停止后台广播")
     args=parser.parse_args()
-    try:asyncio.run(run(args))
+    instance=None
+    try:
+        if sys.platform != "win32": raise RuntimeError("音乐读取功能需要 Windows 10 / 11")
+        if args.stop:
+            instance=BackgroundInstance();instance.stop();return 0
+        for key,value in load_config().items():setattr(args,key,value)
+        args.instance=None
+        if not args.inspect and not args.once:
+            instance=BackgroundInstance()
+            if not instance.acquire():return 0
+            args.instance=instance
+        asyncio.run(run(args))
     except KeyboardInterrupt:pass
     except Exception as exc:print(f"错误：{exc}",file=sys.stderr);return 1
+    finally:
+        if instance:instance.close()
     return 0
 
 

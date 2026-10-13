@@ -20,34 +20,39 @@
 
 ## Windows 广播工具
 
-需要 Windows 10 / 11、[uv](https://docs.astral.sh/uv/) 以及接入系统媒体控件的播放器。通过 SSH 下载仓库（已有仓库执行 `git pull --ff-only`）：
+需要 Windows 10 / 11 以及接入系统媒体控件的播放器。
+
+1. 解压 Windows 工具包，双击 **StillinkMusic.exe**。
+2. 工具在后台运行，不弹出命令行窗口，也无需填写服务器地址。重复双击不会产生多个实例。
+3. 开始播放音乐，服务器即可收到歌曲和封面。
+4. 双击 **停止音乐广播.vbs** 停止工具。
+
+电脑与服务器须处于同一局域网。默认广播到 `255.255.255.255:8790`，切歌或播放状态变化时广播，每 10 秒重复一次作为心跳。原始封面和歌曲信息组成 JSON，按 1200 字节分片，附带 SHA256；接收端重组、校验并合并重复广播。
+
+### 从源码构建工具包
+
+安装 [uv](https://docs.astral.sh/uv/) 后，通过 SSH 下载仓库（已有仓库执行 `git pull --ff-only`）：
 
 ```powershell
 git clone git@github.com:sheetung/Stillink.git
 cd Stillink/extra-services/music-client-win
-uv sync --frozen
-uv run --frozen app.py
+.\build.ps1
 ```
 
-默认广播到 `255.255.255.255:8790`，切歌或播放状态变化时广播，每 10 秒重复一次作为心跳。按 `Ctrl+C` 停止。原始封面和歌曲信息组成 JSON，按 1200 字节分片，附带 SHA256；接收端重组、校验并合并重复广播。
-
-可选参数：
+生成 `dist/StillinkMusic-win.zip`，其中 EXE 可独立运行，不需要用户安装 Python 或 uv。源码调试：
 
 ```powershell
-# 只读查看当前 Windows 媒体会话，不广播
+uv run --frozen app.py
+
+# 查看系统媒体会话，不广播
 uv run --frozen app.py --inspect
-
-# 指定接收服务器；仍使用 UDP，不上传 ESP
-uv run --frozen app.py --target 192.168.31.12
-
-# 指定播放器（匹配 --inspect 返回的 player ID）
-uv run --frozen app.py --player Spotify
-
-# 自定义 UDP 端口，需与服务器一致
-uv run --frozen app.py --port 8790
 ```
 
 播放器提供哪些信息就显示哪些；缺少封面时显示占位图。未接入系统媒体控件的播放器无法读取。
+
+### 排查连接
+
+工具日志位于 `%LOCALAPPDATA%\Stillink\music-client-win\client.log`。默认不需要配置；确需指定接收地址或端口时，将工具旁的 `config.example.yml` 复制为 `config.yml`，修改 `target`、`port`（与服务器一致）或 `player`（播放器 ID 中包含的文字），再停止并重新启动。配置只从工具所在目录读取。
 
 ## 网页与 ESP
 

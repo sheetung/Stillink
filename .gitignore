@@ -51,6 +51,9 @@ docs/ref/
 __pycache__/
 *.pyc
 .venv/
+extra-services/music-client-win/dist/
+extra-services/music-client-win/*.spec
+extra-services/music-client-win/config.yml
 
 # ---- 编辑器 ----
 .vscode/

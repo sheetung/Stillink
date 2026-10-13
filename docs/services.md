@@ -80,20 +80,9 @@ HTTP 与 UDP 端口、设备地址和接口保持一致，设备无需重新配�
 
 仅使用音乐时，需要额外运行 Windows 10 / 11 工具。它读取接入系统媒体控件的播放器，广播歌曲信息和原始封面；服务器接收并绘图。
 
-```powershell
-git clone git@github.com:sheetung/Stillink.git
-cd Stillink/extra-services/music-client-win
-uv sync --frozen
-uv run --frozen app.py
-```
+解压 Windows 工具包，双击 **StillinkMusic.exe** 后即在后台运行，无需填写配置。电脑与服务器连接同一局域网，默认通过 UDP `8790` 广播。双击「停止音乐广播.vbs」停止。
 
-已有仓库可直接进入该目录。默认向局域网 `255.255.255.255:8790` 广播；跨子网或广播无法到达时，指定接收服务器：
-
-```powershell
-uv run --frozen app.py --target 服务器IP
-```
-
-按 `Ctrl+C` 停止。其他参数、播放器支持和卡片使用见 [音乐说明](music.md)。
+工具构建、播放器支持和卡片使用见 [音乐说明](music.md)。
 
 ## 接口与验证
 

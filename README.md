@@ -133,15 +133,7 @@ uv run --frozen app.py --host 0.0.0.0 --port 8787
 
 在「设备设置 → 额外服务支持」填写 `http://服务器IP:8787` 并保存。服务默认使用 HTTP `8787` 和音乐 UDP `8790`；常驻运行与 systemd 配置见 [总部署说明](docs/services.md)。天气数据来自 [Open-Meteo](https://open-meteo.com/)，服务需要能访问互联网。
 
-音乐还需在 Windows 运行广播工具：
-
-```powershell
-cd Stillink/extra-services/music-client-win
-uv sync --frozen
-uv run --frozen app.py
-```
-
-Windows 与服务器处于同一局域网；广播无法到达时，使用 `--target 服务器IP`。完整参数见 [音乐说明](docs/music.md)。启用音乐会暂停自动天气，关闭音乐后恢复天气计划。
+音乐还需在 Windows 解压工具包并双击 **StillinkMusic.exe**，即可在后台广播当前歌曲，无需安装 Python 或填写地址。双击「停止音乐广播.vbs」可停止。Windows 与服务器需处于同一局域网；工具使用与构建见 [音乐说明](docs/music.md)。启用音乐会暂停自动天气，关闭音乐后恢复天气计划。
 
 ## 文档
 
