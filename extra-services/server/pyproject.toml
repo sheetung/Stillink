@@ -7,3 +7,9 @@ dependencies = ["pillow>=11.3,<13"]
 
 [tool.uv]
 package = false
+
+[project.optional-dependencies]
+windows = ["pystray>=0.19.5; sys_platform == 'win32'"]
+
+[dependency-groups]
+dev = ["pyinstaller>=6.22.3; sys_platform == 'win32'"]

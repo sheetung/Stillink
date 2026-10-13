@@ -138,6 +138,8 @@ python tools/package_bins.py
 
 ## 可选服务部署
 
+Windows 用户可下载 [免安装服务 ZIP](https://github.com/sheetung/Stillink/releases/latest/download/StillinkServices-win.zip)，完整解压后双击 **StillinkServices.exe**。窗口显示可复制的局域网地址，关闭后留在托盘运行；无需安装 Python，天气与相簿可直接使用，音乐另需运行下方的广播工具。照片保存在 `data` 文件夹，更新时请保留。推荐服务器／树莓派常驻部署，详见 [总部署说明](docs/services.md)。
+
 天气、音乐和相簿共用 `extra-services/server` 中的 Python 服务，需要 **Python 3.11+、uv 和中文字体**。Linux 示例：
 
 ```bash

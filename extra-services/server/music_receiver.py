@@ -27,6 +27,8 @@ class Receiver:
         self.card_key = None
         self.data = dict(playing=False, version="", title="", artist="", album="")
         self.png = b""; self.frame = b""
+        self.sock = None
+        self.stopping = threading.Event()
 
     def feed(self, packet, source):
         if len(packet) < HEADER.size: return
@@ -92,11 +94,27 @@ class Receiver:
     def start(self, host="0.0.0.0", port=8790):
         sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
         sock.bind((host,port))
+        sock.settimeout(0.5)
+        self.sock = sock
+        self.stopping.clear()
         self.listening = True
         def listen():
-            while True:
-                packet, address = sock.recvfrom(2048)
+            while not self.stopping.is_set():
+                try:
+                    packet, address = sock.recvfrom(2048)
+                except socket.timeout:
+                    continue
+                except OSError:
+                    if self.stopping.is_set(): break
+                    raise
                 try: self.feed(packet,address[0])
                 except Exception as exc: print(f"music broadcast error: {exc}",flush=True)
         threading.Thread(target=listen,daemon=True).start()
         return sock
+
+    def stop(self):
+        self.stopping.set()
+        self.listening = False
+        if self.sock:
+            self.sock.close()
+            self.sock = None

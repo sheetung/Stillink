@@ -63,3 +63,8 @@ jobs:
     uses: ./.github/workflows/music-client-win.yml
     with:
       release_tag: ${{ github.ref_name }}
+  services:
+    needs: publish
+    uses: ./.github/workflows/services-win.yml
+    with:
+      release_tag: ${{ github.ref_name }}

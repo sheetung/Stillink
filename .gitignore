@@ -54,6 +54,8 @@ extra-services/music-client-win/config.yml
 extra-services/web-flasher/node_modules/
 extra-services/web-flasher/public/
 extra-services/server/data/
+extra-services/server/dist/
+extra-services/server/*.spec
 
 # ---- 编辑器 ----
 .vscode/

@@ -142,7 +142,7 @@ Windows UDP 广播和服务器部署见 [音乐功能说明](music.md)。
 
 设备连接可访问 GitHub 的 Wi-Fi 后使用。设备自动选择最新稳定版中与自身芯片匹配的 `-ota.bin`，HTTPS 下载并通过 ESP-IDF 镜像与芯片校验后切换 OTA 槽重启。
 
-- `GET /api/ota/online`：当前版本、芯片、联网状态、最新版本、升级状态、字节进度和错误。
+- `GET /api/ota/online`：当前版本、芯片、联网状态、最新版本、升级状态、字节进度和错误；`release_notes` 返回该版本的 GitHub Release 更新说明。
 - `POST /api/ota/online/check`：异步检查最新稳定版，返回 202。
 - `POST /api/ota/online/install`：下载已检查到的新版本并升级，返回 202；未联网、正在升级或没有新版本时返回 409。
 

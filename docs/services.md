@@ -14,6 +14,16 @@ extra-services/
 
 ## 服务器部署
 
+### Windows 免安装 ZIP
+
+从 [Release 下载 StillinkServices-win.zip](https://github.com/sheetung/Stillink/releases/latest/download/StillinkServices-win.zip)，完整解压并双击 `StillinkServices.exe`，无需 Python、uv 或额外字库。启动窗口显示局域网服务地址，点击「复制地址」，填入设备的「额外服务支持」并保存。
+
+关闭窗口后留在托盘运行，右键可显示地址或退出。首次运行允许 Windows 防火墙的专用网络访问；照片保存在程序旁的 `data` 文件夹，升级时保留它与照片数据库。音乐仍需运行独立的 `StillinkMusic.exe` 广播工具。详细步骤见 [Windows 使用说明](../extra-services/server/WINDOWS.md)。
+
+推荐服务器／树莓派常驻部署；Windows 电脑休眠或关机后服务暂停，设备保留当前画面。服务仅供局域网使用。
+
+### Linux / 树莓派（推荐）
+
 需要 Python 3.11+、[uv](https://docs.astral.sh/uv/)、Git 和中文字体。以下为 Debian / Ubuntu 示例，Git 下载使用 SSH，需已配置 GitHub SSH 公钥。
 
 ```bash
