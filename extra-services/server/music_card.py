@@ -59,17 +59,14 @@ def render_card(track, font_path=""):
     def text(x, y, value, size=18, fill=0):
         draw.text((x, y), value, font=font(size, font_path), fill=fill, anchor="lt")
 
-    text(32, 25, "正在播放", 19)
-    text(640, 28, "STILLINK", 15)
-    draw.line((32, 62, 736, 62), fill=0, width=2)
-    cover_box = (32, 92, 392, 452)
+    cover_box = (20, 20, 532, 532)
     artwork = None
     if track.cover:
         try:
             with Image.open(io.BytesIO(track.cover)) as source:
                 rgba = ImageOps.exif_transpose(source).convert("RGBA")
                 background = Image.new("RGBA", rgba.size, "white"); background.alpha_composite(rgba)
-                artwork = ImageOps.fit(background.convert("RGB"), (360, 360), method=Image.Resampling.LANCZOS)
+                artwork = ImageOps.fit(background.convert("RGB"), (512, 512), method=Image.Resampling.LANCZOS)
         except (OSError, ValueError):
             pass
     if artwork is not None:
@@ -80,22 +77,18 @@ def render_card(track, font_path=""):
         image.paste(indexed, cover_box[:2])
     else:
         draw.rectangle(cover_box, fill=2, outline=0, width=2)
-        draw.ellipse((133, 193, 291, 351), fill=0)
-        draw.ellipse((192, 252, 232, 292), fill=1)
-        text(163, 388, "暂无封面", 16)
-    text(424, 99, "NOW PLAYING", 13)
-    y = 139
-    for line in wrap_text(draw, track.title, font(33, font_path), 312, 3):
-        text(424, y, line, 33); y += 46
-    y += 20
-    for line in wrap_text(draw, track.artist or "未知歌手", font(21, font_path), 312, 2):
-        text(424, y, line, 21); y += 32
-    y = max(y + 23, 341)
-    text(424, y, "专辑", 13); y += 25
-    for line in wrap_text(draw, track.album or "未提供专辑信息", font(17, font_path), 312, 2):
-        text(424, y, line, 17); y += 26
-    draw.line((32, 486, 736, 486), fill=0, width=2)
-    text(32, 508, "音乐 · 把喜欢的旋律，放在身边", 15)
+        draw.ellipse((132, 132, 420, 420), fill=0)
+        draw.ellipse((247, 247, 305, 305), fill=1)
+        text(224, 455, "暂无封面", 18)
+    text(560, 30, "NOW PLAYING", 12)
+    y = 80
+    for line in wrap_text(draw, track.title, font(30, font_path), 188, 5):
+        text(560, y, line, 30); y += 40
+    y += 28
+    for line in wrap_text(draw, track.artist or "未知歌手", font(19, font_path), 188, 4):
+        text(560, y, line, 19); y += 29
+    draw.line((560, 493, 748, 493), fill=0, width=1)
+    text(560, 512, "STILLINK", 12)
     return image
 
 

@@ -36,6 +36,20 @@ class WeatherTests(unittest.TestCase):
         self.assertEqual(frame[-1] & 3, 3)
         self.assertEqual(frame[16] >> 6, 2)
 
+    def test_health_does_not_fetch_weather(self):
+        server = app.ThreadingHTTPServer(("127.0.0.1",0),app.Handler)
+        thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
+        try:
+            with patch.object(weather,"fetch_weather") as fetch:
+                with urlopen(f"http://127.0.0.1:{server.server_port}/health") as response:
+                    data=json.load(response)
+                self.assertEqual(data["status"],"ok")
+                self.assertTrue(data["services"]["weather"]["available"])
+                self.assertFalse(data["services"]["music"]["available"])
+                fetch.assert_not_called()
+        finally:
+            server.shutdown();server.server_close();thread.join()
+
     def test_http_and_png_binary_equivalence(self):
         server = app.ThreadingHTTPServer(("127.0.0.1", 0), app.Handler)
         thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()

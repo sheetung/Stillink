@@ -37,6 +37,7 @@
 #include "esp_sleep.h"
 #include "nvs_flash.h"
 #include "esp_http_server.h"
+#include "mdns.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
@@ -501,6 +502,15 @@ void app_main(void)
 
     frame_init();
     netif_ap_init();
+    err = mdns_init();
+    if (err == ESP_OK) {
+        mdns_hostname_set("stillink");
+        mdns_instance_name_set("Stillink");
+        mdns_service_add(NULL, "_http", "_tcp", 80, NULL, 0);
+        ESP_LOGI(TAG, "mDNS ready: http://stillink.local/");
+    } else {
+        ESP_LOGW(TAG, "mDNS unavailable: %s", esp_err_to_name(err));
+    }
     captive_dns_start();
     weather_init();
     music_init();

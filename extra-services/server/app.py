@@ -1,5 +1,6 @@
 """Stillink extra services: HTTP card endpoints and UDP music receiver."""
 import argparse
+import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlsplit
 
@@ -27,7 +28,7 @@ class Handler(BaseHTTPRequestHandler):
             status, body, kind = MUSIC.response(url.path, parse_qs(url.query).get("v", [""])[0])
             return self.send(status, body, kind)
         if url.path == "/health":
-            return self.send(200, b'{"status":"ok"}', "application/json")
+            return self.send(200, json.dumps({"status":"ok", "services":{"weather":{"available":True}, "music":{"available":MUSIC.listening}}}).encode(), "application/json")
         weather.handle(self, url)
 
 
@@ -39,7 +40,7 @@ if __name__ == "__main__":
     parser.add_argument("--music-port", type=int, default=8790, help="UDP music broadcast receiver port")
     args = parser.parse_args()
     weather.FONT_PATH = args.font
-    weather.find_font()
+    MUSIC.font_path = weather.find_font()
     MUSIC.start(port=args.music_port)
     print(f"Stillink services listening on {args.host}:{args.port}", flush=True)
     ThreadingHTTPServer((args.host, args.port), Handler).serve_forever()

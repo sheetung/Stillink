@@ -456,7 +456,7 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
       <div class="row"><label>Wi-Fi 密码</label><input type="password" id="staPass" maxlength="64" autocomplete="new-password" placeholder="开放网络留空"></div>
       <div class="row"><button class="mini" id="connectWifi">连接并保存</button><button class="mini" id="forgetWifi">忘记 Wi-Fi</button></div>
       <p id="wifiStatus" class="hint" role="status" aria-live="polite">正在读取网络状态…</p>
-      <p id="lanAddress" class="hint" hidden>局域网地址：<a id="lanLink" target="_blank" rel="noopener"></a></p>
+      <p id="lanAddress" class="hint" hidden>局域网地址：<a id="lanLink" target="_blank" rel="noopener"></a><br>固定访问：<a href="http://stillink.local/" target="_blank" rel="noopener">stillink.local</a></p>
       <p class="hint">连接路由器后设备保持在线，不进入深度休眠；空闲时自动轻睡，收到网络请求后恢复处理。忘记 Wi-Fi 后恢复原来的休眠设置。重启后会自动连接已保存的网络。</p>
     </details>
 
@@ -464,8 +464,9 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
       <summary>额外服务支持</summary>
       <p class="hint">天气和音乐共用一个服务。服务器生成图片和文字，设备只下载图片，无需保存字库。</p>
       <div class="row"><label for="supportService">服务地址</label><input id="supportService" type="text" placeholder="http://服务器地址:8787" style="flex:1;min-width:0"></div>
-      <div class="row"><button class="mini" id="saveSupportService">保存服务地址</button><a href="https://github.com/sheetung/Stillink/blob/main/docs/services.md" target="_blank" rel="noopener">部署说明</a></div>
+      <div class="row"><button class="mini" id="checkSupportService">测试连接</button><button class="mini" id="saveSupportService">保存服务地址</button><a href="https://github.com/sheetung/Stillink/blob/main/docs/services.md" target="_blank" rel="noopener">部署说明</a></div>
       <p class="hint">填写服务器的 HTTP 根地址。保存一次后，天气和音乐页面无需重复填写；重启和固件升级后保留。清空地址并保存会关闭天气与音乐，隐藏对应入口。</p>
+      <p class="hint" role="status"><span id="supportWeatherStatus">天气：未检测</span> · <span id="supportMusicStatus">音乐：未检测</span></p>
       <span class="savestate" id="supportServiceMessage"></span>
     </details>
 
@@ -2578,21 +2579,44 @@ loadSettings();
 var supportServiceURL="";
 function showServiceModes(){["modeWeather","modeMusic"].forEach(function(id){$(id).hidden=!supportServiceURL;});if(!supportServiceURL)document.querySelector("#modes button[data-m]").click();}
 (function(){
-  var dirty=false;
+  var dirty=false,checking=false;
   function request(path,options){return fetch(api(path),options).then(function(r){if(!r.ok)throw new Error("设备请求失败（"+r.status+"）");return r.json();});}
   function read(){return Promise.all([request("/api/weather"),request("/api/music")]);}
-  read().then(function(states){supportServiceURL=states[0].service_url||states[1].service_url||"";if(!dirty)$("supportService").value=supportServiceURL;showServiceModes();}).catch(function(){$("supportServiceMessage").textContent="无法读取服务配置，请连接设备。";});
-  $("supportService").addEventListener("input",function(){dirty=true;});
-  $("saveSupportService").addEventListener("click",async function(){
-    var url=$("supportService").value.trim().replace(/\/+$/,"");
-    if(url&&(!/^https?:\/\/[^/?#@\s]+(?:\/[^?#@\s]*)?$/.test(url)||new TextEncoder().encode(url).length>=192)){$("supportServiceMessage").textContent="请输入有效的 HTTP 或 HTTPS 服务地址。";return;}
-    $("saveSupportService").disabled=true;
+  function urlValue(){var url=$("supportService").value.trim().replace(/\/+$/,"");if(url&&(!/^https?:\/\/[^/?#@\s]+(?:\/[^?#@\s]*)?$/.test(url)||new TextEncoder().encode(url).length>=192))throw new Error("请输入有效的 HTTP 或 HTTPS 服务地址。");return url;}
+  function status(weather,music){$("supportWeatherStatus").textContent="天气："+weather;$("supportMusicStatus").textContent="音乐："+music;}
+  async function check(url){
+    if(!url)throw new Error("请填写服务地址。");
+    checking=true;$("checkSupportService").disabled=true;status("检测中…","检测中…");
+    var controller=new AbortController(),timer=setTimeout(function(){controller.abort();},8000);
     try{
+      var response=await fetch(url+"/health",{signal:controller.signal,cache:"no-store"});
+      if(!response.ok)throw new Error("服务请求失败（"+response.status+"）");
+      var data=await response.json();
+      if(data.status!=="ok"||!data.services||!data.services.weather||!data.services.music)throw new Error("服务版本不支持状态检测，请更新额外服务。");
+      var weather=!!data.services.weather.available,music=!!data.services.music.available;
+      status(weather?"可用":"不可用",music?"可用":"接收服务未就绪");
+      if(!weather&&!music)throw new Error("天气和音乐服务均不可用。");
+      return data.services;
+    }catch(e){status("检测失败","检测失败");throw new Error(e.name==="AbortError"?"连接超时，请检查服务地址和网络。":e.message);}
+    finally{clearTimeout(timer);checking=false;$("checkSupportService").disabled=false;}
+  }
+  read().then(function(states){supportServiceURL=states[0].service_url||states[1].service_url||"";if(!dirty)$("supportService").value=supportServiceURL;showServiceModes();}).catch(function(){$("supportServiceMessage").textContent="无法读取服务配置，请连接设备。";});
+  $("supportService").addEventListener("input",function(){dirty=true;status("未检测","未检测");});
+  $("checkSupportService").addEventListener("click",async function(){
+    if(checking)return;$("saveSupportService").disabled=true;
+    try{await check(urlValue());$("supportServiceMessage").textContent="检测完成，服务状态如上。";}catch(e){$("supportServiceMessage").textContent=e.message;}
+    finally{$("saveSupportService").disabled=false;}
+  });
+  $("saveSupportService").addEventListener("click",async function(){
+    if(checking)return;$("saveSupportService").disabled=true;
+    try{
+      var url=urlValue();if(url)await check(url);
       var states=await read();
       for(var i=0;i<2;i++)await request(i?"/api/music":"/api/weather",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({enabled:!!url&&states[i].enabled,service_url:url})});
       states=await read();
       if(states.some(function(s){return s.service_url!==url;}))throw new Error("服务地址保存未完成，请重试");
-      supportServiceURL=url;showServiceModes();$("supportService").value=url;dirty=false;$("supportServiceMessage").textContent=url?"已保存，天气与音乐入口已开启。":"服务已关闭，天气与音乐入口已隐藏。";
+      supportServiceURL=url;showServiceModes();$("supportService").value=url;dirty=false;$("supportServiceMessage").textContent=url?"检测通过并已保存，天气与音乐入口已开启。":"服务已关闭，天气与音乐入口已隐藏。";
+      if(!url)status("未检测","未检测");
     }catch(e){$("supportServiceMessage").textContent="保存失败："+e.message;}
     finally{$("saveSupportService").disabled=false;}
   });

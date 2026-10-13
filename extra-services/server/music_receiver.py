@@ -19,6 +19,8 @@ MAX_MESSAGE = 6 * 1024 * 1024
 class Receiver:
     def __init__(self):
         self.lock = threading.Lock()
+        self.listening = False
+        self.font_path = ""
         self.pending = {}
         self.last_digest = None
         self.received = 0
@@ -56,7 +58,7 @@ class Receiver:
             if len(cover)>4*1024*1024: return
             card_key = message["title"], message["artist"], message["album"], hashlib.sha256(cover).digest()
             if message["title"] and card_key != self.card_key:
-                image = render_card(Track(message["title"],message["artist"],message["album"],message["player"],cover))
+                image = render_card(Track(message["title"],message["artist"],message["album"],message["player"],cover), self.font_path)
                 frame = pack_frame(image)
                 out = io.BytesIO(); image.save(out,"PNG")
                 with self.lock:
@@ -83,6 +85,7 @@ class Receiver:
     def start(self, host="0.0.0.0", port=8790):
         sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
         sock.bind((host,port))
+        self.listening = True
         def listen():
             while True:
                 packet, address = sock.recvfrom(2048)

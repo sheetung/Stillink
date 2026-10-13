@@ -2,6 +2,9 @@ import base64
 import binascii
 import hashlib
 import json
+import io
+from PIL import Image
+from music_card import Track, render_card
 import struct
 import unittest
 from music_receiver import Receiver
@@ -32,6 +35,17 @@ class MusicReceiverTests(unittest.TestCase):
         self.assertFalse(paused["playing"]);self.assertEqual(paused["version"],data["version"])
         receiver.received-=40
         self.assertFalse(json.loads(receiver.response("/v1/music.json")[1])["playing"])
+
+    def test_large_cover_preserves_artwork_area(self):
+        source=Image.new("RGB",(100,100),"black")
+        source.paste((255,0,0),(50,0,100,100))
+        out=io.BytesIO();source.save(out,"PNG")
+        image=render_card(Track("大封面测试","歌手",cover=out.getvalue()))
+        self.assertEqual(image.size,(768,552))
+        self.assertEqual(image.getpixel((20,20)),0)
+        self.assertEqual(image.getpixel((531,531)),3)
+        self.assertEqual(image.getpixel((10,10)),1)
+        self.assertEqual(image.getpixel((540,200)),1)
 
     def test_incomplete_and_corrupted_broadcast(self):
         receiver=Receiver()
