@@ -1,4 +1,4 @@
-# Stillink sdkconfig defaults — ESP32-S3，4MB Flash
+# Stillink sdkconfig defaults — ESP32-S3 / ESP32-C3，4MB Flash
 # 生产配置：日志降级到 Error、深睡唤醒跳过镜像校验、上电校验保留。
 # 排障时把 LOG 两行改回 INFO/Debug 即可（不要动 eFuse 级选项）。
 
@@ -7,7 +7,7 @@ CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
 CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
 CONFIG_ESPTOOLPY_FLASHFREQ_40M=y
 
-# ---- 控制台走 S3 自带 USB-Serial-JTAG（GPIO19/20）----
+# ---- 原生 USB-Serial-JTAG（S3: GPIO19/20，C3: GPIO18/19）----
 CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
 CONFIG_ESP_CONSOLE_SECONDARY_NONE=y
 

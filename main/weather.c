@@ -7,6 +7,7 @@
 #include "esp_http_client.h"
 #include "esp_crt_bundle.h"
 #include "esp_netif_sntp.h"
+#include "online_ota.h"
 #include "esp_log.h"
 #include "nvs.h"
 #include "freertos/FreeRTOS.h"
@@ -244,6 +245,7 @@ static void worker(void *unused)
     if (!config) { vTaskDelete(NULL); return; }
     for (;;) {
         vTaskDelay(pdMS_TO_TICKS(3000));
+        if (online_ota_busy()) continue;
         time_t now = time(NULL);
         xSemaphoreTake(s_lock, portMAX_DELAY);
         int offset = s_has_data ? s_data.utc_offset : 8 * 3600;

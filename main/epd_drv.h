@@ -68,7 +68,7 @@ extern const epd_profile_t EPD_PROFILES[EPD_PANEL_COUNT];
 #define EPD_PIN_RST      3
 #define EPD_PIN_BUSY     10
 #define EPD_PIN_WAKE_BTN 5
-#define EPD_PIN_BAT_ADC  2  /* S3 ADC1_CH1; GPIO0 is not an ADC pin. */
+#define EPD_PIN_BAT_ADC  2  /* S3: ADC1_CH1; C3: ADC1_CH2. */
 
 /* 初始化 SPI 总线 + GPIO。成功返回 0。 */
 int epd_init(void);

@@ -9,17 +9,34 @@ permissions:
 jobs:
   firmware:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        chip: [esp32s3, esp32c3]
     container: espressif/idf:v6.1
     steps:
       - uses: actions/checkout@v4
-      - name: Build ESP32-S3 firmware
+      - name: Build firmware
         shell: bash
         run: |
           . "$IDF_PATH/export.sh"
           python tools/set_release_version.py "$GITHUB_REF_NAME"
-          idf.py set-target esp32s3
+          idf.py set-target ${{ matrix.chip }}
           idf.py build
           python tools/package_bins.py "$GITHUB_REF_NAME"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ matrix.chip }}
+          path: firmware/*.bin
+          if-no-files-found: error
+  publish:
+    needs: firmware
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: firmware-*
+          path: firmware
+          merge-multiple: true
       - name: Publish firmware
         uses: softprops/action-gh-release@v2
         with:
@@ -27,7 +44,7 @@ jobs:
           files: firmware/*.bin
           fail_on_unmatched_files: true
   music:
-    needs: firmware
+    needs: publish
     uses: ./.github/workflows/music-client-win.yml
     with:
       release_tag: ${{ github.ref_name }}

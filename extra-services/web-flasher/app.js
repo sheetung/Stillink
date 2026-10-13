@@ -23,11 +23,13 @@ async function disconnect(){
   if(transport){try{await transport.disconnect();}finally{transport=null;}}
   $('deviceDot').classList.remove('online');$('deviceName').textContent='尚未连接设备';$('deviceInfo').textContent='通过 USB 数据线连接电脑';controls();
 }
-for(const [i,release] of catalog.releases.entries()){const option=document.createElement('option');option.value=String(i);option.textContent=release.version;$('release').append(option);}
+for(const [i,release] of catalog.releases.entries()){const option=document.createElement('option');option.value=String(i);option.textContent=release.version+' · '+(release.chip==='esp32c3'?'ESP32-C3':'ESP32-S3');$('release').append(option);}
 $('imageType').value='ota';
 function showFirmware(){
   const release=catalog.releases[Number($('release').value)||0],firmware=selectedFirmware();
   $('version').textContent=release?.version||'';
+  $('firmwareChip').textContent=release?.chip==='esp32c3'?'ESP32-C3':'ESP32-S3';
+  $('chipBadge').textContent='推荐 · '+$('firmwareChip').textContent;
   $('firmwareName').textContent=firmware?.file||'当前没有可用的 Release 固件';
   $('firmwareSize').textContent=firmware?(firmware.size/1024/1024).toFixed(2)+' MiB':'';
   $('download').hidden=!firmware;if(firmware)$('download').href=firmware.url;
@@ -64,7 +66,8 @@ $('flash').addEventListener('click',async()=>{
     let data,address=0,ota=false;
     if(mode==='stillink'){
       const firmware=selectedFirmware();if(!firmware)throw new Error('当前版本尚未提供所选固件，请选择其他版本或烧录方式');
-      if(loader.chip.CHIP_NAME!=='ESP32-S3')throw new Error('Stillink 固件仅支持 ESP32-S3，当前设备为 '+loader.chip.CHIP_NAME);
+      const expectedChip=catalog.releases[Number($('release').value)||0].chip==='esp32c3'?'ESP32-C3':'ESP32-S3';
+      if(loader.chip.CHIP_NAME!==expectedChip)throw new Error('所选固件仅支持 '+expectedChip+'，当前设备为 '+loader.chip.CHIP_NAME);
       message('正在读取 Stillink 固件…');
       const response=await fetch(firmware.url);if(!response.ok)throw new Error('固件下载失败：'+response.status);
       data=new Uint8Array(await response.arrayBuffer());

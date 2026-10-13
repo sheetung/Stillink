@@ -2,7 +2,7 @@
 
 **把喜欢的瞬间，放在身边。**
 
-基于 ESP32-S3 与四色电子墨水屏的网页相框。打开浏览器，就能把照片、便签、天气和正在听的音乐放到桌面；断电后，画面依然保留。
+基于 ESP32-S3 / ESP32-C3 与四色电子墨水屏的网页相框。打开浏览器，就能把照片、便签、天气和正在听的音乐放到桌面；断电后，画面依然保留。
 
 [快速上手](#快速上手) · [固件构建](#固件构建) · [服务部署](#可选服务部署) · [HTTP API](docs/API.md) · [更新记录](docs/CHANGELOG.md)
 
@@ -70,7 +70,7 @@ Windows 通过 UDP 广播播放器的歌曲、歌手、专辑和封面，服务�
 
 ### 网页升级
 
-在设备设置中上传 `.bin` 升级固件，或上传 `.html` 热更新控制页；也可清理残影、恢复内置页面。
+设备连接可访问互联网的 Wi-Fi 后，在「系统维护与升级」点击「检查新版本 → 下载并升级」，设备直接下载 Release 中对应芯片的 OTA 包，并显示进度。也可上传 `-ota.bin` 升级固件、上传 `.html` 热更新控制页，或清理残影、恢复内置页面。
 
 ![系统维护：固件与控制页升级](docs/images/maintenance.png)
 
@@ -85,9 +85,9 @@ Windows 通过 UDP 广播播放器的歌曲、歌手、专辑和封面，服务�
 
 ## 硬件与接线
 
-**ESP32-S3 · 4 MB Flash · 768 × 552 四色墨水屏**。固件不依赖 PSRAM，通过原生 USB Serial/JTAG 下载。
+**ESP32-S3 / ESP32-C3 · 4 MB Flash · 768 × 552 四色墨水屏**。固件不依赖 PSRAM，通过原生 USB Serial/JTAG 下载。
 
-| 屏幕信号 | ESP32-S3 |
+| 屏幕信号 | ESP32-S3 / ESP32-C3 |
 | --- | --- |
 | SCK | GPIO4 |
 | MOSI | GPIO6 |
@@ -112,10 +112,10 @@ idf.py build
 idf.py -p COM13 flash monitor
 ```
 
-将 `COM13` 换成实际串口。生成 USB 整包与 OTA 应用镜像：
+ESP32-C3 构建时将 `esp32s3` 换为 `esp32c3`。将 `COM13` 换成实际串口。生成 USB 整包与 OTA 应用镜像：
 
 ```powershell
-python tools/package_bins.py V1.2.1
+python tools/package_bins.py
 ```
 
 | 文件 | 用途 |
@@ -123,6 +123,8 @@ python tools/package_bins.py V1.2.1
 | `firmware/stillink-v1.2.1-esp32s3.bin` | 首次 USB 烧录，写入地址 `0x0` |
 | `firmware/stillink-v1.2.1-esp32s3-ota.bin` | 已有相同分区表的 S3 设备，通过网页 OTA 升级 |
 | `page/index.html` | 单独热更新控制页 |
+
+Release 会分别提供 `esp32s3` 和 `esp32c3` 的完整包与 `-ota.bin`，两种芯片的固件不能混用。在线烧录页可按芯片选择，设备在线升级自动匹配芯片。
 
 固件 OTA 会重置屏幕与休眠等设备设置；Wi-Fi、天气、音乐和电池校准配置保留。升级后确认屏幕设置。
 

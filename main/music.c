@@ -2,6 +2,7 @@
 #include "wifi_lan.h"
 #include "frame.h"
 #include "power.h"
+#include "online_ota.h"
 #include "cJSON.h"
 #include "esp_http_client.h"
 #include "esp_crt_bundle.h"
@@ -147,6 +148,7 @@ static void worker(void *unused)
 {
     for (;;) {
         vTaskDelay(pdMS_TO_TICKS(5000));
+        if (online_ota_busy()) continue;
         xSemaphoreTake(s_lock, portMAX_DELAY);
         config_t config = s_config; unsigned revision = s_revision;
         xSemaphoreGive(s_lock);

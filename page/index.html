@@ -523,6 +523,11 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
 
     <details>
       <summary>系统维护与升级</summary>
+      <div class="row"><b style="font-size:13px">在线固件升级</b></div>
+      <p class="hint" id="onlineOtaInfo">连接 Wi-Fi 后，可从 GitHub Release 检查并下载对应芯片的 OTA 固件。</p>
+      <div class="row"><button class="mini" id="onlineOtaCheck" disabled>检查新版本</button><button class="mini" id="onlineOtaInstall" disabled>下载并升级</button></div>
+      <progress id="onlineOtaProgress" max="100" value="0" hidden style="width:100%"></progress>
+      <p class="hint" id="onlineOtaMessage"></p>
       <div class="row"><b style="font-size:13px">① 升级（固件或控制页）</b></div>
       <input type="file" id="upFile" accept=".bin,.html,.htm" style="width:100%;font-size:13px">
       <div class="row"><button class="mini" id="upGo">上传并升级</button><span class="savestate" id="upmsg"></span></div>
@@ -2429,6 +2434,55 @@ $("savePanel").addEventListener("click", function(){
 });
 
 /* ---------- 维护 ---------- */
+/* ---------- GitHub Release 在线升级 ---------- */
+(function(){
+  var timer=null, state=null;
+  function display(s){
+    state=s;
+    var busy=s.status==="checking"||s.status==="downloading"||s.status==="rebooting";
+    $("onlineOtaCheck").disabled=!s.connected||busy;
+    $("onlineOtaInstall").disabled=!s.connected||busy||!s.update_available||s.status!=="ready";
+    $("upGo").disabled=busy;
+    $("onlineOtaInfo").textContent="当前 "+s.current+" · "+s.chip+(s.latest?" · 最新 "+s.latest:"");
+    $("onlineOtaProgress").hidden=s.status!=="downloading";
+    $("onlineOtaProgress").value=s.size?Math.min(100,Math.round(s.received/s.size*100)):0;
+    $("onlineOtaMessage").textContent=s.status==="checking"?"正在读取 GitHub Release…":
+      s.status==="downloading"?"正在下载并写入："+$("onlineOtaProgress").value+"%，请勿断电。":
+      s.status==="rebooting"?"固件已校验通过，设备重启中；45 秒内勿断电，随后刷新页面。":
+      s.status==="error"?"操作失败："+s.error+"。可重试或使用文件上传升级。":
+      !s.connected?"请先连接可访问互联网的 Wi-Fi。":
+      s.latest?(s.update_available?"发现新版本，可下载并升级。":"已是最新版本。"):"点击检查新版本。";
+    clearTimeout(timer);
+    if(s.status==="checking"||s.status==="downloading")timer=setTimeout(load,1500);
+  }
+  async function load(){
+    if(LOCAL_PREVIEW)return;
+    try{
+      var r=await fetch(api("/api/ota/online"),{cache:"no-store"});
+      if(!r.ok)throw new Error("HTTP "+r.status);
+      var s=await r.json();if(!s.current||!s.status)throw new Error("不支持在线升级");
+      display(s);
+    }catch(e){
+      $("onlineOtaCheck").disabled=$("onlineOtaInstall").disabled=true;
+      $("onlineOtaMessage").textContent=state?"设备暂时无法访问，请检查连接。":"请先通过文件上传或 USB 安装支持在线升级的固件。";
+      if(state&&(state.status==="checking"||state.status==="downloading"))timer=setTimeout(load,3000);
+    }
+  }
+  async function start(action){
+    if(action==="install"&&!confirm("下载 "+state.latest+" 并升级？设备将重启，屏幕等设置恢复默认，Wi-Fi、热点凭据和服务配置保留。升级期间请勿断电。"))return;
+    $("onlineOtaCheck").disabled=$("onlineOtaInstall").disabled=true;
+    try{
+      var r=await fetch(api("/api/ota/online/"+action),{method:"POST"});
+      var s=await r.json();display(s);
+      if(!r.ok)$("onlineOtaMessage").textContent=s.error||"设备未联网、升级正在进行或没有新版本，请重新检查。";
+    }catch(e){$("onlineOtaMessage").textContent="请求失败，请确认设备在线。";load();}
+  }
+  $("onlineOtaCheck").addEventListener("click",function(){start("check");});
+  $("onlineOtaInstall").addEventListener("click",function(){start("install");});
+  $("gearBtn").addEventListener("click",load);
+  load();
+})();
+
 /* ---------- 统一升级入口（R1.2.0，FB-015）----------
    固件与控制页走同一条 /api/upload，由固件按请求体首块内容嗅探分流，用户不需要
    判断本次升的是哪一种。这里用**同一套规则**预判类型：固件 OTA 成功后约 1 秒即

@@ -38,6 +38,7 @@
 #include "nvs_flash.h"
 #include "esp_http_server.h"
 #include "mdns.h"
+#include "online_ota.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
@@ -403,6 +404,7 @@ static httpd_handle_t start_server(void)
     }
 
     ota_web_register(server);
+    online_ota_register(server);
     wifi_lan_register(server);
     weather_register(server);
     music_register(server);

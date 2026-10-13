@@ -2,6 +2,7 @@
 #include "epd_drv.h"
 #include "settings.h"
 #include "wifi_lan.h"
+#include "online_ota.h"
 
 #include "driver/gpio.h"
 #include "driver/rtc_io.h"
@@ -101,7 +102,7 @@ uint32_t power_wakeup_causes(void)
 bool power_should_sleep(void)
 {
     /* LAN access must remain available while connected or provisioning. */
-    if (wifi_lan_keep_awake()) return false;
+    if (wifi_lan_keep_awake() || online_ota_busy()) return false;
     const epaper_settings_t *s = settings_get();
     uint32_t limit = s->sleep_s;
 
@@ -124,10 +125,14 @@ void power_enter_deep_sleep(void)
     gpio_pullup_en((gpio_num_t)EPD_PIN_WAKE_BTN);
     gpio_pulldown_dis((gpio_num_t)EPD_PIN_WAKE_BTN);
     gpio_set_direction((gpio_num_t)EPD_PIN_WAKE_BTN, GPIO_MODE_INPUT);
+#if CONFIG_IDF_TARGET_ESP32C3
+    ESP_ERROR_CHECK(esp_sleep_enable_gpio_wakeup_on_hp_periph_powerdown(1ULL << EPD_PIN_WAKE_BTN, ESP_GPIO_WAKEUP_GPIO_LOW));
+#else
     ESP_ERROR_CHECK(rtc_gpio_pullup_en((gpio_num_t)EPD_PIN_WAKE_BTN));
     ESP_ERROR_CHECK(rtc_gpio_pulldown_dis((gpio_num_t)EPD_PIN_WAKE_BTN));
     ESP_ERROR_CHECK(esp_sleep_enable_ext1_wakeup_io(
         1ULL << EPD_PIN_WAKE_BTN, ESP_EXT1_WAKEUP_ANY_LOW));
+#endif
 
     uint32_t wake_s = settings_get()->wake_s;
     if (wake_s > 0) {

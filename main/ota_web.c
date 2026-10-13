@@ -1,6 +1,7 @@
 #include "ota_web.h"
 #include "version.h"
 #include "settings.h"
+#include "online_ota.h"
 
 #include "nvs.h"
 #include "esp_ota_ops.h"
@@ -321,6 +322,10 @@ static int sniff_kind(const char *p, int n)
 
 static esp_err_t upload_handler(httpd_req_t *req)
 {
+    if (online_ota_busy()) {
+        httpd_resp_set_status(req, "409 Conflict");
+        return httpd_resp_sendstr(req, "Online update is busy");
+    }
     power_activity();
     size_t total = req->content_len;
     if (total == 0)

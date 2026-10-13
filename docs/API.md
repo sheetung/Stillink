@@ -129,3 +129,13 @@ ESP 请求 `${service_url}/v1/weather.bin?latitude=...&longitude=...&name=...`�
 设备从服务的 `/v1/music.json` 获取当前歌曲版本，版本变化时请求 `/v1/music.bin?v=版本`，校验长度和 CRC 后刷新。自动刷新间隔至少 60 秒，手动刷新可以绕过间隔；失败约 30 秒后重试。启用音乐时暂停自动天气，不修改已有天气配置。
 
 Windows UDP 广播和服务器部署见 [音乐功能说明](music.md)。
+
+## GitHub Release 在线固件升级
+
+设备连接可访问 GitHub 的 Wi-Fi 后使用。设备自动选择最新稳定版中与自身芯片匹配的 `-ota.bin`，HTTPS 下载并通过 ESP-IDF 镜像与芯片校验后切换 OTA 槽重启。
+
+- `GET /api/ota/online`：当前版本、芯片、联网状态、最新版本、升级状态、字节进度和错误。
+- `POST /api/ota/online/check`：异步检查最新稳定版，返回 202。
+- `POST /api/ota/online/install`：下载已检查到的新版本并升级，返回 202；未联网、正在升级或没有新版本时返回 409。
+
+`status` 为 `idle`、`checking`、`ready`、`downloading`、`rebooting` 或 `error`。下载期间可每 1.5 秒读取状态；重启后刷新网页。失败不会切换启动槽，可重新检查或使用文件上传升级。
