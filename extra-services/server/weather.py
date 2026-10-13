@@ -130,10 +130,6 @@ def render(name, data):
     today = data["days"][0]
     text(277, 223, f'{round(today["low"])}° / {round(today["high"])}°', 19)
     icon(data["code"], 527, 119, 168)
-    wet = data["code"] >= 51 or data["rain_probability"] >= 50
-    draw.rounded_rectangle((38, 278, 450, 316), radius=3, fill=RED if wet else YELLOW)
-    hint = "今天有雨雪，出门记得带伞。" if wet else "阳光正好，出门走走。" if data["code"] <= 2 else "留意天气，安排好今天。"
-    text(53, 286, hint, 18, WHITE if wet else BLACK)
     for x, label, value in [(39, "风速", f'{data["wind"]:.1f} m/s'), (287, "相对湿度", f'{data["humidity"]}%'), (536, "降水概率", f'{data["rain_probability"]}%')]:
         text(x, 338, label, 13); text(x, 364, value, 18)
     draw.line((38, 406, 730, 406), fill=BLACK, width=2)
