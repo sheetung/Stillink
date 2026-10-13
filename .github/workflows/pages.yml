@@ -7,6 +7,9 @@ on:
       - '.github/workflows/pages.yml'
   workflow_dispatch:
   workflow_call:
+  workflow_run:
+    workflows: ['Firmware release']
+    types: [completed]
 permissions:
   contents: read
   pages: write
@@ -16,6 +19,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   build:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

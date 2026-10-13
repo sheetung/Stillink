@@ -26,9 +26,6 @@ jobs:
           generate_release_notes: true
           files: firmware/*.bin
           fail_on_unmatched_files: true
-  pages:
-    needs: firmware
-    uses: ./.github/workflows/pages.yml
   music:
     needs: firmware
     uses: ./.github/workflows/music-client-win.yml
