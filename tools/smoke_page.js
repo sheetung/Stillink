@@ -50,7 +50,7 @@ ok("page version meta present (Vx.y.z)", /epaper-page-version" content="V\d+\.\d
 // 10. R1.0.18 UI 重构：齿轮入口 / 返回按钮 / 无页签 / 步骤条 / 设备信息网格 / 分栏 / 文案
 ok("R1.0.18 gear + back nav present", page.includes('id="gearBtn"') && page.includes('id="backBtn"'));
 ok("R1.0.18 tab bar removed", page.indexOf('data-t="image"') < 0 && page.indexOf('id="tabs"') < 0);
-ok("R1.0.18 subtitle", page.includes("把喜欢的瞬间，放在身边"));
+ok("header slogan removed", !page.includes("把喜欢的瞬间，放在身边"));
 ok("R1.0.18 header version line removed", page.indexOf('id="i-fw"') < 0);
 ok("R1.0.18 dev copy cleaned (no 预览已跑通/预览还没跑通)",
    page.indexOf("预览已跑通") < 0 && page.indexOf("预览还没跑通") < 0);
