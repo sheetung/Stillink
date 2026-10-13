@@ -19,4 +19,5 @@ typedef struct {
 void weather_init(void);
 void weather_register(httpd_handle_t server);
 void weather_factory_reset(void);
+esp_err_t weather_disable(void);
 #endif

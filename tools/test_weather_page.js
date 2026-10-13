@@ -13,7 +13,8 @@ function element(id) {
 for (const id of [...page.matchAll(/id="(weather[^" ]*|modeWeather|modeMusic|editorGrid|steps)"/g)].map(m=>m[1])) elements[id]=element(id);
 const modes=[element("photo"),element("note")];
 const state={enabled:false,name:"杭州",service_url:"http://192.168.31.12:8787",latitude:30.29,longitude:120.16,times:[480,720,1080],status:"disabled",error:""};
-const context={supportServiceURL:"",
+const notifications=[];
+const context={displayModeRevision:0,notifyDisplayMode:mode=>notifications.push(mode),supportServiceURL:"",
   $:id=>elements[id], api:url=>url, console, TextEncoder, Date, Set, Math, JSON, Array,
   setTimeout:(f,ms)=>{timers.push({f,ms});return timers.length;}, clearTimeout:()=>{},
   fetch:async(url,options)=>{requests.push({url,options});assert(responses.length,"Unexpected request: "+url);const response=responses.shift();if(response instanceof Error)throw response;return {ok:response.status<400,text:async()=>response.text||"error",json:async()=>response.body};},
@@ -66,5 +67,12 @@ const trigger=(id,event="click")=>elements[id].events[event].call(elements[id]);
   modes[0].events.click();respond({...state,enabled:true,status:"waiting_wifi"});trigger("modeWeather");await flush();
   assert.equal(elements.weatherRefresh.disabled,true);
   assert.match(elements.weatherStatus.textContent,/Wi-Fi/);
+  responses.push({status:500,text:"save failed"});respond({...state,enabled:true,status:"waiting_wifi"});
+  trigger("weatherSave");await flush();
+  assert.match(elements.weatherMessage.textContent,/保存失败/);
+  elements.weatherEnabled.checked=false;
+  respond({saved:true});respond(state);trigger("weatherSave");await flush();
+  assert.match(elements.weatherMessage.textContent,/已关闭/);
+  assert.deepEqual(notifications,["weather"]);
   console.log("WEATHER PAGE: PASS (schedule validation, device save, service URL, city search, safe image preview, offline state)");
 })().catch(e=>{console.error(e);process.exitCode=1;});

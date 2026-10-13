@@ -3,6 +3,7 @@
 #include "frame.h"
 #include "power.h"
 #include "online_ota.h"
+#include "weather.h"
 #include "cJSON.h"
 #include "esp_http_client.h"
 #include "esp_crt_bundle.h"
@@ -24,10 +25,36 @@ static TickType_t s_last_refresh;
 
 bool music_enabled(void)
 {
+    if (!s_lock) return false;
     xSemaphoreTake(s_lock, portMAX_DELAY);
     bool enabled = s_config.enabled;
     xSemaphoreGive(s_lock);
     return enabled;
+}
+
+esp_err_t music_disable(void)
+{
+    xSemaphoreTake(s_lock, portMAX_DELAY);
+    esp_err_t err = ESP_OK;
+    if (s_config.enabled) {
+        config_t next = s_config;
+        next.enabled = false;
+        nvs_handle_t nvs;
+        err = nvs_open("music", NVS_READWRITE, &nvs);
+        if (err == ESP_OK) {
+            err = nvs_set_blob(nvs, "config_v1", &next, sizeof(next));
+            if (err == ESP_OK) err = nvs_commit(nvs);
+            nvs_close(nvs);
+        }
+        if (err == ESP_OK) {
+            s_config = next;
+            ++s_revision;
+            s_force = false;
+            s_error[0] = 0;
+        }
+    }
+    xSemaphoreGive(s_lock);
+    return err;
 }
 
 void music_factory_reset(void)
@@ -97,7 +124,8 @@ static esp_err_t config_handler(httpd_req_t *req)
     if (next.enabled && !next.url[0]) valid = false;
     cJSON_Delete(json);
     esp_err_t err = ESP_OK;
-    if (valid) {
+    if (valid && next.enabled) err = weather_disable();
+    if (valid && err == ESP_OK) {
         nvs_handle_t nvs;
         err = nvs_open("music", NVS_READWRITE, &nvs);
         if (err == ESP_OK) {

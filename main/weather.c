@@ -62,6 +62,26 @@ void weather_factory_reset(void)
     }
 }
 
+esp_err_t weather_disable(void)
+{
+    xSemaphoreTake(s_lock, portMAX_DELAY);
+    esp_err_t err = ESP_OK;
+    if (s_config.enabled) {
+        weather_config_t next = s_config;
+        next.enabled = false;
+        err = save_config(&next);
+        if (err == ESP_OK) {
+            s_config = next;
+            ++s_revision; /* Invalidates a card already downloading. */
+            s_requested = false;
+            s_retry = 0;
+            s_error[0] = 0;
+        }
+    }
+    xSemaphoreGive(s_lock);
+    return err;
+}
+
 static esp_err_t get_handler(httpd_req_t *req)
 {
     headers(req);
@@ -156,6 +176,10 @@ static esp_err_t config_handler(httpd_req_t *req)
     if (next->enabled && (!next->name[0] || !next->service_url[0])) valid = false;
     cJSON_Delete(json);
     if (!valid) { free(next); return httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid weather settings"); }
+    if (next->enabled && music_disable() != ESP_OK) {
+        free(next);
+        return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Could not disable music");
+    }
     xSemaphoreTake(s_lock, portMAX_DELAY);
     esp_err_t err = save_config(next);
     if (err == ESP_OK) {
@@ -246,6 +270,7 @@ static void worker(void *unused)
     for (;;) {
         vTaskDelay(pdMS_TO_TICKS(3000));
         if (online_ota_busy()) continue;
+        if (music_enabled()) continue; /* Also covers legacy settings with both enabled. */
         time_t now = time(NULL);
         xSemaphoreTake(s_lock, portMAX_DELAY);
         int offset = s_has_data ? s_data.utc_offset : 8 * 3600;
@@ -253,7 +278,7 @@ static void worker(void *unused)
         bool due = !s_has_data || s_requested || slot > s_last_slot;
         bool retry_ready = !s_retry || (int32_t)(xTaskGetTickCount() - s_retry) >= 0;
         /* NTP must establish time before certificate validity checks. */
-        if (!s_config.enabled || music_enabled() || !wifi_lan_connected() || now < 1700000000 || !due || !retry_ready) { xSemaphoreGive(s_lock); continue; }
+        if (!s_config.enabled || !wifi_lan_connected() || now < 1700000000 || !due || !retry_ready) { xSemaphoreGive(s_lock); continue; }
         *config = s_config;
         unsigned revision = s_revision;
         s_requested = false;

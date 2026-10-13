@@ -516,6 +516,7 @@ void app_main(void)
     captive_dns_start();
     weather_init();
     music_init();
+    if (music_enabled()) ESP_ERROR_CHECK(weather_disable());
 
     if (start_server() == NULL) {
         ESP_LOGE(TAG, "HTTP server failed to start");

@@ -126,7 +126,7 @@ ESP 请求 `${service_url}/v1/weather.bin?latitude=...&longitude=...&name=...`�
 
 `GET /api/music` 返回 `enabled`、`service_url`、最后显示的 `version`、`status` 和 `error`。状态包括 `disabled`、`waiting_wifi`、`waiting`、`loading`、`ready`、`error`。`POST /api/music/refresh` 在启用且联网时返回 202，未启用或未联网返回 409。
 
-设备从服务的 `/v1/music.json` 获取当前歌曲版本，版本变化时请求 `/v1/music.bin?v=版本`，校验长度和 CRC 后刷新。自动刷新间隔至少 60 秒，手动刷新可以绕过间隔；失败约 30 秒后重试。启用音乐时暂停自动天气，不修改已有天气配置。
+设备从服务的 `/v1/music.json` 获取当前歌曲版本，版本变化时请求 `/v1/music.bin?v=版本`，校验长度和 CRC 后刷新。自动刷新间隔至少 60 秒，手动刷新可以绕过间隔；失败约 30 秒后重试。启用并保存音乐会关闭天气；启用并保存天气会关闭音乐。有效的 `/api/frame` 手动上传会关闭两项自动刷新，并保留配置；关闭状态持久保存，重启后不自动恢复。
 
 Windows UDP 广播和服务器部署见 [音乐功能说明](music.md)。
 

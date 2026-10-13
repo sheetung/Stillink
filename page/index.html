@@ -247,7 +247,7 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
           <p class="hint">默认每天 3 次。保存并启用后会立即更新一次。</p>
           <div id="weatherStatus" class="weatherStatus" role="status" aria-live="polite">正在读取天气设置…</div>
           <div class="weatherActions"><button id="weatherSave">保存天气设置</button><button class="mini" id="weatherRefresh" disabled>立即刷新</button></div><p id="weatherMessage" class="hint" role="status" aria-live="polite"></p>
-          <p class="weatherFoot">关闭后停止自动刷新。断网或请求失败时保留原画面，联网后继续更新。使用拍立得或便签时，可先关闭天气以保留手动画面。</p>
+          <p class="weatherFoot">启用并保存天气会自动关闭音乐。拍立得或便签上传成功后，两种自动卡片都会关闭，位置和时间配置保留。断网或请求失败时保留原画面。</p>
         </div>
       </div>
     </div>
@@ -256,7 +256,7 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
         <div><div class="weatherPreviewLabel">音乐卡片 · 768 × 552</div><div class="weatherFrame"><div id="musicScreen"><p>连接 Windows 音乐服务。<br><small>播放歌曲后显示专辑卡片。</small></p></div></div><p class="hint">黑 · 白 · 黄 · 红 · 切歌时自动更新</p></div>
         <div class="weatherConfig">
           <h2>音乐卡片</h2><p class="hint">Windows 广播当前音乐，设备主动请求并刷新。</p>
-          <div class="weatherEnable"><div><b>启用音乐卡片</b><p class="hint">启用时暂停自动天气，关闭后恢复天气计划。</p></div><label class="weatherSwitch"><input type="checkbox" id="musicEnabled" aria-label="启用音乐卡片"><i></i></label></div>
+          <div class="weatherEnable"><div><b>启用音乐卡片</b><p class="hint">启用并保存后自动关闭天气；手动上传图片会关闭自动卡片。</p></div><label class="weatherSwitch"><input type="checkbox" id="musicEnabled" aria-label="启用音乐卡片"><i></i></label></div>
           <p class="hint"><a href="https://github.com/sheetung/Stillink/blob/main/docs/music.md" target="_blank" rel="noopener">使用说明</a></p>
           <p id="musicTrack" class="hint">等待音乐服务。</p>
           <div id="musicStatus" class="weatherStatus" role="status" aria-live="polite">正在读取音乐设置…</div>
@@ -2051,7 +2051,7 @@ function buildAndUpload(){
   xhr.onload = function(){
     hideWorkLoading();
     barEl.style.display = "none";
-    if (xhr.status === 200){ msg("已上传，屏幕刷新中…", "ok"); }
+    if (xhr.status === 200){ notifyDisplayMode("manual"); msg("已上传，屏幕刷新中…，天气和音乐自动刷新已关闭", "ok"); }
     else { msg("上传失败：" + (xhr.responseText || ("HTTP " + xhr.status)), "err"); }
     goEl.disabled = (MODE === 0) ? !img : false;
   };
@@ -2690,6 +2690,20 @@ function showServiceModes(){["modeWeather","modeMusic"].forEach(function(id){$(i
   });
 })();
 
+/* ---------- 自动卡片互斥：仅在设备保存或上传成功后同步 ---------- */
+var displayModeRevision=0;
+function notifyDisplayMode(mode){
+  ++displayModeRevision;
+  ["weather","music"].forEach(function(card){
+    if(card===mode)return;
+    $(card+"Enabled").checked=false;
+    $(card+"Status").textContent=card==="weather"?"天气卡片已关闭":"音乐卡片已关闭";
+    $(card+"Status").classList.remove("warn");
+    $(card+"Refresh").disabled=true;
+    $(card+"Message").textContent=mode==="manual"?"手动图片已上传，自动刷新已关闭，配置保留。":"另一种自动卡片已启用，此卡片已关闭，配置保留。";
+  });
+}
+
 /* ---------- 天气卡片：设备配置、服务端渲染、定时下载 ---------- */
 (function(){
   var active=false, selected=null, timer=null, searchTimer=null, searchId=0, dirty=false, saving=false;
@@ -2715,7 +2729,9 @@ function showServiceModes(){["modeWeather","modeMusic"].forEach(function(id){$(i
   }
   function load(){
     clearTimeout(timer);if(!active)return;
+    var revision=displayModeRevision;
     request("/api/weather?t="+Date.now()).then(function(state){
+      if(revision!==displayModeRevision)return;
       latest=state;renderStatus(state);
       if(!dirty&&!saving){$("weatherEnabled").checked=!!state.enabled;if(!supportServiceURL)supportServiceURL=state.service_url||"";$("weatherLocation").value=state.name||"";selected=state.name?{name:state.name,latitude:state.latitude,longitude:state.longitude}:null;["weatherMorning","weatherNoon","weatherEvening"].forEach(function(id,i){var m=state.times[i];$(id).value=("0"+Math.floor(m/60)).slice(-2)+":"+("0"+m%60).slice(-2);});$("weatherRegion").textContent=state.name?"位置已保存在设备中。":"输入位置后，从搜索结果中选择。";}
       draw(state);
@@ -2755,7 +2771,7 @@ function showServiceModes(){["modeWeather","modeMusic"].forEach(function(id){$(i
       }
     }catch(e){$("weatherMessage").textContent=e.message;return;}
     saving=true;$("weatherSave").disabled=true;$("weatherMessage").textContent="正在保存…";
-    request("/api/weather",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}).then(function(){dirty=false;$("weatherMessage").textContent=enabled?"已保存，设备将立即获取天气并刷新屏幕。":"已保存，天气卡片已关闭。";}).catch(function(e){$("weatherMessage").textContent="保存失败："+e.message;}).finally(function(){saving=false;$("weatherSave").disabled=false;load();});
+    request("/api/weather",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}).then(function(){dirty=false;if(enabled)notifyDisplayMode("weather");$("weatherMessage").textContent=enabled?"已保存，音乐已关闭，设备将立即获取天气并刷新屏幕。":"已保存，天气卡片已关闭。";}).catch(function(e){$("weatherMessage").textContent="保存失败："+e.message;}).finally(function(){saving=false;$("weatherSave").disabled=false;load();});
   });
   $("weatherRefresh").addEventListener("click",function(){
     $("weatherRefresh").disabled=true;
@@ -2780,7 +2796,9 @@ function showServiceModes(){["modeWeather","modeMusic"].forEach(function(id){$(i
   }
   function load(){
     clearTimeout(timer);if(!active)return;
+    var revision=displayModeRevision;
     request("/api/music?t="+Date.now()).then(function(state){
+      if(revision!==displayModeRevision)return;
       if(!dirty&&!saving){$("musicEnabled").checked=state.enabled;if(!supportServiceURL)supportServiceURL=state.service_url||"";}
       var labels={disabled:"音乐卡片已关闭",waiting_wifi:"等待连接 Wi-Fi",waiting:"等待 Windows 播放音乐",loading:"正在下载音乐卡片并刷新…",ready:"音乐卡片已同步",error:"音乐同步失败，保留原画面"};
       $("musicStatus").textContent=(labels[state.status]||"等待音乐")+(state.error?" · "+state.error:"");$("musicStatus").classList.toggle("warn",state.status==='error'||state.status==='waiting_wifi');
@@ -2795,8 +2813,9 @@ function showServiceModes(){["modeWeather","modeMusic"].forEach(function(id){$(i
   $("musicPreview").addEventListener("click",function(){previewKey="";preview();});
   $("musicSave").addEventListener("click",function(){
     var url;try{url=supportServiceURL?serviceUrl():"";if($("musicEnabled").checked&&!url)throw new Error("请先在设备设置中保存服务地址");}catch(e){$("musicMessage").textContent=e.message;return;}
+    var enabled=$("musicEnabled").checked;
     saving=true;$("musicSave").disabled=true;
-    request("/api/music",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({enabled:$("musicEnabled").checked,service_url:url})}).then(function(){dirty=false;$("musicMessage").textContent="已保存，设备将主动连接音乐服务。";}).catch(function(e){$("musicMessage").textContent=e.message;}).finally(function(){saving=false;$("musicSave").disabled=false;load();});
+    request("/api/music",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({enabled:enabled,service_url:url})}).then(function(){dirty=false;if(enabled)notifyDisplayMode("music");$("musicMessage").textContent=enabled?"已保存，天气已关闭，设备将主动连接音乐服务。":"已保存，音乐卡片已关闭。";}).catch(function(e){$("musicMessage").textContent=e.message;}).finally(function(){saving=false;$("musicSave").disabled=false;load();});
   });
   $("musicRefresh").addEventListener("click",function(){request("/api/music/refresh",{method:"POST"}).then(function(){$("musicMessage").textContent="已请求刷新当前歌曲。";load();}).catch(function(e){$("musicMessage").textContent=e.message;});});
 })();
