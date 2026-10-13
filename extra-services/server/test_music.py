@@ -54,8 +54,10 @@ class MusicReceiverTests(unittest.TestCase):
         out=io.BytesIO();source.save(out,"PNG")
         image=render_card(Track("大封面测试","歌手",cover=out.getvalue()))
         self.assertEqual(image.size,(768,552))
-        self.assertEqual(image.getpixel((20,20)),0)
-        self.assertEqual(image.getpixel((531,531)),3)
+        self.assertEqual(image.getpixel((20,20)),1)
+        self.assertEqual(image.getpixel((531,531)),1)
+        self.assertEqual(image.getpixel((44,20)),0)
+        self.assertEqual(image.getpixel((507,531)),3)
         self.assertEqual(image.getpixel((10,10)),1)
         self.assertEqual(image.getpixel((540,200)),1)
 

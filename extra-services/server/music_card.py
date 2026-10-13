@@ -74,9 +74,11 @@ def render_card(track, font_path=""):
         # Pillow may choose duplicated black entries in the 256-entry palette.
         indexed = artwork.quantize(palette=palette, dither=Image.Dither.FLOYDSTEINBERG)
         indexed = indexed.point([i if i < 4 else 0 for i in range(256)])
-        image.paste(indexed, cover_box[:2])
+        mask = Image.new("L", (512, 512), 0)
+        ImageDraw.Draw(mask).rounded_rectangle((0, 0, 511, 511), radius=24, fill=255)
+        image.paste(indexed, cover_box[:2], mask)
     else:
-        draw.rectangle(cover_box, fill=2, outline=0, width=2)
+        draw.rounded_rectangle((20, 20, 531, 531), radius=24, fill=2, outline=0, width=2)
         draw.ellipse((132, 132, 420, 420), fill=0)
         draw.ellipse((247, 247, 305, 305), fill=1)
         text(224, 455, "暂无封面", 18)
