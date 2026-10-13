@@ -85,7 +85,7 @@ Windows 通过 UDP 广播播放器的歌曲、歌手、专辑和封面，服务�
 1. 用电脑 Chrome / Edge 打开 [在线烧录页](https://blog.moontung.top/Stillink/)，新设备选择「首次烧录 · 完整包」，点击「连接并选择设备」后烧录。连接设备热点 `Stillink-XXXX`，打开 `http://192.168.4.1`。
 2. 在「拍立得」选图，或在「便签」编辑文字，预览后点击「上传并刷新屏幕」。
 3. 如需局域网访问，在「设备设置 → Wi-Fi 配网」选择家中的 2.4 GHz 网络并连接，之后可用 `http://stillink.local/` 访问。
-4. 如需天气或音乐，部署下方服务，在「设备设置 → 额外服务支持」保存 HTTP 根地址，再打开对应功能。
+4. 如需天气、音乐或相簿，启动下方服务，在「设备设置 → 额外服务支持」保存 HTTP 根地址，再打开对应功能。
 
 `stillink.local` 使用局域网 mDNS，设备响应当前 IP，无需公网域名；设备和客户端需在同一网络，客户端须支持 mDNS。
 
@@ -160,6 +160,7 @@ uv run --frozen app.py --host 0.0.0.0 --port 8787
 - [额外服务总部署说明](docs/services.md)
 - [天气卡片使用](docs/weather.md)
 - [Windows 音乐广播与专辑卡片](docs/music.md)
+- [相簿与轮播](docs/album.md)
 - [版本更新记录](docs/CHANGELOG.md)
 - [在线烧录使用说明](docs/flasher.md)
 
