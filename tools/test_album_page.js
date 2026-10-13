@@ -22,13 +22,14 @@ vm.runInNewContext(source,context);
 const click=id=>elements[id].events.click(),flush=()=>new Promise(setImmediate);
 (async()=>{
  click("modeAlbum");await flush();assert.equal(elements.albumPane.hidden,false);assert.equal(elements.albumPhotos.children.length,2);
- assert.equal(elements.albumPhotos.children[0].children[1].children[1].textContent,"<测试照片>");
+ assert.match(elements.albumPhotos.children[0].children[1].children[1].textContent,/ · aaaaaaaa$/);
+ assert(!elements.albumPhotos.children[0].children[1].children[1].textContent.includes("测试照片"));
  elements.albumEnabled.checked=true;click("albumSave");await flush();assert.equal(posts.length,0);assert.match(elements.albumMessage.textContent,/至少/);
  click("albumSelectAll");elements.albumInterval.value="0";click("albumSave");await flush();assert.equal(posts.length,0);
  elements.albumInterval.value="30";elements.albumMode.value="random";await click("albumSave");await flush();
  assert.deepEqual(selection,photos.map(p=>p.id));assert.equal(state.interval,1800);assert.equal(state.mode,"random");assert.equal(state.playlist,"c".repeat(32));assert.deepEqual(notifications,["album"]);
  failSave=true;await click("albumSave");await flush();assert.deepEqual(notifications,["album"]);assert.match(elements.albumMessage.textContent,/保存失败/);failSave=false;
  elements.albumEnabled.checked=false;await click("albumSave");await flush();assert.deepEqual(notifications,["album"],"Stopping slideshow must not restart another card");
- await click("saveAlbumPhoto");await flush();const upload=posts.find(p=>p.url.startsWith("http"));assert.equal(upload.body,packed);assert.match(upload.url,/photo.jpg/);assert.deepEqual(notifications,["album"],"Saving a photo does not change device display mode");assert.match(elements.albumUploadMessage.textContent,/已保存/);
+ await click("saveAlbumPhoto");await flush();const upload=posts.find(p=>p.url.startsWith("http"));assert.equal(upload.body,packed);assert.equal(upload.url,"http://server/v1/album/photos");assert.deepEqual(notifications,["album"],"Saving a photo does not change device display mode");assert.match(elements.albumUploadMessage.textContent,/已保存/);
  console.log("ALBUM PAGE: PASS (gallery, safe title, selection, interval validation, save failure, exclusive enable, processed frame upload)");
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -1,5 +1,6 @@
 import binascii
 import io
+import hashlib
 import json
 import struct
 import tempfile
@@ -48,7 +49,10 @@ class AlbumTests(unittest.TestCase):
         photo_id = self.add()
         app.ALBUM = album.Store(self.directory.name)  # Simulate service restart.
         with self.request("/v1/album/photos") as response:
-            self.assertEqual(json.load(response)["photos"][0]["id"], photo_id)
+            photo = json.load(response)["photos"][0]
+            self.assertEqual(photo["id"], photo_id)
+            self.assertRegex(photo["name"], r"^\d{8}-\d{6}-[a-f0-9]{8}$")
+            self.assertTrue(photo["name"].endswith(hashlib.sha256(self.frame).hexdigest()[:8]))
         with self.request(f"/v1/album/photos/{photo_id}.bin") as response:
             self.assertEqual(response.read(), self.frame)
         with self.request(f"/v1/album/photos/{photo_id}.png") as response:

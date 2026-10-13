@@ -1,6 +1,7 @@
 """Persistent photo frames and device-independent slideshow selections."""
 import binascii
 import io
+import hashlib
 import json
 import random
 import sqlite3
@@ -53,11 +54,11 @@ class Store:
         finally:
             db.close()
 
-    def add(self, frame, name):
+    def add(self, frame, name=None):
         width, height, png = preview(frame)
-        if not name or len(name) > 120:
-            raise ValueError("照片名称须为 1–120 个字符")
-        photo = dict(id=uuid.uuid4().hex, name=name, created=int(time.time()), width=width, height=height)
+        created = int(time.time())
+        name = time.strftime("%Y%m%d-%H%M%S", time.localtime(created)) + "-" + hashlib.sha256(frame).hexdigest()[:8]
+        photo = dict(id=uuid.uuid4().hex, name=name, created=created, width=width, height=height)
         with self.connect() as db:
             db.execute("INSERT INTO photos VALUES (?,?,?,?,?,?,?)", (*photo.values(), frame, png))
         return photo

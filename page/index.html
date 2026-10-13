@@ -75,6 +75,11 @@ button:disabled{ opacity:.45; cursor:default; }
               font-size:14px; border-radius:9px; white-space:nowrap; min-width:0; }
 #modes .mode.on{ background:#fff; color:var(--acc); box-shadow:0 1px 3px rgba(75,55,30,.12); }
 #modes .mode svg{ flex-shrink:0; }
+dialog.releaseDialog{width:calc(100% - 32px);max-width:560px;max-height:80vh;padding:22px;border:1px solid var(--line);border-radius:16px;color:var(--ink);background:var(--card);}
+dialog.releaseDialog::backdrop{background:rgba(0,0,0,.35);}
+.releaseDialog h2{margin:0 0 12px;font-size:18px;}
+.releaseDialog .releaseNotes{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.7;}
+.releaseDialog .row{justify-content:flex-end;margin-bottom:0;}
 @media (max-width:400px){
   #modes .mode{gap:4px;font-size:13px;}
   #modes .mode svg{width:14px;height:14px;}
@@ -205,6 +210,11 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
 </style>
 </head>
 <body>
+<dialog id="onlineOtaNotesDialog" class="releaseDialog" aria-labelledby="onlineOtaNotesTitle">
+  <h2 id="onlineOtaNotesTitle">更新内容</h2>
+  <div id="onlineOtaNotesBody" class="releaseNotes"></div>
+  <div class="row"><a id="onlineOtaNotesLink" target="_blank" rel="noopener noreferrer">查看 Release</a><button class="mini" id="onlineOtaNotesClose">关闭</button></div>
+</dialog>
 
 <div id="workLoading" aria-hidden="true">
   <div class="box" role="status" aria-live="polite"><span class="spin"></span><span id="workLoadingText">正在处理…</span></div>
@@ -2460,7 +2470,13 @@ $("savePanel").addEventListener("click", function(){
 /* ---------- 维护 ---------- */
 /* ---------- GitHub Release 在线升级 ---------- */
 (function(){
-  var timer=null, state=null;
+  var timer=null, state=null, showNotesAfterCheck=false;
+  function showNotes(s){
+    $("onlineOtaNotesTitle").textContent=s.latest+" · 更新内容";
+    $("onlineOtaNotesBody").textContent=s.release_notes||"此版本未提供更新说明，可前往 Release 页面查看。";
+    $("onlineOtaNotesLink").href="https://github.com/sheetung/Stillink/releases/tag/"+encodeURIComponent(s.latest);
+    if(!$("onlineOtaNotesDialog").open)$("onlineOtaNotesDialog").showModal();
+  }
   function display(s){
     state=s;
     var busy=s.status==="checking"||s.status==="downloading"||s.status==="rebooting";
@@ -2477,6 +2493,8 @@ $("savePanel").addEventListener("click", function(){
       !s.connected?"请先连接可访问互联网的 Wi-Fi。":
       s.latest?(s.update_available?"发现新版本，可下载并升级。":"已是最新版本。"):"点击检查新版本。";
     clearTimeout(timer);
+    if(showNotesAfterCheck&&s.status==="ready"&&s.latest){showNotesAfterCheck=false;showNotes(s);}
+    if(s.status==="error")showNotesAfterCheck=false;
     if(s.status==="checking"||s.status==="downloading")timer=setTimeout(load,1500);
   }
   async function load(){
@@ -2495,14 +2513,16 @@ $("savePanel").addEventListener("click", function(){
   async function start(action){
     if(action==="install"&&!confirm("下载 "+state.latest+" 并升级？设备将重启，屏幕等设置恢复默认，Wi-Fi、热点凭据和服务配置保留。升级期间请勿断电。"))return;
     $("onlineOtaCheck").disabled=$("onlineOtaInstall").disabled=true;
+    showNotesAfterCheck=action==="check";
     try{
       var r=await fetch(api("/api/ota/online/"+action),{method:"POST"});
-      var s=await r.json();display(s);
+      var s=await r.json();if(!r.ok)showNotesAfterCheck=false;display(s);
       if(!r.ok)$("onlineOtaMessage").textContent=s.error||"设备未联网、升级正在进行或没有新版本，请重新检查。";
-    }catch(e){$("onlineOtaMessage").textContent="请求失败，请确认设备在线。";load();}
+    }catch(e){showNotesAfterCheck=false;$("onlineOtaMessage").textContent="请求失败，请确认设备在线。";load();}
   }
   $("onlineOtaCheck").addEventListener("click",function(){start("check");});
   $("onlineOtaInstall").addEventListener("click",function(){start("install");});
+  $("onlineOtaNotesClose").addEventListener("click",function(){$("onlineOtaNotesDialog").close();});
   $("gearBtn").addEventListener("click",load);
   load();
 })();
@@ -2859,8 +2879,11 @@ function notifyDisplayMode(mode){
     $("albumEmpty").textContent=photos.length?"已保存 "+photos.length+" 张照片，勾选需要轮播的照片。":"相簿还没有照片。在拍立得中调整好画面，点击「保存当前画面到相簿」。";
     photos.forEach(function(photo){
       var card=document.createElement("div");card.className="albumPhoto";
-      var image=document.createElement("img");image.src=server("/v1/album/photos/"+photo.id+".png");image.alt=photo.name;image.loading="lazy";image.addEventListener("click",function(){previewKey="";preview(photo.id);});card.appendChild(image);
-      var label=document.createElement("label"),check=document.createElement("input"),name=document.createElement("span");check.type="checkbox";check.checked=selected.has(photo.id);name.textContent=photo.name;
+      var date=new Date((photo.created||0)*1000),pad=function(n){return String(n).padStart(2,"0");};
+      var hash=/^[0-9]{8}-[0-9]{6}-([a-f0-9]{8})$/.exec(photo.name||""),shortHash=hash?hash[1]:photo.id.slice(0,8);
+      var shortName=pad(date.getMonth()+1)+"/"+pad(date.getDate())+" "+pad(date.getHours())+":"+pad(date.getMinutes())+" · "+shortHash;
+      var image=document.createElement("img");image.src=server("/v1/album/photos/"+photo.id+".png");image.alt=shortName;image.loading="lazy";image.addEventListener("click",function(){previewKey="";preview(photo.id);});card.appendChild(image);
+      var label=document.createElement("label"),check=document.createElement("input"),name=document.createElement("span");check.type="checkbox";check.checked=selected.has(photo.id);name.textContent=shortName;name.title=hash?photo.name:shortName;
       check.addEventListener("change",function(){if(check.checked)selected.add(photo.id);else selected.delete(photo.id);dirty=true;$("albumMessage").textContent="照片选择已修改，请保存轮播设置。";});label.appendChild(check);label.appendChild(name);card.appendChild(label);
       var remove=document.createElement("button");remove.className="mini";remove.textContent="删除";remove.addEventListener("click",async function(){if(!confirm("从服务器删除这张照片？"))return;remove.disabled=true;try{await request(server("/v1/album/photos/"+photo.id),{method:"DELETE"});selected.delete(photo.id);if(previewKey===photo.id){previewKey="";$("albumScreen").textContent="照片已删除";}await list();}catch(e){$("albumMessage").textContent=e.message;remove.disabled=false;}});card.appendChild(remove);$("albumPhotos").appendChild(card);
     });
@@ -2906,8 +2929,8 @@ function notifyDisplayMode(mode){
     $("saveAlbumPhoto").disabled=true;showWorkLoading("正在保存当前画面到相簿…");
     afterLoadingPaint(async function(){
       try{
-        var frame=frameWithHeader(packFull()),name=(fileEl.files&&fileEl.files[0]?fileEl.files[0].name:MODE===0?"拍立得":"便签")+" · "+new Date().toLocaleString();
-        await request(server("/v1/album/photos?name="+encodeURIComponent(name.slice(0,120))),{method:"POST",headers:{"Content-Type":"application/octet-stream"},body:frame});
+        var frame=frameWithHeader(packFull());
+        await request(server("/v1/album/photos"),{method:"POST",headers:{"Content-Type":"application/octet-stream"},body:frame});
         $("albumUploadMessage").textContent="已保存到服务器，可在相簿中选择轮播。";
       }catch(e){$("albumUploadMessage").textContent="保存失败："+e.message;}
       finally{hideWorkLoading();$("saveAlbumPhoto").disabled=false;}

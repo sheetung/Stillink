@@ -24,6 +24,7 @@ static SemaphoreHandle_t s_lock;
 static bool s_busy, s_newer;
 static char s_status[16] = "idle", s_error[128], s_tag[32], s_url[320];
 static int s_size, s_received;
+static char *s_notes;
 
 bool online_ota_busy(void)
 {
@@ -91,6 +92,9 @@ static esp_err_t check_release(void)
                 strlcpy(s_url, expected, sizeof(s_url));
                 s_size = size->valueint;
                 s_newer = version_number(s_tag) > version_number(EPAPER_VERSION);
+                cJSON *notes = cJSON_GetObjectItemCaseSensitive(json, "body");
+                free(s_notes);
+                s_notes = cJSON_IsString(notes) ? strdup(notes->valuestring) : NULL;
                 xSemaphoreGive(s_lock);
                 err = ESP_OK; break;
             }
@@ -161,6 +165,7 @@ static esp_err_t status_handler(httpd_req_t *req)
     cJSON_AddBoolToObject(json, "connected", wifi_lan_connected());
     cJSON_AddStringToObject(json, "status", s_status);
     cJSON_AddStringToObject(json, "latest", s_tag);
+    cJSON_AddStringToObject(json, "release_notes", s_notes ? s_notes : "");
     cJSON_AddBoolToObject(json, "update_available", s_newer && s_url[0]);
     cJSON_AddNumberToObject(json, "size", s_size);
     cJSON_AddNumberToObject(json, "received", s_received);
@@ -177,7 +182,7 @@ static esp_err_t start_handler(httpd_req_t *req)
     bool ready = wifi_lan_connected() && !s_busy && (!install || (s_newer && s_url[0]));
     if (ready) {
         s_busy = true; s_received = 0; s_error[0] = 0;
-        if (!install) { s_tag[0] = s_url[0] = 0; s_newer = false; s_size = 0; }
+        if (!install) { s_tag[0] = s_url[0] = 0; s_newer = false; s_size = 0; free(s_notes); s_notes = NULL; }
         strlcpy(s_status, install ? "downloading" : "checking", sizeof(s_status));
         if (xTaskCreate(worker, "online_ota", 6144, install ? (void *)1 : NULL, 4, NULL) != pdPASS) {
             s_busy = false; ready = false;
