@@ -32,6 +32,21 @@ jobs:
     needs: firmware
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+      - name: Prepare release notes
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          python - <<'PY'
+          import os, re
+          from pathlib import Path
+          tag = os.environ['RELEASE_TAG']
+          changelog = Path('docs/CHANGELOG.md').read_text(encoding='utf-8')
+          match = re.search(r'^## ' + re.escape(tag.upper()) + r'[^\n]*\n(.*?)(?=^## |\Z)', changelog, re.M | re.S)
+          if not match:
+              raise SystemExit(f'Missing changelog for {tag}')
+          Path('release-notes.md').write_text(match.group(1).strip() + '\n', encoding='utf-8')
+          PY
       - uses: actions/download-artifact@v4
         with:
           pattern: firmware-*
@@ -40,7 +55,7 @@ jobs:
       - name: Publish firmware
         uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          body_path: release-notes.md
           files: release-assets/*.bin
           fail_on_unmatched_files: true
   music:

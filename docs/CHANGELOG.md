@@ -1,11 +1,18 @@
 # Stillink — 版本更新记录
 
-## 未发布
+## V1.2.4 · 2026-10-13
 
 - 新增相簿：将拍立得或便签处理后的画面保存到服务器，支持预览、删除、选图轮播、顺序／随机模式与自定义切换间隔。
 - 相簿轮播与天气、音乐互斥；手动上传画面关闭所有自动卡片，配置保留。
+- 相簿数据持久保存到服务器，多台设备可分别设置轮播列表和切换间隔；设备断网时保留原画面。
+- 增加相簿导航图标，改善五个功能入口在小屏上的间距与文字显示。
 - 移除旧版 `flash_kit`，统一使用在线烧录页与 Release 固件包。
 - 移除仓库根目录的 `firmware`，本地打包产物改放 `build/dist/`，Release 继续由工作流自动编译发布。
+- 清理未使用的 `legacy_ref` 旧工程参考资料和日志。
+
+使用相簿前，请更新额外服务服务器，并保留原有 `data/` 目录。部署步骤见 [额外服务说明](https://github.com/sheetung/Stillink/blob/v1.2.4/docs/services.md)，相簿使用方法见 [相簿说明](https://github.com/sheetung/Stillink/blob/v1.2.4/docs/album.md)。
+
+固件提供 ESP32-S3 和 ESP32-C3 两种版本：网页升级使用 `-ota.bin`，USB 首次烧录使用完整 `.bin`。Windows 音乐工具下载 `StillinkMusic-win.zip` 后解压运行。
 
 ## V1.2.3 · 2026-10-13
 
