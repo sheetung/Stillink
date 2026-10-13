@@ -216,7 +216,8 @@ ok("R1.2.0 热点密码单字段语义（留空=保持 / 勾选清除=开放，F
 ok("R1.2.0 热点保存按需携带 pass（缺省不发送 = 固件保持）",
    js.indexOf('if ($("apClearPw").checked) fields.pass = "";') >= 0
    && js.indexOf('else if ($("apPass").value) fields.pass = $("apPass").value;') >= 0);
-ok("V1.2.0 版本 meta", page.indexOf('content="V1.2.0"') >= 0);
+const firmwareVersion=fs.readFileSync(require('path').join(__dirname,'../main/version.h'),'utf8').match(/#define\s+EPAPER_VERSION\s+"([^"]+)"/)[1];
+ok("页面版本与固件一致", page.indexOf('content="'+firmwareVersion+'"') >= 0);
 ok("R1.2.1 正式配置页不含 iOS captive 专用渲染逻辑",
    js.indexOf("captiveLitePreview") < 0 && js.indexOf("iosDevice") < 0
    && page.indexOf("iosCaptiveNotice") < 0

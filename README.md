@@ -14,6 +14,7 @@
 - **联网常在线**：连接 Wi-Fi 后空闲轻睡，仍可接收 HTTP 请求；离线支持深睡与按键唤醒。
 - **按需扩展**：天气、音乐共用可选服务，部署并配置后才显示入口。
 - **方便维护**：网页上传固件或控制页，支持 HTTP API 和电池电压校准。
+- **在线烧录**：[打开烧录页](https://sheetung.github.io/Stillink/)，选择 Release 固件，通过 USB 更新设备或首次安装，也支持本地 BIN。[部署说明](docs/flasher.md)
 
 ## 功能展示
 
@@ -69,7 +70,7 @@ Windows 通过 UDP 广播播放器的歌曲、歌手、专辑和封面，服务�
 
 ## 快速上手
 
-1. 烧录固件，连接设备热点 `Stillink-XXXX`，打开 `http://192.168.4.1`。
+1. 用电脑 Chrome / Edge 打开 [在线烧录页](https://sheetung.github.io/Stillink/)，新设备选择「首次烧录 · 完整包」，点击「连接并选择设备」后烧录。连接设备热点 `Stillink-XXXX`，打开 `http://192.168.4.1`。
 2. 在「拍立得」选图，或在「便签」编辑文字，预览后点击「上传并刷新屏幕」。
 3. 如需局域网访问，在「设备设置 → Wi-Fi 配网」选择家中的 2.4 GHz 网络并连接，之后可用 `http://stillink.local/` 访问。
 4. 如需天气或音乐，部署下方服务，在「设备设置 → 额外服务支持」保存 HTTP 根地址，再打开对应功能。
@@ -108,16 +109,18 @@ idf.py -p COM13 flash monitor
 将 `COM13` 换成实际串口。生成 USB 整包与 OTA 应用镜像：
 
 ```powershell
-python tools/package_bins.py V1.2.0
+python tools/package_bins.py V1.2.1
 ```
 
 | 文件 | 用途 |
 | --- | --- |
-| `stillink_V1.2.0_merged.bin` | 首次 USB 烧录，写入地址 `0x0` |
-| `stillink_V1.2.0_app.bin` | 已有相同分区表的 S3 设备，通过网页 OTA 升级 |
+| `firmware/stillink-v1.2.1-esp32s3.bin` | 首次 USB 烧录，写入地址 `0x0` |
+| `firmware/stillink-v1.2.1-esp32s3-ota.bin` | 已有相同分区表的 S3 设备，通过网页 OTA 升级 |
 | `page/index.html` | 单独热更新控制页 |
 
 固件 OTA 会重置屏幕与休眠等设备设置；Wi-Fi、天气、音乐和电池校准配置保留。升级后确认屏幕设置。
+
+推送新的 `vX.Y.Z` 标签时，GitHub Actions 自动构建固件、上传到 Release，并更新 GitHub Pages 烧录页。Git 仓库不保存 BIN；需要的固件可从 [Release](https://github.com/sheetung/Stillink/releases) 下载。在线烧录默认使用 OTA 应用更新已有设备，首次安装选择完整包。
 
 ## 可选服务部署
 
@@ -142,6 +145,7 @@ uv run --frozen app.py --host 0.0.0.0 --port 8787
 - [天气卡片使用](docs/weather.md)
 - [Windows 音乐广播与专辑卡片](docs/music.md)
 - [版本更新记录](docs/CHANGELOG.md)
+- [在线烧录与固件自动发布](docs/flasher.md)
 
 ## 许可
 

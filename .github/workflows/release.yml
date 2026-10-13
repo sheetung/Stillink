@@ -1,0 +1,31 @@
+name: Firmware release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+jobs:
+  firmware:
+    runs-on: ubuntu-latest
+    container: espressif/idf:v6.1
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build ESP32-S3 firmware
+        shell: bash
+        run: |
+          . "$IDF_PATH/export.sh"
+          python tools/set_release_version.py "$GITHUB_REF_NAME"
+          idf.py set-target esp32s3
+          idf.py build
+          python tools/package_bins.py "$GITHUB_REF_NAME"
+      - name: Publish firmware
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: firmware/*.bin
+          fail_on_unmatched_files: true
+  pages:
+    needs: firmware
+    uses: ./.github/workflows/pages.yml

@@ -1,6 +1,9 @@
 # Stillink — 版本更新记录
 
-## 未发布
+## V1.2.1 · 2026-10-13
+
+- 新增基于官方 esptool-js 的单页在线烧录工具，部署于 GitHub Pages，默认使用 Release 中的 Stillink S3 OTA 固件，并支持完整包与本地 BIN。
+- 固件统一输出到 `firmware/`，命名为 `stillink-vX.Y.Z-esp32s3.bin`；推送版本 tag 后自动构建 GitHub Release。
 
 - Windows 音乐广播工具支持双击无窗口后台运行，默认无需配置；提供停止入口，必要时通过 `config.yml` 调整参数。
 

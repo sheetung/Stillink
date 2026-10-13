@@ -1,0 +1,8 @@
+[project]
+name = "stillink-web-flasher-host"
+version = "1.0.0"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.uv]
+package = false

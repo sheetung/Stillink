@@ -1,0 +1,11 @@
+[Unit]
+Description=Stillink browser firmware flasher
+After=network.target
+
+[Service]
+WorkingDirectory=%h/Stillink/extra-services/web-flasher
+ExecStart=%h/.local/bin/uv run --frozen --no-dev python -m http.server 8788 --bind 0.0.0.0 --directory public
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

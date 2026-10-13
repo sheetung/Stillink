@@ -1,23 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-package_bins.py [tag] [--build-dir build] —— 把编译产物打包成刷机/OTA 用的 bin。
-
-用受管 venv 的解释器运行（里面装了 esptool 5.4）：
-    python tools/package_bins.py r1
-
-产出：
-    stillink_<tag>_merged.bin  整包（0x0）：bootloader + partitions + OTA data + app
-    stillink_<tag>_app.bin     app 镜像：OTA 上传用（build/stillink.bin 的原样拷贝）
-
-芯片类型从构建目录的 project_description.json 读取；合并使用 dio / 40m / 4MB。
-"""
+"""Generate firmware/stillink-vX.Y.Z-<chip>.bin and -ota.bin from an ESP-IDF build."""
 import os
 import sys
 import shutil
 import subprocess
 import argparse
 import json
+import re
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -33,10 +23,15 @@ def esptool(args):
 def main():
     global BUILD
     parser = argparse.ArgumentParser()
-    parser.add_argument("tag", nargs="?", default="r1")
+    parser.add_argument("tag", nargs="?", default=None)
     parser.add_argument("--build-dir", default=BUILD)
+    parser.add_argument("--output-dir", default=os.path.join(ROOT, "firmware"))
     args = parser.parse_args()
-    tag = args.tag
+    tag = args.tag or re.search(r'#define\s+EPAPER_VERSION\s+"([^"]+)"', open(os.path.join(ROOT, "main", "version.h"), encoding="utf-8").read()).group(1)
+    tag = tag.lower()
+    if not tag.startswith("v"): tag = "v" + tag
+    if not re.fullmatch(r"v\d+\.\d+\.\d+(?:-[a-z0-9.-]+)?", tag):
+        parser.error("tag must be vX.Y.Z")
     BUILD = os.path.abspath(args.build_dir)
     with open(os.path.join(BUILD, "project_description.json"), encoding="utf-8") as f:
         chip = json.load(f)["target"]
@@ -51,8 +46,9 @@ def main():
             print("missing build artifact: %s" % p)
             return 1
 
-    app_out = os.path.join(ROOT, "stillink_%s_app.bin" % tag)
-    merged = os.path.join(ROOT, "stillink_%s_merged.bin" % tag)
+    os.makedirs(args.output_dir, exist_ok=True)
+    app_out = os.path.join(args.output_dir, "stillink-%s-%s-ota.bin" % (tag, chip))
+    merged = os.path.join(args.output_dir, "stillink-%s-%s.bin" % (tag, chip))
 
     shutil.copyfile(app, app_out)
     print("app     -> %s (%d B)" % (app_out, os.path.getsize(app_out)))

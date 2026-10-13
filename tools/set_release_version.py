@@ -1,0 +1,17 @@
+"""Set the firmware and embedded page version from a release tag."""
+from pathlib import Path
+import re
+import sys
+
+root = Path(__file__).resolve().parents[1]
+tag = sys.argv[1]
+if not re.fullmatch(r"v\d+\.\d+\.\d+", tag):
+    raise SystemExit("Expected tag vX.Y.Z")
+version = tag.upper()
+for path, pattern, replacement in (
+    (root / "main/version.h", r'(#define\s+EPAPER_VERSION\s+)"[^"]+"', rf'\g<1>"{version}"'),
+    (root / "page/index.html", r'(<meta\s+name="epaper-page-version"\s+content=")[^"]+("\s*>)', rf'\g<1>{version}\g<2>'),
+):
+    text, count = re.subn(pattern, replacement, path.read_text(encoding="utf-8"))
+    if count != 1: raise SystemExit(f"Expected one version in {path}")
+    path.write_text(text, encoding="utf-8")

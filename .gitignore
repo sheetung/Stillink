@@ -11,9 +11,6 @@ sdkconfig.old
 *.zip
 unpacked/
 releases/
-# flash_kit 是一键刷机工具包，bin 是其内容，保留入库
-!flash_kit/*.bin
-!flash_kit/esp32s3/*.bin
 
 # ---- 本地备份与历史版本（保留在磁盘，不入库）----
 backups/
@@ -54,6 +51,8 @@ __pycache__/
 extra-services/music-client-win/dist/
 extra-services/music-client-win/*.spec
 extra-services/music-client-win/config.yml
+extra-services/web-flasher/node_modules/
+extra-services/web-flasher/public/
 
 # ---- 编辑器 ----
 .vscode/
