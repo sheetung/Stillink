@@ -69,12 +69,16 @@ button.sec{ background:var(--acc2); }
 button.danger{ background:var(--err); }
 button:disabled{ opacity:.45; cursor:default; }
 #modes{ display:flex; background:#f1ece1; border-radius:12px; padding:3px;
-        max-width:340px; margin:10px auto 2px; }
-#modes .mode{ flex:1; display:flex; align-items:center; justify-content:center; gap:7px;
+        max-width:440px; margin:10px auto 2px; }
+#modes .mode{ flex:1 1 auto; display:flex; align-items:center; justify-content:center; gap:7px;
               background:transparent; color:var(--mut); padding:10px 0;
-              font-size:14px; border-radius:9px; }
+              font-size:14px; border-radius:9px; white-space:nowrap; min-width:0; }
 #modes .mode.on{ background:#fff; color:var(--acc); box-shadow:0 1px 3px rgba(75,55,30,.12); }
 #modes .mode svg{ flex-shrink:0; }
+@media (max-width:400px){
+  #modes .mode{gap:4px;font-size:13px;}
+  #modes .mode svg{width:14px;height:14px;}
+}
 #steps{ display:flex; align-items:center; justify-content:center; gap:8px;
         margin:8px 0 2px; font-size:12px; color:var(--mut); flex-wrap:wrap; }
 #steps span.on{ color:var(--acc); font-weight:600; }
