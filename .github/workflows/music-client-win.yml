@@ -1,5 +1,8 @@
 name: Windows music client
 on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/music-client-win.yml']
   workflow_dispatch:
     inputs:
       release_tag:
@@ -32,9 +35,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: StillinkMusic-win
-          path: |
-            extra-services/music-client-win/dist/StillinkMusic.exe
-            extra-services/music-client-win/dist/StillinkMusic-win.zip
+          path: extra-services/music-client-win/dist/StillinkMusic-win.zip
       - name: Attach Windows tool to Release
         shell: pwsh
         env:
@@ -47,5 +48,11 @@ jobs:
             $musicTag = gh release view --json tagName --jq '.tagName'
             if ($LASTEXITCODE -ne 0) { throw 'No published Release found' }
           }
-          gh release upload $musicTag extra-services/music-client-win/dist/StillinkMusic.exe extra-services/music-client-win/dist/StillinkMusic-win.zip --clobber
+          gh release upload $musicTag extra-services/music-client-win/dist/StillinkMusic-win.zip --clobber
           if ($LASTEXITCODE -ne 0) { throw 'Release upload failed' }
+          $musicExeAsset = gh release view $musicTag --json assets --jq '.assets[] | select(.name == "StillinkMusic.exe") | .name'
+          if ($LASTEXITCODE -ne 0) { throw 'Release asset lookup failed' }
+          if ($musicExeAsset) {
+            gh release delete-asset $musicTag StillinkMusic.exe --yes
+            if ($LASTEXITCODE -ne 0) { throw 'Standalone EXE removal failed' }
+          }
