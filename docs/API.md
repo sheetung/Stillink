@@ -126,9 +126,17 @@ ESP 请求 `${service_url}/v1/weather.bin?latitude=...&longitude=...&name=...`�
 
 `GET /api/music` 返回 `enabled`、`service_url`、最后显示的 `version`、`status` 和 `error`。状态包括 `disabled`、`waiting_wifi`、`waiting`、`loading`、`ready`、`error`。`POST /api/music/refresh` 在启用且联网时返回 202，未启用或未联网返回 409。
 
-设备从服务的 `/v1/music.json` 获取当前歌曲版本，版本变化时请求 `/v1/music.bin?v=版本`，校验长度和 CRC 后刷新。自动刷新间隔至少 60 秒，手动刷新可以绕过间隔；失败约 30 秒后重试。启用并保存音乐会关闭天气；启用并保存天气会关闭音乐。有效的 `/api/frame` 手动上传会关闭两项自动刷新，并保留配置；关闭状态持久保存，重启后不自动恢复。
+设备从服务的 `/v1/music.json` 获取当前歌曲版本，版本变化时请求 `/v1/music.bin?v=版本`，校验长度和 CRC 后刷新。自动刷新间隔至少 60 秒，手动刷新可以绕过间隔；失败约 30 秒后重试。启用并保存音乐会关闭天气和相簿；启用并保存天气会关闭音乐和相簿。有效的 `/api/frame` 手动上传会关闭所有自动刷新，并保留配置；关闭状态持久保存，重启后不自动恢复。
 
 Windows UDP 广播和服务器部署见 [音乐功能说明](music.md)。
+
+## 相簿 API
+
+`POST /api/album` 保存 `{"enabled":true,"service_url":"http://服务器:8787","playlist":"服务器返回的32位列表ID","mode":"sequence","interval":1800}`。`mode` 为 `sequence` 或 `random`，`interval` 为 60–86400 秒。只关闭轮播可发送 `{"enabled":false}`。配置重启与 OTA 保留，恢复出厂清除。
+
+`GET /api/album` 返回 `enabled`、`service_url`、`playlist`、`mode`、`interval`、`current`（最后显示的照片 ID）、`status` 和 `error`。状态与音乐 API 相同。`POST /api/album/refresh` 请求下一张，启用且联网时返回 202，否则返回 409。
+
+设备按自身屏幕尺寸从服务器取得下一张照片 ID，再流式下载二进制帧，校验长度和 CRC 后刷新。相簿、天气和音乐互斥；有效的 `/api/frame` 手动上传会关闭三项自动刷新，配置保留。照片与服务器接口见 [相簿说明](album.md)。
 
 ## GitHub Release 在线固件升级
 

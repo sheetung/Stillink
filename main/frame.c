@@ -3,6 +3,7 @@
 #include "power.h"
 #include "weather.h"
 #include "music.h"
+#include "album.h"
 
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
@@ -196,7 +197,7 @@ esp_err_t frame_upload_handler(httpd_req_t *req)
 
     /* Only accepted manual frames turn off scheduled cards. The framebuffer lock
        and revision checks prevent an older download overwriting this upload. */
-    if (weather_disable() != ESP_OK || music_disable() != ESP_OK) {
+    if (weather_disable() != ESP_OK || music_disable() != ESP_OK || album_disable() != ESP_OK) {
         xSemaphoreGive(s_fb_mutex);
         return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Could not disable scheduled cards");
     }

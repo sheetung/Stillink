@@ -2,7 +2,7 @@
 
 **把喜欢的瞬间，放在身边。**
 
-基于 ESP32-S3 / ESP32-C3 与四色电子墨水屏的网页相框。打开浏览器，就能把照片、便签、天气和正在听的音乐放到桌面；断电后，画面依然保留。
+基于 ESP32-S3 / ESP32-C3 与四色电子墨水屏的网页相框。打开浏览器，就能把照片、便签、天气、正在听的音乐和相簿轮播放到桌面；断电后，画面依然保留。
 
 [快速上手](#快速上手) · [固件构建](#固件构建) · [服务部署](#可选服务部署) · [HTTP API](docs/API.md) · [更新记录](docs/CHANGELOG.md)
 
@@ -12,7 +12,7 @@
 - **四色墨水屏**：黑、白、黄、红，支持 A0 / A1 屏幕配置。
 - **浏览器编辑**：裁剪、旋转、调色、留白和文字排版，本地预览后上传。
 - **联网常在线**：连接 Wi-Fi 后空闲轻睡，仍可接收 HTTP 请求；离线支持深睡与按键唤醒。
-- **按需扩展**：天气、音乐共用可选服务，部署并配置后才显示入口。
+- **按需扩展**：天气、音乐、相簿共用可选服务，部署并配置后才显示入口。
 - **方便维护**：网页上传固件或控制页，支持 HTTP API 和电池电压校准。
 - **在线烧录**：[打开烧录页](https://sheetung.github.io/Stillink/)，选择 Release 固件，通过 USB 更新设备或首次安装，也支持本地 BIN。[部署说明](docs/flasher.md)
 
@@ -44,6 +44,12 @@ Windows 通过 UDP 广播播放器的歌曲、歌手、专辑和封面，服务�
 
 ![音乐：当前 Windows UDP 广播歌曲的圆角大封面与灰色预览框](docs/images/music.png)
 
+### 相簿
+
+将拍立得处理后的照片或便签画面保存到服务器，点击缩略图预览，勾选照片轮播。支持顺序循环和随机播放，默认每 30 分钟切换，可设置 1 分钟至 24 小时；多台设备共用照片库，各自设置轮播计划。[使用说明](docs/album.md)
+
+![相簿：服务器照片、预览与轮播设置](docs/images/album.png)
+
 ### 配网与局域网访问
 
 点击 Wi-Fi 名称自动扫描，连接后保存配置并关闭设备热点。接入同一路由器，即可通过设备 IP 或 [stillink.local](http://stillink.local/) 操作。
@@ -52,7 +58,7 @@ Windows 通过 UDP 广播播放器的歌曲、歌手、专辑和封面，服务�
 
 ### 额外服务支持
 
-天气与音乐只需配置一次共用服务地址。保存后显示两张状态卡片，展开设置时每 15 秒更新：天气显示服务是否就绪，音乐未收到 Windows 广播时显示「等待音乐」，收到歌曲后才显示「可用」。为节省 ESP 的 Flash 和内存，字库与卡片渲染放在服务器，设备直接下载二进制图片。未配置服务时，只显示拍立得和便签。
+天气、音乐与相簿只需配置一次共用服务地址。保存后显示三张状态卡片，展开设置时每 15 秒更新：天气显示服务是否就绪，音乐未收到 Windows 广播时显示「等待音乐」，收到歌曲后才显示「可用」。为节省 ESP 的 Flash 和内存，字库与卡片渲染放在服务器，设备直接下载二进制图片。未配置服务时，只显示拍立得和便签。
 
 ![设备设置：共用服务地址与天气、音乐状态卡片](docs/images/services.png)
 
@@ -120,11 +126,11 @@ python tools/package_bins.py
 
 | 文件 | 用途 |
 | --- | --- |
-| `firmware/stillink-v1.2.1-esp32s3.bin` | 首次 USB 烧录，写入地址 `0x0` |
-| `firmware/stillink-v1.2.1-esp32s3-ota.bin` | 已有相同分区表的 S3 设备，通过网页 OTA 升级 |
+| `stillink-vX.Y.Z-esp32s3.bin` | 首次 USB 烧录，写入地址 `0x0` |
+| `stillink-vX.Y.Z-esp32s3-ota.bin` | 已有相同分区表的 S3 设备，通过网页 OTA 升级 |
 | `page/index.html` | 单独热更新控制页 |
 
-Release 会分别提供 `esp32s3` 和 `esp32c3` 的完整包与 `-ota.bin`，两种芯片的固件不能混用。在线烧录页可按芯片选择，设备在线升级自动匹配芯片。
+本地打包输出到 `build/dist/`，构建产物不提交到 Git。Release 会分别提供 `esp32s3` 和 `esp32c3` 的完整包与 `-ota.bin`，两种芯片的固件不能混用。在线烧录页可按芯片选择，设备在线升级自动匹配芯片。
 
 固件 OTA 会重置屏幕与休眠等设备设置；Wi-Fi、天气、音乐和电池校准配置保留。升级后确认屏幕设置。
 
@@ -132,7 +138,7 @@ Release 会分别提供 `esp32s3` 和 `esp32c3` 的完整包与 `-ota.bin`，两
 
 ## 可选服务部署
 
-天气和音乐共用 `extra-services/server` 中的 Python 服务，需要 **Python 3.11+、uv 和中文字体**。Linux 示例：
+天气、音乐和相簿共用 `extra-services/server` 中的 Python 服务，需要 **Python 3.11+、uv 和中文字体**。Linux 示例：
 
 ```bash
 sudo apt install git fonts-noto-cjk
@@ -144,7 +150,7 @@ uv run --frozen app.py --host 0.0.0.0 --port 8787
 
 在「设备设置 → 额外服务支持」填写 `http://服务器IP:8787` 并保存。服务默认使用 HTTP `8787` 和音乐 UDP `8790`；常驻运行与 systemd 配置见 [总部署说明](docs/services.md)。天气数据来自 [Open-Meteo](https://open-meteo.com/)，服务需要能访问互联网。
 
-音乐还需在 Windows 下载并解压 [音乐工具包](https://github.com/sheetung/Stillink/releases/latest/download/StillinkMusic-win.zip)，双击 **StillinkMusic.exe**，即可在后台广播当前歌曲，无需安装 Python 或填写地址。右键任务栏通知区域的音乐图标，选择「退出」可停止。Windows 与服务器需处于同一局域网；工具使用与构建见 [音乐说明](docs/music.md)。天气和音乐互斥：启用并保存其中一项会关闭另一项。拍立得或便签上传成功后，两项自动刷新都会关闭，配置保留。
+音乐还需在 Windows 下载并解压 [音乐工具包](https://github.com/sheetung/Stillink/releases/latest/download/StillinkMusic-win.zip)，双击 **StillinkMusic.exe**，即可在后台广播当前歌曲，无需安装 Python 或填写地址。右键任务栏通知区域的音乐图标，选择「退出」可停止。Windows 与服务器需处于同一局域网；工具使用与构建见 [音乐说明](docs/music.md)。天气、音乐与相簿轮播互斥：启用并保存其中一项会关闭其他项。拍立得或便签上传成功后，所有自动刷新都会关闭，配置保留。
 
 ## 文档
 

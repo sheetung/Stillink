@@ -4,6 +4,7 @@
 #include "power.h"
 #include "online_ota.h"
 #include "weather.h"
+#include "album.h"
 #include "cJSON.h"
 #include "esp_http_client.h"
 #include "esp_crt_bundle.h"
@@ -123,8 +124,11 @@ static esp_err_t config_handler(httpd_req_t *req)
     }
     if (next.enabled && !next.url[0]) valid = false;
     cJSON_Delete(json);
+    xSemaphoreGive(s_lock);
     esp_err_t err = ESP_OK;
     if (valid && next.enabled) err = weather_disable();
+    if (valid && next.enabled && err == ESP_OK) err = album_disable();
+    xSemaphoreTake(s_lock, portMAX_DELAY);
     if (valid && err == ESP_OK) {
         nvs_handle_t nvs;
         err = nvs_open("music", NVS_READWRITE, &nvs);

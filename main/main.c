@@ -54,6 +54,7 @@
 #include "store.h"
 #include "weather.h"
 #include "music.h"
+#include "album.h"
 
 #include "index_html.h"     /* 由 tools/make_index_header.py 固化，改页必重跑 */
 
@@ -61,7 +62,7 @@ static const char *TAG = "main";
 
 #define HOLD_RESET_S    5          /* 长按恢复出厂 */
 #define HTTPD_STACK     4096
-#define HTTPD_MAX_URI   28
+#define HTTPD_MAX_URI   32
 
 /* ---------------- 请求小工具 ---------------- */
 
@@ -408,6 +409,7 @@ static httpd_handle_t start_server(void)
     wifi_lan_register(server);
     weather_register(server);
     music_register(server);
+    album_register(server);
 
     /* 必须在所有业务路由之后注册：OS 探测路径此前直接 404，根本进不了首页。
        兜底 GET 同时覆盖带查询参数的探测与厂商自定义路径。 */
@@ -516,6 +518,11 @@ void app_main(void)
     captive_dns_start();
     weather_init();
     music_init();
+    album_init();
+    if (album_enabled()) {
+        ESP_ERROR_CHECK(weather_disable());
+        ESP_ERROR_CHECK(music_disable());
+    }
     if (music_enabled()) ESP_ERROR_CHECK(weather_disable());
 
     if (start_server() == NULL) {

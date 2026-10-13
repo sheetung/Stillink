@@ -18,7 +18,7 @@ if(process.argv.includes('--local')){
   const release={version,chip};
   for(const [type,suffix] of [['ota','-ota'],['full','']]){
     const file=`stillink-${version}-${chip}${suffix}.bin`;
-    let data;try{data=await readFile(path.join(dir,'../../firmware',file));}catch(e){if(e.code==='ENOENT')continue;throw e;}
+    let data;try{data=await readFile(path.join(dir,'../../build/dist',file));}catch(e){if(e.code==='ENOENT')continue;throw e;}
     release[type]=await asset(data,file);
   }
   if(release.ota||release.full)manifest.releases.push(release);

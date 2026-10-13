@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Generate firmware/stillink-vX.Y.Z-<chip>.bin and -ota.bin from an ESP-IDF build."""
+"""Generate build/dist/stillink-vX.Y.Z-<chip>.bin and -ota.bin from an ESP-IDF build."""
 import os
 import sys
 import shutil
@@ -25,7 +25,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("tag", nargs="?", default=None)
     parser.add_argument("--build-dir", default=BUILD)
-    parser.add_argument("--output-dir", default=os.path.join(ROOT, "firmware"))
+    parser.add_argument("--output-dir", default=os.path.join(ROOT, "build", "dist"))
     args = parser.parse_args()
     tag = args.tag or re.search(r'#define\s+EPAPER_VERSION\s+"([^"]+)"', open(os.path.join(ROOT, "main", "version.h"), encoding="utf-8").read()).group(1)
     tag = tag.lower()

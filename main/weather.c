@@ -1,5 +1,6 @@
 #include "weather.h"
 #include "music.h"
+#include "album.h"
 #include "wifi_lan.h"
 #include "frame.h"
 #include "power.h"
@@ -176,7 +177,7 @@ static esp_err_t config_handler(httpd_req_t *req)
     if (next->enabled && (!next->name[0] || !next->service_url[0])) valid = false;
     cJSON_Delete(json);
     if (!valid) { free(next); return httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid weather settings"); }
-    if (next->enabled && music_disable() != ESP_OK) {
+    if (next->enabled && (music_disable() != ESP_OK || album_disable() != ESP_OK)) {
         free(next);
         return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Could not disable music");
     }
@@ -270,7 +271,7 @@ static void worker(void *unused)
     for (;;) {
         vTaskDelay(pdMS_TO_TICKS(3000));
         if (online_ota_busy()) continue;
-        if (music_enabled()) continue; /* Also covers legacy settings with both enabled. */
+        if (music_enabled() || album_enabled()) continue;
         time_t now = time(NULL);
         xSemaphoreTake(s_lock, portMAX_DELAY);
         int offset = s_has_data ? s_data.utc_offset : 8 * 3600;

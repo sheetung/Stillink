@@ -1,16 +1,16 @@
 # 额外服务部署
 
-天气和音乐共用一个服务器，只需部署一次；设备上两项自动卡片互斥，启用并保存一项会关闭另一项；配置各自保留。天气用户无需运行 Windows 工具，音乐用户无需配置天气。
+天气、音乐和相簿共用一个服务器，只需部署一次。设备上三项自动卡片互斥，启用并保存一项会关闭其他项，配置各自保留。天气用户无需运行 Windows 工具，音乐用户无需配置天气。
 
 ## 目录与分工
 
 ```text
 extra-services/
-├── server/          HTTP 卡片服务、天气模块、UDP 音乐接收器
+├── server/          HTTP 卡片服务、天气模块、UDP 音乐接收器与相簿存储
 └── music-client-win/    Windows 音乐信息与原始封面广播
 ```
 
-服务器负责字库与卡片渲染，ESP 保存配置并请求二进制图片。部署完成后，功能操作分别见 [天气](weather.md) 和 [音乐](music.md)。
+服务器负责字库与卡片渲染，ESP 保存配置并请求二进制图片。部署完成后，功能操作分别见 [天气](weather.md)、[音乐](music.md) 和 [相簿](album.md)。
 
 ## 服务器部署
 
@@ -33,6 +33,18 @@ curl http://127.0.0.1:8787/health
 ```
 
 正常返回 `status: "ok"`。`services.weather.available` 表示天气服务已就绪（不请求天气上游）；`services.music.receiver_ready` 表示 UDP 接收端已启动，`broadcast_active` 表示最近 35 秒收到有效广播，`available` 表示接收端已启动且有近期广播和歌曲。仅启动服务器而未启动 Windows 广播工具时，音乐卡片显示「等待音乐」。自定义字体使用 `STILLINK_FONT=/绝对路径/font.ttf` 或 `--font`；音乐接收端口使用 `--music-port`。系统字体不随仓库分发。
+
+相簿默认持久保存到服务工作目录的 `data/album.sqlite3`。可通过 `--data-dir /持久存储目录` 指定路径，升级服务时保留该目录；备份时先停止服务再复制数据库。
+
+## 更新服务
+
+```bash
+cd ~/Stillink
+git pull --ff-only
+cd extra-services/server
+uv sync --frozen
+systemctl --user restart stillink-services
+```
 
 ## 常驻运行
 
@@ -71,7 +83,7 @@ HTTP 与 UDP 端口、设备地址和接口保持一致，设备无需重新配�
 
 1. 让 ESP 连接路由器 Wi-Fi。
 2. 打开「设备设置 → 额外服务支持」，填写服务器的 HTTP 根地址，如 `http://服务器IP:8787`。
-3. 点击「测试连接」查看服务状态；保存时会先检测连接，检测失败时不修改已有配置。保存后显示天气和音乐两张状态卡片，并开启对应功能入口。展开服务设置时每 15 秒更新状态，Windows 未广播不会阻止保存地址。
+3. 点击「测试连接」查看服务状态；保存时会先检测连接，检测失败时不修改已有配置。保存后显示天气、音乐和相簿三张状态卡片，并开启对应功能入口。展开服务设置时每 15 秒更新状态，Windows 未广播不会阻止保存地址。
 4. 按需启用天气或音乐，两个功能页面无需重复填写地址。
 
 服务需持续运行。公网部署可使用反向代理提供 HTTPS，ESP 验证可信证书；HTTPS 控制页预览也需使用 HTTPS 服务地址。清空共用地址并保存会关闭相关功能并隐藏入口。
@@ -89,12 +101,13 @@ HTTP 与 UDP 端口、设备地址和接口保持一致，设备无需重新配�
 - `GET /health`：共用服务健康检查。
 - `/v1/weather.json`、`.png`、`.bin`：天气数据与图片，参数见 [天气说明](weather.md)。
 - `/v1/music.json`、`.png`、`.bin`：音乐状态与图片，参数见 [音乐说明](music.md)。
+- `/v1/album/photos`、`/v1/album/playlists`、`/v1/album/next.json`：相簿保存、列表与轮播，见 [相簿说明](album.md)。
 
 在服务器目录验证天气接口、帧格式及音乐 UDP 接收：
 
 ```bash
 cd ~/Stillink/extra-services/server
-uv run --frozen python -m unittest test_app test_music
+uv run --frozen python -m unittest test_app test_music test_album
 ```
 
 Windows 广播协议测试：

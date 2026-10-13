@@ -2,7 +2,7 @@
 const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm"),path=require("node:path");
 const page=fs.readFileSync(path.join(__dirname,"../page/index.html"),"utf8");
 const elements={};
-for(const card of ["weather","music"]){
+for(const card of ["weather","music","album"]){
   for(const suffix of ["Enabled","Status","Refresh","Message"])
     elements[card+suffix]={checked:true,disabled:false,textContent:"",classList:{remove(){}}};
 }
@@ -17,6 +17,11 @@ elements.musicEnabled.checked=true;
 context.notifyDisplayMode("music");
 assert.equal(elements.weatherEnabled.checked,false);
 assert.equal(elements.musicEnabled.checked,true);
+elements.albumEnabled.checked=true;
+context.notifyDisplayMode("album");
+assert.equal(elements.albumEnabled.checked,true);
+assert.equal(elements.musicEnabled.checked,false);
+elements.musicEnabled.checked=true;
 // Run the actual upload completion callback: a rejected upload must leave modes enabled.
 const callback=page.slice(page.indexOf("  xhr.onload = function(){",page.indexOf("function upload(")),page.indexOf("  xhr.onerror = function(){",page.indexOf("function upload(")));
 context.xhr={status:400,responseText:"bad CRC"};
@@ -29,6 +34,7 @@ context.xhr.status=200;
 context.xhr.onload();
 assert.equal(elements.weatherEnabled.checked,false);
 assert.equal(elements.musicEnabled.checked,false);
+assert.equal(elements.albumEnabled.checked,false);
 assert.equal(elements.weatherRefresh.disabled,true);
 assert.match(elements.musicMessage.textContent,/配置保留/);
 console.log("DISPLAY MODES: PASS (exclusive saves, accepted manual upload disables both, rejected upload preserves modes)");

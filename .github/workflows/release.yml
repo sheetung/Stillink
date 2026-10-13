@@ -26,7 +26,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: firmware-${{ matrix.chip }}
-          path: firmware/*.bin
+          path: build/dist/*.bin
           if-no-files-found: error
   publish:
     needs: firmware
@@ -35,13 +35,13 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           pattern: firmware-*
-          path: firmware
+          path: release-assets
           merge-multiple: true
       - name: Publish firmware
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
-          files: firmware/*.bin
+          files: release-assets/*.bin
           fail_on_unmatched_files: true
   music:
     needs: publish

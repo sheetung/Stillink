@@ -1,9 +1,9 @@
 "use strict";
 const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
 const page=fs.readFileSync(require("node:path").join(__dirname,"../page/index.html"),"utf8");
-const source=page.slice(page.indexOf("/* ---------- 音乐卡片："),page.lastIndexOf("</script>"));
+const source=page.slice(page.indexOf("/* ---------- 音乐卡片："),page.indexOf("/* ---------- 相簿："));
 function el(){return {value:"",checked:false,hidden:false,disabled:false,textContent:"",style:{},events:{},children:[],classList:{add(){},remove(){},toggle(){}},addEventListener(k,f){this.events[k]=f;},replaceChildren(...v){this.children=v;}};}
-const ids=[...page.matchAll(/id="(music[^" ]*|modeMusic|modeWeather|editorGrid|steps)"/g)].map(m=>m[1]);
+const ids=[...page.matchAll(/id="(music[^" ]*|modeMusic|modeWeather|modeAlbum|editorGrid|steps)"/g)].map(m=>m[1]);
 const elements=Object.fromEntries(ids.map(id=>[id,el()])),modes=[el(),el()],queue=[],requests=[];
 const respond=body=>queue.push(body),flush=()=>new Promise(setImmediate),click=id=>elements[id].events.click();
 const notifications=[];

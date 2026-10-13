@@ -26,7 +26,7 @@ npm ci
 npm run build
 ```
 
-默认从 Release 获取固件，输出到 `public/`。本地测试新固件时，先用 ESP-IDF 构建，并在仓库根目录运行 `python tools/package_bins.py v1.2.1`，再进入本目录运行 `npm run build -- --local`。本地固件放在仓库的 `firmware/`，不会提交到 Git。
+默认从 Release 获取固件，输出到 `public/`。本地测试新固件时，先用 ESP-IDF 构建，并在仓库根目录运行 `python tools/package_bins.py`，再进入本目录运行 `npm run build -- --local`。本地固件放在构建目录的 `build/dist/`，不会提交到 Git。
 
 ## 树莓派部署
 
