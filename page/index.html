@@ -195,8 +195,9 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
 .dmark.off{ visibility:hidden; }
 @media (max-width:480px){ .slider label{ width:66px; } }
 
-#modeWeather[hidden],#modeMusic[hidden],#weatherPane[hidden],#musicPane[hidden]{display:none}#weatherPane,#musicPane{margin-top:22px}.weatherLayout{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:22px;align-items:start}.weatherPreviewLabel{font-size:12px;color:var(--mut);margin-bottom:12px}.weatherFrame{background:#b7b9bc;padding:11px;border-radius:22px;box-shadow:0 10px 24px #30210e12}#weatherScreen,#musicScreen{background:white;aspect-ratio:768/552;overflow:hidden;border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--mut);text-align:center}#weatherScreen img,#musicScreen img{width:100%;height:100%;display:block}#weatherScreen small,#musicScreen small{font-size:12px}.weatherConfig{border:1px solid var(--line);border-radius:12px;padding:18px}.weatherConfig h2{margin-bottom:4px}.weatherEnable{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);margin:18px 0;padding-bottom:12px}.weatherEnable .hint{margin-top:3px}.weatherSwitch{display:block;width:40px;height:24px;position:relative;flex:none;margin-left:7px}.weatherSwitch input{opacity:0;position:absolute;width:100%;height:100%;margin:0;cursor:pointer}.weatherSwitch i{display:block;background:#d8d1c6;border-radius:20px;width:40px;height:24px;pointer-events:none}.weatherSwitch i:after{content:"";position:absolute;left:3px;top:3px;background:white;border-radius:50%;width:18px;height:18px}.weatherSwitch input:checked+i{background:var(--acc2)}.weatherSwitch input:checked+i:after{transform:translateX(16px)}.weatherSwitch input:focus-visible+i{outline:2px solid var(--acc)}.weatherLabel{display:block;color:var(--mut);font-size:12px;margin:17px 0 7px}.weatherLocation{position:relative}#weatherLocation{width:100%}#weatherCities{position:absolute;top:calc(100% + 4px);left:0;right:0;background:white;box-shadow:0 8px 25px #30210e20;border:1px solid var(--line);border-radius:9px;padding:5px;z-index:5;max-height:230px;overflow:auto}#weatherCities button{display:block;width:100%;text-align:left;background:transparent;color:var(--ink);padding:8px;font-size:12px}#weatherCities button:hover{background:var(--bg)}#weatherCities small{display:block;color:var(--mut);font-size:10px}.weatherTimes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.weatherTimes label{font-size:11px;color:var(--mut)}.weatherTimes input{margin-top:5px;display:block;width:100%;min-width:0;padding:8px 3px;font-size:12px;border:1px solid var(--line);border-radius:8px;background:white;color:var(--ink)}.weatherStatus{font-size:12px;background:#f0f6f2;color:var(--acc2);border-radius:9px;padding:11px;margin-top:17px}.weatherStatus.warn{background:#fbf1de;color:#9b762b}.weatherActions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:17px}.weatherActions button{padding:9px 4px;font-size:12px}#weatherMessage{min-height:20px}.weatherFoot{font-size:11px;color:var(--mut);padding-top:12px;border-top:1px solid var(--line);margin-bottom:0}
+#modeAlbum[hidden],#albumPane[hidden],#saveAlbumPhoto[hidden],#modeWeather[hidden],#modeMusic[hidden],#weatherPane[hidden],#musicPane[hidden]{display:none}#weatherPane,#musicPane,#albumPane{margin-top:22px}.weatherLayout{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:22px;align-items:start}.weatherPreviewLabel{font-size:12px;color:var(--mut);margin-bottom:12px}.weatherFrame{background:#b7b9bc;padding:11px;border-radius:22px;box-shadow:0 10px 24px #30210e12}#weatherScreen,#musicScreen,#albumScreen{background:white;aspect-ratio:768/552;overflow:hidden;border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--mut);text-align:center}#weatherScreen img,#musicScreen img,#albumScreen img{width:100%;height:100%;display:block}#weatherScreen small,#musicScreen small{font-size:12px}.weatherConfig{border:1px solid var(--line);border-radius:12px;padding:18px}.weatherConfig h2{margin-bottom:4px}.weatherEnable{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);margin:18px 0;padding-bottom:12px}.weatherEnable .hint{margin-top:3px}.weatherSwitch{display:block;width:40px;height:24px;position:relative;flex:none;margin-left:7px}.weatherSwitch input{opacity:0;position:absolute;width:100%;height:100%;margin:0;cursor:pointer}.weatherSwitch i{display:block;background:#d8d1c6;border-radius:20px;width:40px;height:24px;pointer-events:none}.weatherSwitch i:after{content:"";position:absolute;left:3px;top:3px;background:white;border-radius:50%;width:18px;height:18px}.weatherSwitch input:checked+i{background:var(--acc2)}.weatherSwitch input:checked+i:after{transform:translateX(16px)}.weatherSwitch input:focus-visible+i{outline:2px solid var(--acc)}.weatherLabel{display:block;color:var(--mut);font-size:12px;margin:17px 0 7px}.weatherLocation{position:relative}#weatherLocation{width:100%}#weatherCities{position:absolute;top:calc(100% + 4px);left:0;right:0;background:white;box-shadow:0 8px 25px #30210e20;border:1px solid var(--line);border-radius:9px;padding:5px;z-index:5;max-height:230px;overflow:auto}#weatherCities button{display:block;width:100%;text-align:left;background:transparent;color:var(--ink);padding:8px;font-size:12px}#weatherCities button:hover{background:var(--bg)}#weatherCities small{display:block;color:var(--mut);font-size:10px}.weatherTimes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.weatherTimes label{font-size:11px;color:var(--mut)}.weatherTimes input{margin-top:5px;display:block;width:100%;min-width:0;padding:8px 3px;font-size:12px;border:1px solid var(--line);border-radius:8px;background:white;color:var(--ink)}.weatherStatus{font-size:12px;background:#f0f6f2;color:var(--acc2);border-radius:9px;padding:11px;margin-top:17px}.weatherStatus.warn{background:#fbf1de;color:#9b762b}.weatherActions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:17px}.weatherActions button{padding:9px 4px;font-size:12px}#weatherMessage{min-height:20px}.weatherFoot{font-size:11px;color:var(--mut);padding-top:12px;border-top:1px solid var(--line);margin-bottom:0}
 @media(max-width:760px){.weatherLayout{grid-template-columns:1fr}.weatherTimes input{padding:10px 6px;font-size:13px}.weatherConfig{padding:17px}}
+.albumPhotos{display:grid;grid-template-columns:repeat(auto-fill,minmax(135px,1fr));gap:12px;margin-top:18px}.albumPhoto{border:1px solid var(--line);padding:10px;border-radius:12px;background:white}.albumPhoto img{width:100%;aspect-ratio:768/552;object-fit:contain;border-radius:7px;cursor:pointer}.albumPhoto label{display:flex;align-items:center;gap:5px;font-size:12px;overflow-wrap:anywhere;margin:8px 0}.albumPhoto button{font-size:11px;padding:4px 8px}.serviceCards{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
 </style>
 </head>
 <body>
@@ -234,6 +235,7 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
       <button class="mode" data-m="1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>便签</button>
       <button class="mode" id="modeWeather" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></svg>天气</button>
       <button class="mode" id="modeMusic" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>音乐</button>
+      <button class="mode" id="modeAlbum" hidden>相簿</button>
     </div>
     <div id="weatherPane" hidden>
       <div class="weatherLayout">
@@ -247,7 +249,7 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
           <p class="hint">默认每天 3 次。保存并启用后会立即更新一次。</p>
           <div id="weatherStatus" class="weatherStatus" role="status" aria-live="polite">正在读取天气设置…</div>
           <div class="weatherActions"><button id="weatherSave">保存天气设置</button><button class="mini" id="weatherRefresh" disabled>立即刷新</button></div><p id="weatherMessage" class="hint" role="status" aria-live="polite"></p>
-          <p class="weatherFoot">启用并保存天气会自动关闭音乐。拍立得或便签上传成功后，两种自动卡片都会关闭，位置和时间配置保留。断网或请求失败时保留原画面。</p>
+          <p class="weatherFoot">启用并保存天气会自动关闭音乐和相簿。拍立得或便签上传成功后，所有自动卡片都会关闭，位置和时间配置保留。断网或请求失败时保留原画面。</p>
         </div>
       </div>
     </div>
@@ -256,13 +258,29 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
         <div><div class="weatherPreviewLabel">音乐卡片 · 768 × 552</div><div class="weatherFrame"><div id="musicScreen"><p>连接 Windows 音乐服务。<br><small>播放歌曲后显示专辑卡片。</small></p></div></div><p class="hint">黑 · 白 · 黄 · 红 · 切歌时自动更新</p></div>
         <div class="weatherConfig">
           <h2>音乐卡片</h2><p class="hint">Windows 广播当前音乐，设备主动请求并刷新。</p>
-          <div class="weatherEnable"><div><b>启用音乐卡片</b><p class="hint">启用并保存后自动关闭天气；手动上传图片会关闭自动卡片。</p></div><label class="weatherSwitch"><input type="checkbox" id="musicEnabled" aria-label="启用音乐卡片"><i></i></label></div>
+          <div class="weatherEnable"><div><b>启用音乐卡片</b><p class="hint">启用并保存后自动关闭天气和相簿；手动上传图片会关闭自动卡片。</p></div><label class="weatherSwitch"><input type="checkbox" id="musicEnabled" aria-label="启用音乐卡片"><i></i></label></div>
           <p class="hint"><a href="https://github.com/sheetung/Stillink/blob/main/docs/music.md" target="_blank" rel="noopener">使用说明</a></p>
           <p id="musicTrack" class="hint">等待音乐服务。</p>
           <div id="musicStatus" class="weatherStatus" role="status" aria-live="polite">正在读取音乐设置…</div>
           <div class="weatherActions"><button id="musicSave">保存音乐设置</button><button class="mini" id="musicPreview">预览卡片</button></div>
           <button class="mini" id="musicRefresh" style="width:100%;margin-top:8px" disabled>立即刷新屏幕</button><p id="musicMessage" class="hint" role="status" aria-live="polite"></p>
           <p class="weatherFoot">电脑与设备需在同一网络。Windows 广播工具和服务器持续运行即可，无需在 Windows 指定 ESP 地址。设备只在歌曲变化时刷新，自动刷新间隔至少 60 秒；暂停或恢复不会重复刷新。</p>
+        </div>
+      </div>
+    </div>
+    <div id="albumPane" hidden>
+      <div class="weatherLayout">
+        <div><div class="weatherPreviewLabel">相簿预览 · 点击照片查看</div><div class="weatherFrame"><div id="albumScreen"><small>在拍立得中处理照片，再保存到相簿。</small></div></div><div id="albumPhotos" class="albumPhotos"></div><p id="albumEmpty" class="hint"></p></div>
+        <div class="weatherConfig">
+          <h2>相簿轮播</h2><p class="hint">照片保存在服务器，设备按设定时间请求图片。 <a href="https://github.com/sheetung/Stillink/blob/main/docs/album.md" target="_blank" rel="noopener">使用说明 ↗</a></p>
+          <div class="weatherEnable"><div><b>启用相簿轮播</b><p class="hint">保存启用后关闭天气和音乐。</p></div><label class="weatherSwitch"><input type="checkbox" id="albumEnabled" aria-label="启用相簿轮播"><i></i></label></div>
+          <label class="weatherLabel" for="albumMode">轮播模式</label><select id="albumMode" style="width:100%"><option value="sequence">顺序循环</option><option value="random">随机播放</option></select>
+          <label class="weatherLabel" for="albumInterval">切换间隔（分钟）</label><input type="number" id="albumInterval" min="1" max="1440" value="30" style="width:100%">
+          <p class="hint">默认 30 分钟，最短 1 分钟。勾选下方照片加入轮播；顺序按照片保存时间排列。</p>
+          <div class="weatherActions"><button class="mini" id="albumSelectAll">全选照片</button><button class="mini" id="albumReload">刷新相簿</button></div>
+          <div id="albumStatus" class="weatherStatus" role="status" aria-live="polite">正在读取相簿设置…</div>
+          <div class="weatherActions"><button id="albumSave">保存轮播设置</button><button class="mini" id="albumRefresh" disabled>下一张</button></div><p id="albumMessage" class="hint" role="status" aria-live="polite"></p>
+          <p class="weatherFoot">关闭轮播保留当前画面与照片。手动上传拍立得或便签会停止所有自动卡片；保存到相簿不会改变当前屏幕。</p>
         </div>
       </div>
     </div>
@@ -391,6 +409,7 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
     <div id="prevWrap"><canvas id="prev" width="552" height="768"></canvas><div id="objLayer"></div></div>
     <div id="stathint"></div>
     <button class="sec" id="go" style="width:100%" disabled>上传并刷新屏幕</button>
+    <button class="mini" id="saveAlbumPhoto" style="width:100%;margin-top:8px" hidden>保存当前画面到相簿</button><p id="albumUploadMessage" class="hint" role="status" aria-live="polite"></p>
     <div id="bar"><div id="fill"></div></div>
     <p id="msg"></p>
   </div></div>
@@ -467,13 +486,14 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
 
     <details id="supportSettings">
       <summary>额外服务支持</summary>
-      <p class="hint">天气和音乐共用一个服务。服务器生成图片和文字，设备只下载图片，无需保存字库。</p>
+      <p class="hint">天气、音乐和相簿共用一个服务。服务器生成或保存图片，设备只下载图片，无需保存字库。</p>
       <div class="row"><label for="supportService">服务地址</label><input id="supportService" type="text" placeholder="http://服务器地址:8787" style="flex:1;min-width:0"></div>
       <div class="row"><button class="mini" id="checkSupportService">测试连接</button><button class="mini" id="saveSupportService">保存服务地址</button><a href="https://github.com/sheetung/Stillink/blob/main/docs/services.md" target="_blank" rel="noopener">部署说明</a></div>
-      <p class="hint">填写服务器的 HTTP 根地址。保存一次后，天气和音乐页面无需重复填写；重启和固件升级后保留。清空地址并保存会关闭天气与音乐，隐藏对应入口。</p>
+      <p class="hint">填写服务器的 HTTP 根地址。保存一次后，各功能页面无需重复填写；重启和固件升级后保留。清空地址并保存会关闭自动卡片，隐藏对应入口。</p>
       <div class="serviceCards" id="supportServiceCards" hidden role="status" aria-live="polite">
         <div class="serviceCard"><strong>天气</strong><span id="supportWeatherStatus">未检测</span><p class="hint" id="supportWeatherDetail"></p></div>
         <div class="serviceCard"><strong>音乐</strong><span id="supportMusicStatus">未检测</span><p class="hint" id="supportMusicDetail"></p></div>
+        <div class="serviceCard"><strong>相簿</strong><span id="supportAlbumStatus">未检测</span><p class="hint" id="supportAlbumDetail"></p></div>
       </div>
       <span class="savestate" id="supportServiceMessage"></span>
     </details>
@@ -2051,7 +2071,7 @@ function buildAndUpload(){
   xhr.onload = function(){
     hideWorkLoading();
     barEl.style.display = "none";
-    if (xhr.status === 200){ notifyDisplayMode("manual"); msg("已上传，屏幕刷新中…，天气和音乐自动刷新已关闭", "ok"); }
+    if (xhr.status === 200){ notifyDisplayMode("manual"); msg("已上传，屏幕刷新中…，自动卡片刷新已关闭", "ok"); }
     else { msg("上传失败：" + (xhr.responseText || ("HTTP " + xhr.status)), "err"); }
     goEl.disabled = (MODE === 0) ? !img : false;
   };
@@ -2643,13 +2663,13 @@ refreshInfo();
 loadSettings();
 /* ---------- 额外服务支持：天气与音乐共用地址 ---------- */
 var supportServiceURL="";
-function showServiceModes(){["modeWeather","modeMusic"].forEach(function(id){$(id).hidden=!supportServiceURL;});if(!supportServiceURL)document.querySelector("#modes button[data-m]").click();}
+function showServiceModes(){["modeWeather","modeMusic","modeAlbum","saveAlbumPhoto"].forEach(function(id){$(id).hidden=!supportServiceURL;});if(!supportServiceURL)document.querySelector("#modes button[data-m]").click();}
 (function(){
   var dirty=false,checking=false;
   function request(path,options){return fetch(api(path),options).then(function(r){if(!r.ok)throw new Error("设备请求失败（"+r.status+"）");return r.json();});}
-  function read(){return Promise.all([request("/api/weather"),request("/api/music")]);}
+  function read(){return Promise.all([request("/api/weather"),request("/api/music"),request("/api/album")]);}
   function urlValue(){var url=$("supportService").value.trim().replace(/\/+$/,"");if(url&&(!/^https?:\/\/[^/?#@\s]+(?:\/[^?#@\s]*)?$/.test(url)||new TextEncoder().encode(url).length>=192))throw new Error("请输入有效的 HTTP 或 HTTPS 服务地址。");return url;}
-  function status(weather,music,weatherDetail,musicDetail){$("supportWeatherStatus").textContent=weather;$("supportMusicStatus").textContent=music;$("supportWeatherDetail").textContent=weatherDetail||"";$("supportMusicDetail").textContent=musicDetail||"";}
+  function status(weather,music,weatherDetail,musicDetail){$("supportAlbumStatus").textContent=weather;$("supportAlbumDetail").textContent="";$("supportWeatherStatus").textContent=weather;$("supportMusicStatus").textContent=music;$("supportWeatherDetail").textContent=weatherDetail||"";$("supportMusicDetail").textContent=musicDetail||"";}
   async function check(url){
     if(!url)throw new Error("请填写服务地址。");
     checking=true;$("checkSupportService").disabled=true;status("检测中…","检测中…");
@@ -2662,12 +2682,14 @@ function showServiceModes(){["modeWeather","modeMusic"].forEach(function(id){$(i
       var weather=!!data.services.weather.available,music=!!data.services.music.available;
       var receiver=!!data.services.music.receiver_ready;
       status(weather?"可用":"不可用",music?"可用":receiver?"等待音乐":"不可用",weather?"天气服务已连接":"天气服务未就绪",music?(data.services.music.playing?"正在接收音乐广播":"已收到歌曲，当前已暂停"):receiver?(data.services.music.broadcast_active?"广播已连接，当前没有歌曲":"未收到 Windows 音乐广播"):"音乐接收服务未就绪");
+      $("supportAlbumStatus").textContent=data.services.album&&data.services.album.available?"可用":"不可用";
+      $("supportAlbumDetail").textContent=data.services.album&&data.services.album.available?"相簿存储已就绪":"请更新服务器以启用相簿";
       if(!weather&&!receiver)throw new Error("天气和音乐服务均未就绪。");
       return data.services;
     }catch(e){status("检测失败","检测失败");throw new Error(e.name==="AbortError"?"连接超时，请检查服务地址和网络。":e.message);}
     finally{clearTimeout(timer);checking=false;$("checkSupportService").disabled=false;}
   }
-  read().then(function(states){supportServiceURL=states[0].service_url||states[1].service_url||"";if(!dirty)$("supportService").value=supportServiceURL;showServiceModes();$("supportServiceCards").hidden=!supportServiceURL;if(supportServiceURL&&!dirty)check(supportServiceURL).catch(function(e){$("supportServiceMessage").textContent=e.message;});}).catch(function(){$("supportServiceMessage").textContent="无法读取服务配置，请连接设备。";});
+  read().then(function(states){supportServiceURL=states[0].service_url||states[1].service_url||states[2].service_url||"";if(!dirty)$("supportService").value=supportServiceURL;showServiceModes();$("supportServiceCards").hidden=!supportServiceURL;if(supportServiceURL&&!dirty)check(supportServiceURL).catch(function(e){$("supportServiceMessage").textContent=e.message;});}).catch(function(){$("supportServiceMessage").textContent="无法读取服务配置，请连接设备。";});
   setInterval(function(){if(supportServiceURL&&!dirty&&!checking&&$("supportSettings").open)check(supportServiceURL).catch(function(){});},15000);
   $("supportService").addEventListener("input",function(){dirty=true;status("未检测","未检测");});
   $("checkSupportService").addEventListener("click",async function(){
@@ -2680,10 +2702,10 @@ function showServiceModes(){["modeWeather","modeMusic"].forEach(function(id){$(i
     try{
       var url=urlValue();if(url)await check(url);
       var states=await read();
-      for(var i=0;i<2;i++)await request(i?"/api/music":"/api/weather",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({enabled:!!url&&states[i].enabled,service_url:url})});
+      for(var i=0;i<3;i++)await request(["/api/weather","/api/music","/api/album"][i],{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({enabled:!!url&&states[i].enabled,service_url:url})});
       states=await read();
       if(states.some(function(s){return s.service_url!==url;}))throw new Error("服务地址保存未完成，请重试");
-      supportServiceURL=url;showServiceModes();$("supportServiceCards").hidden=!url;$("supportService").value=url;dirty=false;$("supportServiceMessage").textContent=url?"服务地址已保存。":"服务已关闭，天气与音乐入口已隐藏。";
+      supportServiceURL=url;showServiceModes();$("supportServiceCards").hidden=!url;$("supportService").value=url;dirty=false;$("supportServiceMessage").textContent=url?"服务地址已保存。":"服务已关闭，额外功能入口已隐藏。";
       if(!url)status("未检测","未检测");
     }catch(e){$("supportServiceMessage").textContent="保存失败："+e.message;}
     finally{$("saveSupportService").disabled=false;}
@@ -2694,10 +2716,10 @@ function showServiceModes(){["modeWeather","modeMusic"].forEach(function(id){$(i
 var displayModeRevision=0;
 function notifyDisplayMode(mode){
   ++displayModeRevision;
-  ["weather","music"].forEach(function(card){
+  ["weather","music","album"].forEach(function(card){
     if(card===mode)return;
     $(card+"Enabled").checked=false;
-    $(card+"Status").textContent=card==="weather"?"天气卡片已关闭":"音乐卡片已关闭";
+    $(card+"Status").textContent=card==="weather"?"天气卡片已关闭":card==="music"?"音乐卡片已关闭":"相簿轮播已关闭";
     $(card+"Status").classList.remove("warn");
     $(card+"Refresh").disabled=true;
     $(card+"Message").textContent=mode==="manual"?"手动图片已上传，自动刷新已关闭，配置保留。":"另一种自动卡片已启用，此卡片已关闭，配置保留。";
@@ -2741,6 +2763,7 @@ function notifyDisplayMode(mode){
   function selectWeather(on){active=on;pane.hidden=!on;$("editorGrid").style.display=on?"none":"";$("steps").style.display=on?"none":"";button.classList.toggle("on",on);if(on){document.querySelectorAll("#modes button[data-m]").forEach(function(b){b.classList.remove("on");});load();}else clearTimeout(timer);}
   button.addEventListener("click",function(){selectWeather(true);});
   $("modeMusic").addEventListener("click",function(){selectWeather(false);});
+  $("modeAlbum").addEventListener("click",function(){selectWeather(false);});
   document.querySelectorAll("#modes button[data-m]").forEach(function(b){b.addEventListener("click",function(){selectWeather(false);});});
   ["weatherEnabled","weatherMorning","weatherNoon","weatherEvening"].forEach(function(id){$(id).addEventListener("change",function(){dirty=true;$("weatherMessage").textContent="设置已修改，请保存到设备。";});});
   $("weatherLocation").addEventListener("input",function(){
@@ -2771,7 +2794,7 @@ function notifyDisplayMode(mode){
       }
     }catch(e){$("weatherMessage").textContent=e.message;return;}
     saving=true;$("weatherSave").disabled=true;$("weatherMessage").textContent="正在保存…";
-    request("/api/weather",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}).then(function(){dirty=false;if(enabled)notifyDisplayMode("weather");$("weatherMessage").textContent=enabled?"已保存，音乐已关闭，设备将立即获取天气并刷新屏幕。":"已保存，天气卡片已关闭。";}).catch(function(e){$("weatherMessage").textContent="保存失败："+e.message;}).finally(function(){saving=false;$("weatherSave").disabled=false;load();});
+    request("/api/weather",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}).then(function(){dirty=false;if(enabled)notifyDisplayMode("weather");$("weatherMessage").textContent=enabled?"已保存，音乐和相簿已关闭，设备将立即获取天气并刷新屏幕。":"已保存，天气卡片已关闭。";}).catch(function(e){$("weatherMessage").textContent="保存失败："+e.message;}).finally(function(){saving=false;$("weatherSave").disabled=false;load();});
   });
   $("weatherRefresh").addEventListener("click",function(){
     $("weatherRefresh").disabled=true;
@@ -2808,6 +2831,7 @@ function notifyDisplayMode(mode){
   }
   function close(){active=false;$("musicPane").hidden=true;$("modeMusic").classList.remove("on");clearTimeout(timer);}
   $("modeMusic").addEventListener("click",function(){active=true;$("musicPane").hidden=false;$("editorGrid").style.display="none";$("steps").style.display="none";$("modeMusic").classList.add("on");document.querySelectorAll("#modes button[data-m]").forEach(function(b){b.classList.remove("on");});load();});
+  $("modeAlbum").addEventListener("click",close);
   $("modeWeather").addEventListener("click",close);document.querySelectorAll("#modes button[data-m]").forEach(function(b){b.addEventListener("click",close);});
   ["musicEnabled"].forEach(function(id){$(id).addEventListener("change",function(){dirty=true;$("musicMessage").textContent="设置已修改，请保存音乐设置。";});});
   $("musicPreview").addEventListener("click",function(){previewKey="";preview();});
@@ -2815,9 +2839,76 @@ function notifyDisplayMode(mode){
     var url;try{url=supportServiceURL?serviceUrl():"";if($("musicEnabled").checked&&!url)throw new Error("请先在设备设置中保存服务地址");}catch(e){$("musicMessage").textContent=e.message;return;}
     var enabled=$("musicEnabled").checked;
     saving=true;$("musicSave").disabled=true;
-    request("/api/music",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({enabled:enabled,service_url:url})}).then(function(){dirty=false;if(enabled)notifyDisplayMode("music");$("musicMessage").textContent=enabled?"已保存，天气已关闭，设备将主动连接音乐服务。":"已保存，音乐卡片已关闭。";}).catch(function(e){$("musicMessage").textContent=e.message;}).finally(function(){saving=false;$("musicSave").disabled=false;load();});
+    request("/api/music",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({enabled:enabled,service_url:url})}).then(function(){dirty=false;if(enabled)notifyDisplayMode("music");$("musicMessage").textContent=enabled?"已保存，天气和相簿已关闭，设备将主动连接音乐服务。":"已保存，音乐卡片已关闭。";}).catch(function(e){$("musicMessage").textContent=e.message;}).finally(function(){saving=false;$("musicSave").disabled=false;load();});
   });
   $("musicRefresh").addEventListener("click",function(){request("/api/music/refresh",{method:"POST"}).then(function(){$("musicMessage").textContent="已请求刷新当前歌曲。";load();}).catch(function(e){$("musicMessage").textContent=e.message;});});
+})();
+
+/* ---------- 相簿：服务器照片、轮播选择与设备配置 ---------- */
+(function(){
+  var active=false,dirty=false,saving=false,timer=null,photos=[],selected=new Set(),selectionKey="",previewKey="";
+  function request(url,options){return fetch(url,options).then(function(r){return r.json().then(function(data){if(!r.ok)throw new Error(data.error||"请求失败（"+r.status+"）");return data;});});}
+  function server(path){if(!supportServiceURL)throw new Error("请先在设备设置中保存服务地址");return supportServiceURL+path;}
+  function preview(id){if(!id||previewKey===id)return;previewKey=id;var image=document.createElement("img");image.alt="相簿照片预览";image.src=server("/v1/album/photos/"+id+".png");image.addEventListener("error",function(){previewKey="";$("albumScreen").textContent="照片预览失败，请检查服务连接。";});$("albumScreen").replaceChildren(image);}
+  function renderPhotos(){
+    $("albumPhotos").replaceChildren();
+    $("albumEmpty").textContent=photos.length?"已保存 "+photos.length+" 张照片，勾选需要轮播的照片。":"相簿还没有照片。在拍立得中调整好画面，点击「保存当前画面到相簿」。";
+    photos.forEach(function(photo){
+      var card=document.createElement("div");card.className="albumPhoto";
+      var image=document.createElement("img");image.src=server("/v1/album/photos/"+photo.id+".png");image.alt=photo.name;image.loading="lazy";image.addEventListener("click",function(){previewKey="";preview(photo.id);});card.appendChild(image);
+      var label=document.createElement("label"),check=document.createElement("input"),name=document.createElement("span");check.type="checkbox";check.checked=selected.has(photo.id);name.textContent=photo.name;
+      check.addEventListener("change",function(){if(check.checked)selected.add(photo.id);else selected.delete(photo.id);dirty=true;$("albumMessage").textContent="照片选择已修改，请保存轮播设置。";});label.appendChild(check);label.appendChild(name);card.appendChild(label);
+      var remove=document.createElement("button");remove.className="mini";remove.textContent="删除";remove.addEventListener("click",async function(){if(!confirm("从服务器删除这张照片？"))return;remove.disabled=true;try{await request(server("/v1/album/photos/"+photo.id),{method:"DELETE"});selected.delete(photo.id);if(previewKey===photo.id){previewKey="";$("albumScreen").textContent="照片已删除";}await list();}catch(e){$("albumMessage").textContent=e.message;remove.disabled=false;}});card.appendChild(remove);$("albumPhotos").appendChild(card);
+    });
+  }
+  async function list(){var data=await request(server("/v1/album/photos"));photos=data.photos;selected=new Set(Array.from(selected).filter(function(id){return photos.some(function(p){return p.id===id;});}));renderPhotos();}
+  async function load(){
+    clearTimeout(timer);if(!active)return;var revision=displayModeRevision;
+    try{
+      var state=await request(api("/api/album?t="+Date.now()));if(revision!==displayModeRevision)return;
+      if(!dirty&&!saving){
+        $("albumEnabled").checked=!!state.enabled;$("albumMode").value=state.mode;$("albumInterval").value=state.interval/60;
+        if(state.playlist!==selectionKey){var selection=state.playlist?await request(server("/v1/album/playlists/"+state.playlist)):{photos:[]};if(revision!==displayModeRevision||dirty||saving)return;selected=new Set(selection.photos);selectionKey=state.playlist;renderPhotos();}
+      }
+      var labels={disabled:"相簿轮播已关闭",waiting_wifi:"等待连接 Wi-Fi",waiting:"等待获取照片",loading:"正在获取照片并刷新…",ready:"相簿已更新",error:"轮播失败，保留原画面"};
+      $("albumStatus").textContent=(labels[state.status]||"等待相簿")+(state.error?" · "+state.error:"");$("albumStatus").classList.toggle("warn",state.status==="error"||state.status==="waiting_wifi");$("albumRefresh").disabled=!state.enabled||state.status==="loading"||state.status==="waiting_wifi";
+      if(state.current)preview(state.current);
+    }catch(e){$("albumStatus").textContent=e.message;$("albumRefresh").disabled=true;}
+    finally{if(active)timer=setTimeout(load,5000);}
+  }
+  function close(){active=false;$("albumPane").hidden=true;$("modeAlbum").classList.remove("on");clearTimeout(timer);}
+  $("modeAlbum").addEventListener("click",function(){active=true;$("albumPane").hidden=false;$("editorGrid").style.display="none";$("steps").style.display="none";$("modeAlbum").classList.add("on");document.querySelectorAll("#modes button[data-m]").forEach(function(b){b.classList.remove("on");});Promise.all([list(),load()]).catch(function(e){$("albumMessage").textContent=e.message;});});
+  ["modeWeather","modeMusic"].forEach(function(id){$(id).addEventListener("click",close);});document.querySelectorAll("#modes button[data-m]").forEach(function(b){b.addEventListener("click",close);});
+  ["albumEnabled","albumMode","albumInterval"].forEach(function(id){$(id).addEventListener("change",function(){dirty=true;$("albumMessage").textContent="设置已修改，请保存轮播设置。";});});
+  $("albumSelectAll").addEventListener("click",function(){selected=new Set(photos.map(function(p){return p.id;}));dirty=true;renderPhotos();});
+  $("albumReload").addEventListener("click",function(){list().catch(function(e){$("albumMessage").textContent=e.message;});});
+  $("albumSave").addEventListener("click",async function(){
+    var enabled=$("albumEnabled").checked,interval=Number($("albumInterval").value)*60;
+    if(!Number.isInteger(interval)||interval<60||interval>86400){$("albumMessage").textContent="切换间隔须为 1–1440 分钟。";return;}
+    var ids=photos.filter(function(p){return selected.has(p.id);}).map(function(p){return p.id;});
+    if(enabled&&!ids.length){$("albumMessage").textContent="请至少选择一张轮播照片。";return;}
+    saving=true;$("albumSave").disabled=true;
+    try{
+      var payload={enabled:enabled,service_url:supportServiceURL,interval:interval,mode:$("albumMode").value};
+      if(ids.length){var playlist=await request(server("/v1/album/playlists"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({photos:ids})});payload.playlist=playlist.id;}
+      await request(api("/api/album"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+      dirty=false;if(enabled)notifyDisplayMode("album");$("albumMessage").textContent=enabled?"已保存，天气和音乐已关闭，开始相簿轮播。":"已保存，相簿轮播已关闭。";
+    }catch(e){$("albumMessage").textContent="保存失败："+e.message;}
+    finally{saving=false;$("albumSave").disabled=false;load();}
+  });
+  $("albumRefresh").addEventListener("click",function(){request(api("/api/album/refresh"),{method:"POST"}).then(function(){$("albumMessage").textContent="已请求切换下一张照片。";load();}).catch(function(e){$("albumMessage").textContent=e.message;});});
+  $("saveAlbumPhoto").addEventListener("click",function(){
+    if(MODE===0&&(!img||!previewOK)){$("albumUploadMessage").textContent="请先选择照片并等待预览完成。";return;}
+    $("saveAlbumPhoto").disabled=true;showWorkLoading("正在保存当前画面到相簿…");
+    afterLoadingPaint(async function(){
+      try{
+        var frame=frameWithHeader(packFull()),name=(fileEl.files&&fileEl.files[0]?fileEl.files[0].name:MODE===0?"拍立得":"便签")+" · "+new Date().toLocaleString();
+        await request(server("/v1/album/photos?name="+encodeURIComponent(name.slice(0,120))),{method:"POST",headers:{"Content-Type":"application/octet-stream"},body:frame});
+        $("albumUploadMessage").textContent="已保存到服务器，可在相簿中选择轮播。";
+      }catch(e){$("albumUploadMessage").textContent="保存失败："+e.message;}
+      finally{hideWorkLoading();$("saveAlbumPhoto").disabled=false;}
+    });
+  });
 })();
 
 </script>
