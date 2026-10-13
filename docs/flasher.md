@@ -10,6 +10,8 @@
 
 在线地址：**https://sheetung.github.io/Stillink/**。使用现有 Stillink 仓库，无需新建仓库。
 
+首次部署需由仓库所有者在 **Settings → Pages → Build and deployment → Source** 选择 **GitHub Actions**。工作流令牌不能替仓库完成这一次启用设置；之后会自动发布。
+
 `pages.yml` 使用 GitHub Actions 发布页面。发布时从 Release 下载最近五个稳定版本的 OTA 和完整包，随页面部署到 Pages，浏览器可以同源下载；Git 仓库不保存 BIN。页面和烧录库均打包为一个 HTML，不依赖 CDN。
 
 推送 `vX.Y.Z` 标签后，`release.yml` 依次完成固件编译、Release 发布、Pages 更新。默认显示最新版本，也可选择历史版本。单独修改烧录页面时，推送 main 即可重新部署；也可手动运行 Online flasher 工作流。

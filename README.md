@@ -62,6 +62,12 @@ Windows 通过 UDP 广播播放器的歌曲、歌手、专辑和封面，服务�
 
 ![设备设置：电池校准、休眠与屏幕](docs/images/settings.png)
 
+### 在线烧录
+
+用电脑 Chrome / Edge 打开 [GitHub Pages 烧录页](https://sheetung.github.io/Stillink/)，点击「连接并选择设备」选择 USB 串口。默认使用 Release 的 OTA 应用更新已有设备，新设备选择「首次烧录 · 完整包」。
+
+![在线烧录：Release 版本、OTA 与完整包、USB 设备选择](docs/images/flasher.png)
+
 ### 网页升级
 
 在设备设置中上传 `.bin` 升级固件，或上传 `.html` 热更新控制页；也可清理残影、恢复内置页面。
