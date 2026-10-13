@@ -109,7 +109,7 @@ curl.exe http://192.168.4.1/api/wifi/status
 `POST /api/weather` 使用 `application/json`。示例：
 
 ```json
-{"enabled":true,"service_url":"http://192.168.31.12:8787","name":"杭州","latitude":30.29365,"longitude":120.16142,"times":[480,720,1080]}
+{"enabled":true,"service_url":"http://192.168.1.100:8787","name":"杭州","latitude":30.29365,"longitude":120.16142,"times":[480,720,1080]}
 ```
 
 `enabled` 必须是布尔值；完整位置配置须含名称、经纬度和三个递增的当天分钟数。服务地址支持 HTTP / HTTPS，最长 191 字节，不含查询参数或 fragment。首次启用需填写服务地址和位置。只关闭可发送 `{"enabled":false}`，其他配置保留；地址也可以单独修改。保存成功返回 `{"saved":true}`，错误配置返回 400，保存失败不会更新当前配置。
@@ -122,7 +122,7 @@ ESP 请求 `${service_url}/v1/weather.bin?latitude=...&longitude=...&name=...`�
 
 ## 音乐 API
 
-`POST /api/music` 保存 `{"enabled":true,"service_url":"http://192.168.31.12:8787"}`。只切换开关可以发送 `{"enabled":false}`。地址支持 HTTP / HTTPS，最长 191 字节。配置保存在独立 NVS 命名空间，重启与 OTA 保留，恢复出厂清除。
+`POST /api/music` 保存 `{"enabled":true,"service_url":"http://192.168.1.100:8787"}`。只切换开关可以发送 `{"enabled":false}`。地址支持 HTTP / HTTPS，最长 191 字节。配置保存在独立 NVS 命名空间，重启与 OTA 保留，恢复出厂清除。
 
 `GET /api/music` 返回 `enabled`、`service_url`、最后显示的 `version`、`status` 和 `error`。状态包括 `disabled`、`waiting_wifi`、`waiting`、`loading`、`ready`、`error`。`POST /api/music/refresh` 在启用且联网时返回 202，未启用或未联网返回 409。
 
