@@ -1,6 +1,6 @@
 [project]
 name = "stillink-music"
-version = "1.0.0"
+version = "1.2.2"
 description = "Windows now-playing cards for Stillink"
 requires-python = ">=3.11"
 dependencies = [
@@ -9,6 +9,8 @@ dependencies = [
     "winrt-Windows.Foundation>=3.2; sys_platform == 'win32'",
     "winrt-Windows.Foundation.Collections>=3.2; sys_platform == 'win32'",
     "pyyaml>=6.0.3",
+    "pystray>=0.19.5",
+    "pillow>=11.0",
 ]
 
 [tool.uv]

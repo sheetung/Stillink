@@ -1,0 +1,51 @@
+name: Windows music client
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Existing Release tag (empty for latest)'
+        type: string
+  workflow_call:
+    inputs:
+      release_tag:
+        type: string
+        default: ''
+permissions:
+  contents: write
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Test and build Windows tool
+        working-directory: extra-services/music-client-win
+        shell: pwsh
+        run: |
+          uv sync --frozen
+          if ($LASTEXITCODE -ne 0) { throw 'Dependency install failed' }
+          uv run --frozen python -m unittest test_music.py
+          if ($LASTEXITCODE -ne 0) { throw 'Tests failed' }
+          ./build.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: StillinkMusic-win
+          path: |
+            extra-services/music-client-win/dist/StillinkMusic.exe
+            extra-services/music-client-win/dist/StillinkMusic-win.zip
+      - name: Attach Windows tool to Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          $musicTag = $env:RELEASE_TAG
+          if (-not $musicTag) {
+            $musicTag = gh release view --json tagName --jq '.tagName'
+            if ($LASTEXITCODE -ne 0) { throw 'No published Release found' }
+          }
+          gh release upload $musicTag extra-services/music-client-win/dist/StillinkMusic.exe extra-services/music-client-win/dist/StillinkMusic-win.zip --clobber
+          if ($LASTEXITCODE -ne 0) { throw 'Release upload failed' }

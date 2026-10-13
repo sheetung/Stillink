@@ -10,6 +10,7 @@ import time
 
 from protocol import packets
 from runtime import BackgroundInstance, load_config, setup_background_log
+from tray import MusicTray
 
 @dataclass
 class Track:
@@ -132,6 +133,7 @@ def main():
     parser.add_argument("--stop",action="store_true",help="停止后台广播")
     args=parser.parse_args()
     instance=None
+    tray=None
     try:
         if sys.platform != "win32": raise RuntimeError("音乐读取功能需要 Windows 10 / 11")
         if args.stop:
@@ -142,10 +144,13 @@ def main():
             instance=BackgroundInstance()
             if not instance.acquire():return 0
             args.instance=instance
+            tray=MusicTray(instance)
+            tray.start()
         asyncio.run(run(args))
     except KeyboardInterrupt:pass
     except Exception as exc:print(f"错误：{exc}",file=sys.stderr);return 1
     finally:
+        if tray:tray.close()
         if instance:instance.close()
     return 0
 

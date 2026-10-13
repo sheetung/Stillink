@@ -80,7 +80,7 @@ HTTP 与 UDP 端口、设备地址和接口保持一致，设备无需重新配�
 
 仅使用音乐时，需要额外运行 Windows 10 / 11 工具。它读取接入系统媒体控件的播放器，广播歌曲信息和原始封面；服务器接收并绘图。
 
-解压 Windows 工具包，双击 **StillinkMusic.exe** 后即在后台运行，无需填写配置。电脑与服务器连接同一局域网，默认通过 UDP `8790` 广播。双击「停止音乐广播.vbs」停止。
+下载并解压 [Windows 工具包](https://github.com/sheetung/Stillink/releases/latest/download/StillinkMusic-win.zip)，双击 **StillinkMusic.exe** 后即在后台运行，无需填写配置。电脑与服务器连接同一局域网，默认通过 UDP `8790` 广播。右键任务栏通知区域的音乐图标，选择「退出」停止。
 
 工具构建、播放器支持和卡片使用见 [音乐说明](music.md)。
 

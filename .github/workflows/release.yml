@@ -29,3 +29,8 @@ jobs:
   pages:
     needs: firmware
     uses: ./.github/workflows/pages.yml
+  music:
+    needs: firmware
+    uses: ./.github/workflows/music-client-win.yml
+    with:
+      release_tag: ${{ github.ref_name }}

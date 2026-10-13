@@ -1,5 +1,11 @@
 # Stillink — 版本更新记录
 
+## V1.2.2 · 2026-10-13
+
+- 修复局域网访问时固件升级仍发往热点地址的问题；上传前识别 OTA 应用固件，避免误上传完整烧录包。
+- Windows 音乐客户端增加托盘图标与右键「退出」，移除重复的停止脚本。
+- GitHub Actions 自动构建 Windows EXE 和工具包，随固件版本附加到 Release；音乐说明提供下载入口。
+
 ## V1.2.1 · 2026-10-13
 
 - 新增基于官方 esptool-js 的单页在线烧录工具，部署于 GitHub Pages，默认使用 Release 中的 Stillink S3 OTA 固件，并支持完整包与本地 BIN。
