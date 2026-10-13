@@ -56,6 +56,11 @@ footer#appFoot a:active,footer#appFoot a:hover{ color:var(--acc); border-bottom-
 .card h2 .tag{ font-size:11px; color:var(--mut); font-weight:400; margin-left:6px; }
 .row{ display:flex; align-items:center; gap:10px; margin:8px 0; flex-wrap:wrap; }
 .row label{ font-size:13px; color:var(--mut); min-width:56px; }
+.serviceCards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}
+.serviceCards[hidden]{display:none}
+.serviceCard{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--bg)}
+.serviceCard strong{display:block;margin-bottom:8px;font-size:15px}
+.serviceCard .hint{margin:6px 0 0}
 .hint{ font-size:12px; color:var(--mut); margin:6px 0; }
 button{ font-family:inherit; cursor:pointer; border:none; border-radius:10px;
         background:var(--acc); color:#fff; font-size:14px; padding:9px 16px; }
@@ -460,13 +465,16 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
       <p class="hint">连接路由器后设备保持在线，不进入深度休眠；空闲时自动轻睡，收到网络请求后恢复处理。忘记 Wi-Fi 后恢复原来的休眠设置。重启后会自动连接已保存的网络。</p>
     </details>
 
-    <details>
+    <details id="supportSettings">
       <summary>额外服务支持</summary>
       <p class="hint">天气和音乐共用一个服务。服务器生成图片和文字，设备只下载图片，无需保存字库。</p>
       <div class="row"><label for="supportService">服务地址</label><input id="supportService" type="text" placeholder="http://服务器地址:8787" style="flex:1;min-width:0"></div>
       <div class="row"><button class="mini" id="checkSupportService">测试连接</button><button class="mini" id="saveSupportService">保存服务地址</button><a href="https://github.com/sheetung/Stillink/blob/main/docs/services.md" target="_blank" rel="noopener">部署说明</a></div>
       <p class="hint">填写服务器的 HTTP 根地址。保存一次后，天气和音乐页面无需重复填写；重启和固件升级后保留。清空地址并保存会关闭天气与音乐，隐藏对应入口。</p>
-      <p class="hint" role="status"><span id="supportWeatherStatus">天气：未检测</span> · <span id="supportMusicStatus">音乐：未检测</span></p>
+      <div class="serviceCards" id="supportServiceCards" hidden role="status" aria-live="polite">
+        <div class="serviceCard"><strong>天气</strong><span id="supportWeatherStatus">未检测</span><p class="hint" id="supportWeatherDetail"></p></div>
+        <div class="serviceCard"><strong>音乐</strong><span id="supportMusicStatus">未检测</span><p class="hint" id="supportMusicDetail"></p></div>
+      </div>
       <span class="savestate" id="supportServiceMessage"></span>
     </details>
 
@@ -2583,7 +2591,7 @@ function showServiceModes(){["modeWeather","modeMusic"].forEach(function(id){$(i
   function request(path,options){return fetch(api(path),options).then(function(r){if(!r.ok)throw new Error("设备请求失败（"+r.status+"）");return r.json();});}
   function read(){return Promise.all([request("/api/weather"),request("/api/music")]);}
   function urlValue(){var url=$("supportService").value.trim().replace(/\/+$/,"");if(url&&(!/^https?:\/\/[^/?#@\s]+(?:\/[^?#@\s]*)?$/.test(url)||new TextEncoder().encode(url).length>=192))throw new Error("请输入有效的 HTTP 或 HTTPS 服务地址。");return url;}
-  function status(weather,music){$("supportWeatherStatus").textContent="天气："+weather;$("supportMusicStatus").textContent="音乐："+music;}
+  function status(weather,music,weatherDetail,musicDetail){$("supportWeatherStatus").textContent=weather;$("supportMusicStatus").textContent=music;$("supportWeatherDetail").textContent=weatherDetail||"";$("supportMusicDetail").textContent=musicDetail||"";}
   async function check(url){
     if(!url)throw new Error("请填写服务地址。");
     checking=true;$("checkSupportService").disabled=true;status("检测中…","检测中…");
@@ -2594,13 +2602,15 @@ function showServiceModes(){["modeWeather","modeMusic"].forEach(function(id){$(i
       var data=await response.json();
       if(data.status!=="ok"||!data.services||!data.services.weather||!data.services.music)throw new Error("服务版本不支持状态检测，请更新额外服务。");
       var weather=!!data.services.weather.available,music=!!data.services.music.available;
-      status(weather?"可用":"不可用",music?"可用":"接收服务未就绪");
-      if(!weather&&!music)throw new Error("天气和音乐服务均不可用。");
+      var receiver=!!data.services.music.receiver_ready;
+      status(weather?"可用":"不可用",music?"可用":receiver?"等待音乐":"不可用",weather?"天气服务已连接":"天气服务未就绪",music?(data.services.music.playing?"正在接收音乐广播":"已收到歌曲，当前已暂停"):receiver?(data.services.music.broadcast_active?"广播已连接，当前没有歌曲":"未收到 Windows 音乐广播"):"音乐接收服务未就绪");
+      if(!weather&&!receiver)throw new Error("天气和音乐服务均未就绪。");
       return data.services;
     }catch(e){status("检测失败","检测失败");throw new Error(e.name==="AbortError"?"连接超时，请检查服务地址和网络。":e.message);}
     finally{clearTimeout(timer);checking=false;$("checkSupportService").disabled=false;}
   }
-  read().then(function(states){supportServiceURL=states[0].service_url||states[1].service_url||"";if(!dirty)$("supportService").value=supportServiceURL;showServiceModes();}).catch(function(){$("supportServiceMessage").textContent="无法读取服务配置，请连接设备。";});
+  read().then(function(states){supportServiceURL=states[0].service_url||states[1].service_url||"";if(!dirty)$("supportService").value=supportServiceURL;showServiceModes();$("supportServiceCards").hidden=!supportServiceURL;if(supportServiceURL&&!dirty)check(supportServiceURL).catch(function(e){$("supportServiceMessage").textContent=e.message;});}).catch(function(){$("supportServiceMessage").textContent="无法读取服务配置，请连接设备。";});
+  setInterval(function(){if(supportServiceURL&&!dirty&&!checking&&$("supportSettings").open)check(supportServiceURL).catch(function(){});},15000);
   $("supportService").addEventListener("input",function(){dirty=true;status("未检测","未检测");});
   $("checkSupportService").addEventListener("click",async function(){
     if(checking)return;$("saveSupportService").disabled=true;
@@ -2615,7 +2625,7 @@ function showServiceModes(){["modeWeather","modeMusic"].forEach(function(id){$(i
       for(var i=0;i<2;i++)await request(i?"/api/music":"/api/weather",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({enabled:!!url&&states[i].enabled,service_url:url})});
       states=await read();
       if(states.some(function(s){return s.service_url!==url;}))throw new Error("服务地址保存未完成，请重试");
-      supportServiceURL=url;showServiceModes();$("supportService").value=url;dirty=false;$("supportServiceMessage").textContent=url?"检测通过并已保存，天气与音乐入口已开启。":"服务已关闭，天气与音乐入口已隐藏。";
+      supportServiceURL=url;showServiceModes();$("supportServiceCards").hidden=!url;$("supportService").value=url;dirty=false;$("supportServiceMessage").textContent=url?"服务地址已保存。":"服务已关闭，天气与音乐入口已隐藏。";
       if(!url)status("未检测","未检测");
     }catch(e){$("supportServiceMessage").textContent="保存失败："+e.message;}
     finally{$("saveSupportService").disabled=false;}

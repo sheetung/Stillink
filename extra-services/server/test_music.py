@@ -17,6 +17,18 @@ def packets(message):
 
 
 class MusicReceiverTests(unittest.TestCase):
+    def test_health_requires_recent_broadcast_and_song(self):
+        receiver=Receiver();receiver.listening=True
+        self.assertFalse(receiver.health()["available"])
+        self.assertTrue(receiver.health()["receiver_ready"])
+        message=dict(title="歌曲",artist="歌手",album="",player="player",playing=True,cover="")
+        for p in packets(message):receiver.feed(p,"host")
+        self.assertTrue(receiver.health()["available"])
+        self.assertTrue(receiver.health()["playing"])
+        receiver.received-=36
+        self.assertFalse(receiver.health()["available"])
+        self.assertFalse(receiver.health()["broadcast_active"])
+
     def test_reordering_duplicates_and_playback(self):
         receiver=Receiver()
         message=dict(title="歌曲",artist="歌手",album="专辑",player="player",playing=True,cover=base64.b64encode(b"invalid cover"*300).decode())

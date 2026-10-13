@@ -72,6 +72,13 @@ class Receiver:
         except (ValueError, TypeError, KeyError, binascii.Error):
             return
 
+    def health(self):
+        with self.lock:
+            broadcast = bool(self.received) and time.monotonic() - self.received < 35
+            return dict(available=self.listening and broadcast and bool(self.data["title"]),
+                        receiver_ready=self.listening, broadcast_active=broadcast,
+                        playing=broadcast and self.data["playing"])
+
     def response(self, path, expected=""):
         with self.lock:
             if path == "/v1/music.json":

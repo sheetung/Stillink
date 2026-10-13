@@ -28,7 +28,7 @@ class Handler(BaseHTTPRequestHandler):
             status, body, kind = MUSIC.response(url.path, parse_qs(url.query).get("v", [""])[0])
             return self.send(status, body, kind)
         if url.path == "/health":
-            return self.send(200, json.dumps({"status":"ok", "services":{"weather":{"available":True}, "music":{"available":MUSIC.listening}}}).encode(), "application/json")
+            return self.send(200, json.dumps({"status":"ok", "services":{"weather":{"available":True}, "music":MUSIC.health()}}).encode(), "application/json")
         weather.handle(self, url)
 
 

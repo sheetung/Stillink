@@ -32,7 +32,7 @@ uv run --frozen app.py --host 0.0.0.0 --port 8787
 curl http://127.0.0.1:8787/health
 ```
 
-正常返回 `status: "ok"`，并在 `services.weather.available`、`services.music.available` 中给出天气服务与音乐 UDP 接收器的就绪状态。健康检查不请求天气上游，也不要求 Windows 正在播放歌曲。自定义字体使用 `STILLINK_FONT=/绝对路径/font.ttf` 或 `--font`；音乐接收端口使用 `--music-port`。系统字体不随仓库分发。
+正常返回 `status: "ok"`。`services.weather.available` 表示天气服务已就绪（不请求天气上游）；`services.music.receiver_ready` 表示 UDP 接收端已启动，`broadcast_active` 表示最近 35 秒收到有效广播，`available` 表示接收端已启动且有近期广播和歌曲。仅启动服务器而未启动 Windows 广播工具时，音乐卡片显示「等待音乐」。自定义字体使用 `STILLINK_FONT=/绝对路径/font.ttf` 或 `--font`；音乐接收端口使用 `--music-port`。系统字体不随仓库分发。
 
 ## 常驻运行
 
@@ -71,7 +71,7 @@ HTTP 与 UDP 端口、设备地址和接口保持一致，设备无需重新配�
 
 1. 让 ESP 连接路由器 Wi-Fi。
 2. 打开「设备设置 → 额外服务支持」，填写服务器的 HTTP 根地址，如 `http://服务器IP:8787`。
-3. 点击「测试连接」查看天气、音乐服务是否可用；保存时会先检测连接，检测失败时不修改已有配置。保存成功后天气和音乐入口显示。
+3. 点击「测试连接」查看服务状态；保存时会先检测连接，检测失败时不修改已有配置。保存后显示天气和音乐两张状态卡片，并开启对应功能入口。展开服务设置时每 15 秒更新状态，Windows 未广播不会阻止保存地址。
 4. 按需启用天气或音乐，两个功能页面无需重复填写地址。
 
 服务需持续运行。公网部署可使用反向代理提供 HTTPS，ESP 验证可信证书；HTTPS 控制页预览也需使用 HTTPS 服务地址。清空共用地址并保存会关闭相关功能并隐藏入口。
