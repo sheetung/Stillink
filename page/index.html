@@ -526,7 +526,7 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
       <div class="row"><b style="font-size:13px">① 升级（固件或控制页）</b></div>
       <input type="file" id="upFile" accept=".bin,.html,.htm" style="width:100%;font-size:13px">
       <div class="row"><button class="mini" id="upGo">上传并升级</button><span class="savestate" id="upmsg"></span></div>
-      <div class="hint">选好文件直接上传，类型自动识别：<b>.bin</b> = 固件升级（控制页一并更新、设置重置、热点名与密码保留、设备自动重启）；<b>.html</b> = 只更新控制页（不重启）。</div>
+      <div class="hint">固件升级请选择 Release 中的 <b>-ota.bin</b>，完整烧录包用于 USB 烧录。升级后控制页一并更新、设置重置、热点名与密码保留、设备自动重启；<b>.html</b> 只更新控制页（不重启）。</div>
       <div class="row" style="margin-top:12px">
         <button class="mini" id="webClear">恢复内置页面</button>
       </div>
@@ -2434,8 +2434,7 @@ $("savePanel").addEventListener("click", function(){
    判断本次升的是哪一种。这里用**同一套规则**预判类型：固件 OTA 成功后约 1 秒即
    重启，响应有可能发不出去，所以文案不能依赖响应。
    ★ 改 sniffKind() 必须同步改 src/ota_web.c 的 sniff_kind()。 */
-var UP_URL = "http://192.168.4.1/api/upload";   /* 设备 SoftAP 地址恒定（无 STA 模式）：
-       无论页面从设备内嵌 / 离线客户端 / 本地文件打开，上传都直达设备。 */
+var UP_URL = api("/api/upload");
 function sniffKind(bytes){
   if (bytes.length && bytes[0] === 0xE9) return "fw";        /* ESP 镜像魔数 */
   var head = "";
@@ -2461,8 +2460,13 @@ $("upGo").addEventListener("click", function(){
       return;
     }
     var isFw = (kind === "fw");
+    if (isFw && !(bytes.length >= 36 && bytes[32] === 0x32 && bytes[33] === 0x54 && bytes[34] === 0xCD && bytes[35] === 0xAB)){
+      saveState("upmsg", "err", "✗ 请选择 -ota.bin 应用固件，完整烧录包请使用 USB 烧录");
+      $("otamsg").textContent = "此文件不是 OTA 应用固件，尚未上传。";
+      return;
+    }
     $("otamsg").textContent = (isFw ? "上传固件中…（设备随后自动重启）" : "上传控制页中…")
-                            + "　目标 192.168.4.1";
+                            + "　目标 " + UP_URL;
     saveState("upmsg", "busy", isFw ? "上传固件中…" : "上传控制页中…");
 
     var xhr = new XMLHttpRequest();
@@ -2484,7 +2488,6 @@ $("upGo").addEventListener("click", function(){
     };
     xhr.onload = function(){
       if (reported) return;
-      reported = true;
       $("otabar").style.display = "none";
       if (xhr.status !== 200){
         var why = (xhr.status === 400) ? "（文件类型无法识别）"
@@ -2492,6 +2495,7 @@ $("upGo").addEventListener("click", function(){
         bad("✗ 上传失败：设备返回 " + xhr.status + why);
         return;
       }
+      reported = true;
       if (isFw){
         saveState("upmsg", "ok", "✓ 固件已写入，设备重启中…");
         $("otamsg").textContent = "固件升级成功，设备重启中…（45 秒内勿断电，然后刷新页面；"
@@ -2512,7 +2516,7 @@ $("upGo").addEventListener("click", function(){
                                 + "设备设置已重置，热点名与密码保留）";
         return;
       }
-      bad("✗ 上传失败：连接中断（请确认已连接 Stillink 热点）");
+      bad("✗ 上传失败：连接中断（请确认设备在线，并可通过当前地址访问）");
     };
     /* 包一层 text/plain Blob：Content-Type 落在简单请求白名单内 → 不触发跨源预检。 */
     xhr.send(new Blob([f], { type: "text/plain" }));

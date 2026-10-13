@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node build.mjs"
+    "build": "node build.mjs",
+    "test": "node test.mjs"
   },
   "dependencies": {
     "esptool-js": "0.7.0",

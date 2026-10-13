@@ -179,7 +179,7 @@ ok("R1.2.0 旧的两个入口与同步复选框已删",
    && page.indexOf('id="webFile"') < 0 && page.indexOf('id="webGo"') < 0
    && page.indexOf("fwSyncPage") < 0 && page.indexOf("sync_page") < 0);
 ok("R1.2.0 单一入口常量 + 无旧路由残留",
-   js.indexOf('var UP_URL = "http://192.168.4.1/api/upload";') >= 0
+   js.indexOf('var UP_URL = api("/api/upload");') >= 0
    && js.indexOf("OTA_URL") < 0 && js.indexOf('"/api/ota"') < 0
    && page.indexOf('"/api/ota"') < 0);
 ok("R1.2.0 双端同规则嗅探 (sniffKind + readHead, 固件 0xE9 / 页面 <!doctype)",
