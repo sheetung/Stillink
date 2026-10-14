@@ -88,7 +88,7 @@ $('flash').addEventListener('click',async()=>{
       calculateMD5Hash:bytes=>SparkMD5.ArrayBuffer.hash(bytes.slice().buffer),
       reportProgress(file,done,total){fractions[file]=done/total;const progress=Math.round(fileArray.reduce((sum,item,i)=>sum+item.data.length*fractions[i],0)/totalBytes*100);$('progress').value=progress;$('percent').textContent=progress+'%';}});
     written=true;await loader.after('hard_reset');
-    message(mode==='stillink'?'烧录成功，设备已重启。连接 Stillink 热点后打开 192.168.4.1。':'固件烧录成功，设备已重启。','success');$('phase').textContent='烧录完成';$('progress').value=100;$('percent').textContent='100%';
+    message(mode==='stillink'?'烧录成功！请断开 ESP 的 USB／电源，再重新通电。启动后连接 Stillink 热点，打开 192.168.4.1。':'固件烧录成功！请断开 ESP 的 USB／电源，再重新通电。','success');$('phase').textContent='烧录完成';$('progress').value=100;$('percent').textContent='100%';
   }catch(error){message(written?'固件已写入并校验，请重新插拔 USB 启动设备。':'烧录失败：'+error.message,written?'success':'error');$('phase').textContent=written?'写入完成':'烧录未完成';log('\n'+error.message+'\n');}
   finally{await disconnect().catch(()=>{});busy=false;controls();}
 });
