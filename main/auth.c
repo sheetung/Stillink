@@ -14,7 +14,19 @@
 #define SESSION_COUNT 6
 static char key[65];
 static portMUX_TYPE key_lock = portMUX_INITIALIZER_UNLOCKED;
-static bool first;
+static bool first, initial_key;
+static char remembered[SESSION_COUNT][33];
+static uint8_t remember_next;
+static esp_err_t save_remembered(void) {
+  nvs_handle_t n;
+  esp_err_t err = nvs_open("auth", NVS_READWRITE, &n);
+  if (err != ESP_OK) return err;
+  err = nvs_set_blob(n, "remembered", remembered, sizeof(remembered));
+  if (err == ESP_OK) err = nvs_set_u8(n, "remember_next", remember_next);
+  if (err == ESP_OK) err = nvs_commit(n);
+  nvs_close(n);
+  return err;
+}
 static struct {
   char token[33];
   int64_t until;
@@ -51,6 +63,20 @@ void auth_init(void) {
     ESP_ERROR_CHECK(nvs_set_str(nvs, "key", key));
     ESP_ERROR_CHECK(nvs_commit(nvs));
   }
+  uint8_t initial = 1;
+  if (nvs_get_u8(nvs, "initial", &initial) != ESP_OK) {
+    /* Older firmware generated 16 hexadecimal characters for the initial key. */
+    initial = first || (strlen(key) == 16 && strspn(key, "0123456789abcdef") == 16);
+    ESP_ERROR_CHECK(nvs_set_u8(nvs, "initial", initial));
+    ESP_ERROR_CHECK(nvs_commit(nvs));
+  }
+  initial_key = initial != 0;
+  size = sizeof(remembered);
+  if (nvs_get_blob(nvs, "remembered", remembered, &size) != ESP_OK || size != sizeof(remembered))
+    memset(remembered, 0, sizeof(remembered));
+  for (int i = 0; i < SESSION_COUNT; i++) remembered[i][32] = 0;
+  nvs_get_u8(nvs, "remember_next", &remember_next);
+  remember_next %= SESSION_COUNT;
   nvs_close(nvs);
 }
 void auth_factory_reset(void) {
@@ -61,6 +87,7 @@ void auth_factory_reset(void) {
     nvs_close(n);
   }
   memset(sessions, 0, sizeof(sessions));
+  memset(remembered, 0, sizeof(remembered));
 }
 bool auth_first_boot(void) { return first; }
 void auth_key_copy(char *out, size_t size) {
@@ -84,6 +111,8 @@ static bool authorized(httpd_req_t *r) {
   const char *token = header + 7;
   if (equal(token, key))
     return true;
+  for (int i = 0; i < SESSION_COUNT; i++)
+    if (remembered[i][0] && equal(token, remembered[i])) return true;
   int64_t now = esp_timer_get_time();
   for (int i = 0; i < SESSION_COUNT; i++)
     if (sessions[i].until > now && equal(token, sessions[i].token))
@@ -134,6 +163,7 @@ static esp_err_t login(httpd_req_t *r) {
     return json(r, "429 Too Many Requests",
                 "{\"error\":\"Try again in 30 seconds\"}");
   cJSON *j = read_json(r), *v = cJSON_GetObjectItemCaseSensitive(j, "key");
+  bool remember = cJSON_IsTrue(cJSON_GetObjectItemCaseSensitive(j, "remember"));
   bool valid = cJSON_IsString(v) && equal(v->valuestring, key);
   cJSON_Delete(j);
   if (!valid) {
@@ -151,9 +181,15 @@ static esp_err_t login(httpd_req_t *r) {
       slot = i;
   random_hex(sessions[slot].token, 16);
   sessions[slot].until = now + 86400000000LL;
-  char body[120];
-  snprintf(body, sizeof(body), "{\"token\":\"%s\",\"expires_in\":86400}",
-           sessions[slot].token);
+  if (remember) {
+    strlcpy(remembered[remember_next], sessions[slot].token, sizeof(remembered[0]));
+    remember_next = (remember_next + 1) % SESSION_COUNT;
+    if (save_remembered() != ESP_OK)
+      return json(r, "500 Internal Server Error", "{\"error\":\"Cannot remember login\"}");
+  }
+  char body[180];
+  snprintf(body, sizeof(body), "{\"token\":\"%s\",\"expires_in\":%d,\"remembered\":%s,\"initial_key\":%s}",
+           sessions[slot].token, remember ? 0 : 86400, remember ? "true" : "false", initial_key ? "true" : "false");
   power_activity();
   return json(r, "200 OK", body);
 }
@@ -171,10 +207,19 @@ static esp_err_t change_key(httpd_req_t *r) {
                 "{\"error\":\"Key must contain 12-64 printable ASCII "
                 "characters without spaces\"}");
   }
+  if (equal(v->valuestring, key)) {
+    cJSON_Delete(j);
+    return json(r, "400 Bad Request", "{\"error\":\"Choose a different key\"}");
+  }
   nvs_handle_t n;
   esp_err_t err = nvs_open("auth", NVS_READWRITE, &n);
   if (err == ESP_OK) {
     err = nvs_set_str(n, "key", v->valuestring);
+    if (err == ESP_OK) err = nvs_set_u8(n, "initial", 0);
+    if (err == ESP_OK) {
+      esp_err_t erased = nvs_erase_key(n, "remembered");
+      if (erased != ESP_OK && erased != ESP_ERR_NVS_NOT_FOUND) err = erased;
+    }
     if (err == ESP_OK)
       err = nvs_commit(n);
     nvs_close(n);
@@ -184,6 +229,8 @@ static esp_err_t change_key(httpd_req_t *r) {
     strlcpy(key, v->valuestring, sizeof(key));
     portEXIT_CRITICAL(&key_lock);
     memset(sessions, 0, sizeof(sessions));
+    memset(remembered, 0, sizeof(remembered));
+    initial_key = false;
   }
   cJSON_Delete(j);
   return json(r, err == ESP_OK ? "200 OK" : "500 Internal Server Error",
@@ -191,18 +238,24 @@ static esp_err_t change_key(httpd_req_t *r) {
                             : "{\"error\":\"Cannot save key\"}");
 }
 static esp_err_t status(httpd_req_t *r) {
-  return json(r, "200 OK", "{\"authenticated\":true}");
+  return json(r, "200 OK", initial_key ? "{\"authenticated\":true,\"initial_key\":true}" : "{\"authenticated\":true,\"initial_key\":false}");
 }
 static esp_err_t show_card(httpd_req_t *r) {
   connection_card_request();
   return json(r, "202 Accepted", "{\"requested\":true}");
 }
 static esp_err_t logout(httpd_req_t *r) {
-  char h[128];
+  char h[128] = {0};
   if (httpd_req_get_hdr_value_str(r, "Authorization", h, sizeof(h)) == ESP_OK)
     for (int i = 0; i < SESSION_COUNT; i++)
       if (!strcmp(h + 7, sessions[i].token))
         sessions[i].until = 0;
+  bool changed = false;
+  for (int i = 0; i < SESSION_COUNT; i++) {
+    if (!strcmp(h + 7, remembered[i])) { memset(remembered[i], 0, sizeof(remembered[i])); changed = true; }
+  }
+  if (changed && save_remembered() != ESP_OK)
+    return json(r, "500 Internal Server Error", "{\"error\":\"Cannot forget login\"}");
   return json(r, "200 OK", "{\"logged_out\":true}");
 }
 void auth_register(httpd_handle_t server) {

@@ -13,7 +13,7 @@ curl -H "Authorization: Bearer $STILLINK_DEVICE_KEY" http://设备IP/api/info
 curl -H "Authorization: Bearer $STILLINK_DEVICE_KEY" -H "Content-Type: application/octet-stream" --data-binary @frame.bin http://设备IP/api/frame
 ```
 
-登录：`POST /api/auth/login`，JSON 请求体 `{"key":"设备密钥"}`，成功返回 `{"token":"会话token","expires_in":86400}`。后续将 token 放入同一 Bearer 请求头即可。token 最长有效 24 小时，重启、恢复出厂或改密钥后失效。连续 5 次登录失败暂停登录 30 秒，返回 `429`。
+登录：`POST /api/auth/login`，JSON 请求体 `{"key":"设备密钥"}`，成功返回 `token`、`expires_in`、`remembered` 与 `initial_key`。网页默认记住登录，只保存随机凭证，不保存设备密钥明文。后续将 token 放入同一 Bearer 请求头即可。不传 `remember` 时，token 最长有效 24 小时，重启后失效；传 `"remember":true` 时返回 `remembered:true`、`expires_in:0`，凭证持久保存，浏览器重开与设备重启后仍可使用。最多记住 6 个登录，新登录会替换最早的记录；退出登录、恢复出厂或修改密钥会撤销对应凭证。响应的 `initial_key` 表示是否仍使用初始密钥。连续 5 次登录失败暂停登录 30 秒，返回 `429`。
 
 - `GET /api/auth/status`：验证当前认证是否有效。
 - `POST /api/auth/key`：JSON `{"key":"新设备密钥"}`，成功后重新登录。

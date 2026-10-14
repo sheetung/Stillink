@@ -214,6 +214,7 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
   <h2 id="loginTitle">登录 Stillink</h2><p class="hint">输入墨水屏上显示的验证密钥。忘记密钥时，按住唤醒键 5 秒恢复出厂。</p>
   <form id="loginForm"><input id="loginKey" type="password" autocomplete="current-password" placeholder="设备验证密钥" required style="width:100%"><p id="loginMessage" class="hint"></p><button type="submit">登录</button></form>
 </dialog>
+<dialog id="initialKeyDialog" class="releaseDialog" aria-labelledby="initialKeyTitle"><h2 id="initialKeyTitle">建议修改初始密钥</h2><p class="hint">当前使用设备生成的初始密钥。建议设置自己的验证密钥；此浏览器会记住登录，下次打开无需重复输入。</p><div class="row"><button id="initialKeySettings">去修改密钥</button><button class="mini" id="initialKeyLater">稍后再说</button></div></dialog>
 <dialog id="onlineOtaNotesDialog" class="releaseDialog" aria-labelledby="onlineOtaNotesTitle">
   <h2 id="onlineOtaNotesTitle">更新内容</h2>
   <div id="onlineOtaNotesBody" class="releaseNotes"></div>
@@ -501,7 +502,7 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
       <p class="hint">连接路由器后设备保持在线，不进入深度休眠；空闲时自动轻睡，收到网络请求后恢复处理。忘记 Wi-Fi 后恢复原来的休眠设置。重启后会自动连接已保存的网络。</p>
     </details>
 
-    <details><summary>设备访问验证</summary>
+    <details id="deviceAccessSettings"><summary>设备访问验证</summary>
       <div class="row"><input id="newDeviceKey" type="password" autocomplete="new-password" placeholder="新密钥：12–64 位英文、数字或符号" style="flex:1"></div>
       <div class="row"><button class="mini" id="saveDeviceKey">修改密钥</button><button class="mini" id="showConnectionCard">显示连接信息</button><button class="mini" id="logoutDevice">退出登录</button></div><p class="hint" id="deviceKeyMessage"></p>
     </details>
@@ -623,9 +624,13 @@ var BASE = (typeof window.EPAPER_BASE === "string" && window.EPAPER_BASE) ? wind
 function api(p){ return BASE + p; }
 
 /* ---------- Device authentication ---------- */
-var deviceToken=sessionStorage.getItem("stillink-token:"+(BASE||location.origin))||"";
+var deviceTokenKey="stillink-token:"+(BASE||location.origin);
+var deviceToken=localStorage.getItem(deviceTokenKey)||sessionStorage.getItem(deviceTokenKey)||"";
 var originalFetch=window.fetch.bind(window),resolveDeviceLogin;
-function saveDeviceToken(token){deviceToken=token;sessionStorage.setItem("stillink-token:"+(BASE||location.origin),token);}
+function saveDeviceToken(token){deviceToken=token;if(token)localStorage.setItem(deviceTokenKey,token);else localStorage.removeItem(deviceTokenKey);sessionStorage.removeItem(deviceTokenKey);}
+function initialKeyReminder(data){if(data.initial_key&&!localStorage.getItem(deviceTokenKey+":initial-reminded")){localStorage.setItem(deviceTokenKey+":initial-reminded","1");document.getElementById("initialKeyDialog").showModal();}}
+document.getElementById("initialKeyLater").addEventListener("click",function(){document.getElementById("initialKeyDialog").close();});
+document.getElementById("initialKeySettings").addEventListener("click",function(){document.getElementById("initialKeyDialog").close();document.getElementById("gearBtn").click();var section=document.getElementById("deviceAccessSettings");section.open=true;section.scrollIntoView({block:"center",behavior:"smooth"});document.getElementById("newDeviceKey").focus();});
 function requireDeviceLogin(){var d=document.getElementById("loginDialog");if(!d.open)d.showModal();}
 var deviceLoginReady=new Promise(function(resolve){resolveDeviceLogin=resolve;});
 window.fetch=async function(url,options){
@@ -633,13 +638,13 @@ window.fetch=async function(url,options){
   if(target.origin!==device.origin||!target.pathname.startsWith("/api/"))return originalFetch(url,options);
   await deviceLoginReady;
   options=Object.assign({},options||{});var headers=new Headers(options.headers||{});headers.set("Authorization","Bearer "+deviceToken);options.headers=headers;
-  var response=await originalFetch(url,options);
-  if(response.status===401){saveDeviceToken("");deviceLoginReady=new Promise(function(resolve){resolveDeviceLogin=resolve;});requireDeviceLogin();}
+  var requestToken=deviceToken;var response=await originalFetch(url,options);
+  if(response.status===401&&deviceToken&&deviceToken===requestToken){localStorage.removeItem(deviceTokenKey+":initial-reminded");saveDeviceToken("");deviceLoginReady=new Promise(function(resolve){resolveDeviceLogin=resolve;});requireDeviceLogin();}
   return response;
 };
 document.getElementById("loginDialog").addEventListener("cancel",function(e){e.preventDefault();});
-document.getElementById("loginForm").addEventListener("submit",async function(e){e.preventDefault();var key=document.getElementById("loginKey"),message=document.getElementById("loginMessage");try{var r=await originalFetch(api("/api/auth/login"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key:key.value})});if(!r.ok)throw new Error(r.status===429?"尝试次数过多，请等待 30 秒。":"密钥错误或设备无法访问。");var data=await r.json();saveDeviceToken(data.token);key.value="";message.textContent="";document.getElementById("loginDialog").close();resolveDeviceLogin();}catch(e){message.textContent=e.message;}});
-(async function(){if(location.protocol==="file:"&&!BASE){resolveDeviceLogin();return;}if(deviceToken){try{var r=await originalFetch(api("/api/auth/status"),{headers:{Authorization:"Bearer "+deviceToken}});if(r.ok){resolveDeviceLogin();return;}}catch(e){}}requireDeviceLogin();})();
+document.getElementById("loginForm").addEventListener("submit",async function(e){e.preventDefault();var key=document.getElementById("loginKey"),message=document.getElementById("loginMessage");try{var r=await originalFetch(api("/api/auth/login"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key:key.value,remember:true})});if(!r.ok)throw new Error(r.status===429?"尝试次数过多，请等待 30 秒。":"密钥错误或设备无法访问。");var data=await r.json();saveDeviceToken(data.token);key.value="";message.textContent="";document.getElementById("loginDialog").close();resolveDeviceLogin();initialKeyReminder(data);}catch(e){message.textContent=e.message;}});
+(async function(){if(location.protocol==="file:"&&!BASE){resolveDeviceLogin();return;}if(deviceToken){try{var r=await originalFetch(api("/api/auth/status"),{headers:{Authorization:"Bearer "+deviceToken}});if(r.ok){saveDeviceToken(deviceToken);resolveDeviceLogin();initialKeyReminder(await r.json());return;}if(r.status===401){localStorage.removeItem(deviceTokenKey+":initial-reminded");saveDeviceToken("");}}catch(e){}}requireDeviceLogin();})();
 function serviceProxy(path){return api("/api/service/proxy?path="+encodeURIComponent(path));}
 function authenticatedImage(image,url){fetch(url).then(function(r){if(!r.ok)throw new Error("图片请求失败");return r.blob();}).then(function(blob){if(image.dataset.objectURL)URL.revokeObjectURL(image.dataset.objectURL);var src=URL.createObjectURL(blob);image.dataset.objectURL=src;image.addEventListener("load",function(){URL.revokeObjectURL(src);},{once:true});image.addEventListener("error",function(){URL.revokeObjectURL(src);},{once:true});image.src=src;}).catch(function(){image.alt="无法读取图片，请检查服务配置。";});}
 
@@ -2977,7 +2982,7 @@ function notifyDisplayMode(mode){
 /* ---------- Access settings ---------- */
 $("saveDeviceKey").addEventListener("click",async function(){var key=$("newDeviceKey").value;if(!/^[\x21-\x7e]{12,64}$/.test(key)){$("deviceKeyMessage").textContent="请输入 12–64 位英文、数字或符号，不含空格。";return;}try{var r=await fetch(api("/api/auth/key"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key:key})});if(!r.ok)throw new Error("密钥保存失败");$("newDeviceKey").value="";saveDeviceToken("");location.reload();}catch(e){$("deviceKeyMessage").textContent=e.message;}});
 $("showConnectionCard").addEventListener("click",async function(){if(!confirm("显示连接信息会替换当前屏幕画面，继续？"))return;var r=await fetch(api("/api/connection/show"),{method:"POST"});$("deviceKeyMessage").textContent=r.ok?"已请求显示连接信息。":"显示失败，请重试。";});
-$("logoutDevice").addEventListener("click",async function(){await fetch(api("/api/auth/logout"),{method:"POST"});saveDeviceToken("");location.reload();});
+$("logoutDevice").addEventListener("click",async function(){var r=await fetch(api("/api/auth/logout"),{method:"POST"});if(!r.ok){$("deviceKeyMessage").textContent="退出失败，请重试。";return;}saveDeviceToken("");location.reload();});
 
 </script>
 </body>
