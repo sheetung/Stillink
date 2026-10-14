@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="epaper-page-version" content="V1.2.5">
+<meta name="epaper-page-version" content="V1.2.6">
 <title>Stillink</title>
 <style>
 /* ===== Cropper.js v1.6.2 | MIT | https://github.com/fengyuanchen/cropperjs ===== */
@@ -508,8 +508,8 @@ details summary{ cursor:pointer; font-weight:600; font-size:14px; color:var(--in
     <details id="supportSettings">
       <summary>额外服务支持</summary>
       <p class="hint">天气、音乐和相簿共用一个服务。服务器生成或保存图片，设备只下载图片，无需保存字库。</p>
-      <div class="row"><label for="supportServiceKey">服务密钥</label><input id="supportServiceKey" type="password" autocomplete="off" placeholder="已保存时留空保持原密钥" style="flex:1;min-width:0"></div>
       <div class="row"><label for="supportService">服务地址</label><input id="supportService" type="text" placeholder="http://服务器地址:8787" style="flex:1;min-width:0"></div>
+      <div class="row"><label for="supportServiceKey">服务密钥</label><input id="supportServiceKey" type="password" autocomplete="off" placeholder="已保存时留空保持原密钥" style="flex:1;min-width:0"></div>
       <div class="row"><button class="mini" id="checkSupportService">测试连接</button><button class="mini" id="saveSupportService">保存服务地址</button><a href="https://github.com/sheetung/Stillink/blob/main/docs/services.md" target="_blank" rel="noopener">部署说明</a></div>
       <p class="hint">填写服务器的 HTTP 根地址。保存一次后，各功能页面无需重复填写；重启和固件升级后保留。清空地址并保存会关闭自动卡片，隐藏对应入口。</p>
       <div class="serviceCards" id="supportServiceCards" hidden role="status" aria-live="polite">
