@@ -1,6 +1,6 @@
 # 在线烧录
 
-[打开 Stillink 在线烧录页](https://blog.moontung.top/Stillink/)
+[打开 Stillink 在线烧录页](https://092399.xyz/Stillink/)
 
 使用电脑 Chrome 或 Edge，通过 USB 数据线连接设备。
 
