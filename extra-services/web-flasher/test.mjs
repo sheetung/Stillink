@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
 import {webcrypto,createHash} from 'node:crypto';
-const source=(await readFile(new URL('app.js',import.meta.url),'utf8')).replace(/^import .*;\n/gm,'');
+const source=(await readFile(new URL('app.js',import.meta.url),'utf8')).replace(/^import .*;\r?\n/gm,'');
 const data=new Uint8Array([0xe9,1,2,3]),writes=[];
 const image={file:'stillink-v1.2.1-esp32s3-ota.bin',url:'firmware/test.bin',size:data.length,sha256:createHash('sha256').update(data).digest('hex')};
 const manifest={releases:[{version:'v1.2.1',chip:'esp32s3',ota:image,full:{...image,file:'stillink-v1.2.1-esp32s3.bin'}},{version:'v1.2.1',chip:'esp32c3',ota:{...image,file:'stillink-v1.2.1-esp32c3-ota.bin'},full:{...image,file:'stillink-v1.2.1-esp32c3.bin'}}]};
@@ -15,6 +15,7 @@ class ESPLoader{constructor(){this.chip={CHIP_NAME:chip};}async main(){}async wr
 const context={document:{getElementById:node,createElement:()=>node('code')},window:{isSecureContext:true},navigator:{serial:{requestPort:async()=>({}),addEventListener(){}}},location:{hostname:'localhost'},ESPLoader,Transport,SparkMD5:{ArrayBuffer:{hash:b=>createHash('md5').update(new Uint8Array(b)).digest('hex')}},crypto:webcrypto,Uint8Array,fetch:async()=>({ok:true,arrayBuffer:async()=>badDownload?new Uint8Array([0]).buffer:data.buffer})};
 vm.runInNewContext(source,context);
 await node('connect').click();await node('flash').click();
+assert.match(node('status').textContent,/重新通电/);
 assert.equal(writes.length,1);assert.equal(writes[0].fileArray[0].address,0x10000);assert.equal(writes[0].fileArray[1].address,0xd000);assert.equal(writes[0].fileArray[1].data.length,8192);assert(writes[0].fileArray[1].data.every(byte=>byte===255));assert.equal(writes[0].eraseAll,false);assert.equal(node('percent').textContent,'100%');
 node('imageType').value='full';await node('imageType').change();await node('connect').click();await node('flash').click();assert.equal(writes.length,2);assert.equal(writes[1].fileArray[0].address,0);assert.equal(writes[1].fileArray.length,1);
 chip='ESP32-C3';await node('connect').click();await node('flash').click();assert.equal(writes.length,2);assert.match(node('status').textContent,/仅支持 ESP32-S3/);
