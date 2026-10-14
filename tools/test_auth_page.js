@@ -1,0 +1,12 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const page=fs.readFileSync('page/index.html','utf8');
+const source=page.split('/* ---------- Device authentication ---------- */')[1].split('/* ==================================================================')[0];
+const nodes=new Map(),calls=[];const node=id=>{if(!nodes.has(id))nodes.set(id,{value:'',textContent:'',open:false,events:{},addEventListener(k,f){this.events[k]=f;},showModal(){this.open=true;},close(){this.open=false;}});return nodes.get(id);};
+let status=200;const context={BASE:'',api:p=>p,sessionStorage:{getItem:()=>'',setItem(){}},location:{origin:'http://device',href:'http://device/',protocol:'http:'},document:{getElementById:node},URL,Headers,Promise,JSON,window:{fetch:async(url,options)=>{calls.push({url,options});return {ok:status===200,status,json:async()=>({token:'session-token'})};}}};
+vm.runInNewContext(source,context);const flush=()=>new Promise(setImmediate);
+(async()=>{assert(node('loginDialog').open);let resolved=false;const pending=context.window.fetch('/api/info').then(()=>resolved=true);await flush();assert(!resolved);assert.equal(calls.length,0);
+node('loginKey').value='my-device-key';await node('loginForm').events.submit({preventDefault(){}});await pending;
+assert(!node('loginDialog').open);assert.equal(calls[0].url,'/api/auth/login');assert.equal(calls[1].options.headers.get('Authorization'),'Bearer session-token');
+await context.window.fetch('https://api.open-meteo.com/test');assert(!calls.at(-1).options?.headers,'Do not leak device token to third parties');
+status=401;await context.window.fetch('/api/settings');assert(node('loginDialog').open);assert.equal(context.deviceToken,'');
+console.log('AUTH PAGE: PASS (login gate, session header, third-party isolation, expired session)');})().catch(e=>{console.error(e);process.exitCode=1;});

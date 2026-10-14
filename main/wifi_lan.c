@@ -1,3 +1,5 @@
+#include "connection_card.h"
+#include "auth.h"
 #include "wifi_lan.h"
 #include "power.h"
 #include "netif_ap.h"
@@ -32,6 +34,7 @@ static esp_netif_t *s_sta;
 static portMUX_TYPE s_lock = portMUX_INITIALIZER_UNLOCKED;
 static char s_ssid[33];
 static bool s_saved;
+static bool s_first_ip_card;
 static int s_reason;
 
 /* Keep mode changes in the worker, serialized with scans and connection requests. */
@@ -94,6 +97,10 @@ static void station_event(void *arg, esp_event_base_t base, int32_t id, void *da
         xEventGroupClearBits(s_events, DISCONNECTED);
         xEventGroupSetBits(s_events, CONNECTED);
         ESP_LOGI(TAG, "LAN ready: http://" IPSTR, IP2STR(&event->ip_info.ip));
+        if (auth_first_boot() && !s_first_ip_card) {
+            s_first_ip_card = true;
+            connection_card_request();
+        }
     } else if (base == WIFI_EVENT && id == WIFI_EVENT_STA_DISCONNECTED) {
         wifi_event_sta_disconnected_t *event = data;
         portENTER_CRITICAL(&s_lock);
@@ -171,6 +178,7 @@ static void connection_task(void *arg)
                 connected = false;
             } else {
                 new_credentials = false;
+                connection_card_request();
                 portENTER_CRITICAL(&s_lock);
                 s_saved = true;
                 portEXIT_CRITICAL(&s_lock);
@@ -341,6 +349,6 @@ void wifi_lan_register(httpd_handle_t server)
 {
     const httpd_uri_t status = { .uri = "/api/wifi/status", .method = HTTP_GET, .handler = status_handler };
     const httpd_uri_t scan = { .uri = "/api/wifi/scan", .method = HTTP_GET, .handler = scan_handler };
-    ESP_ERROR_CHECK(httpd_register_uri_handler(server, &status));
-    ESP_ERROR_CHECK(httpd_register_uri_handler(server, &scan));
+    ESP_ERROR_CHECK(auth_register_uri_handler(server, &status));
+    ESP_ERROR_CHECK(auth_register_uri_handler(server, &scan));
 }

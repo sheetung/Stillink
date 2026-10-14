@@ -1,8 +1,11 @@
+#include "connection_card.h"
+#include "service_access.h"
+#include "auth.h"
 /*
  * 电子墨水屏 — 固件主装配（R 系列，重构版）
  *
  * 职责一句话：固件只做「热点 / 接收 / 刷图 / 休眠 / 唤醒 / OTA」，画面全部由页面
- * 在浏览器或天气服务中合成。支持热点配网及局域网访问，没有固件端图像处理。
+ * 在浏览器或天气服务中合成。支持热点配网及局域网访问；固件仅绘制英文连接信息与地址二维码。
  *
  * 模块分工：
  *   epd_drv   锁定屏驱动（A0/A1，RST=GPIO3），不改
@@ -61,8 +64,8 @@
 static const char *TAG = "main";
 
 #define HOLD_RESET_S    5          /* 长按恢复出厂 */
-#define HTTPD_STACK     4096
-#define HTTPD_MAX_URI   32
+#define HTTPD_STACK     6144
+#define HTTPD_MAX_URI   48
 
 /* ---------------- 请求小工具 ---------------- */
 
@@ -325,8 +328,8 @@ static esp_err_t factory_handler(httpd_req_t *req)
 static esp_err_t options_handler(httpd_req_t *req)
 {
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Headers", "Content-Type");
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Headers", "Content-Type, Authorization");
     httpd_resp_send(req, NULL, 0);
     return ESP_OK;
 }
@@ -399,11 +402,13 @@ static httpd_handle_t start_server(void)
         { .uri = "*",               .method = HTTP_OPTIONS,.handler = options_handler,      .user_ctx = NULL },
     };
     for (size_t i = 0; i < sizeof(routes) / sizeof(routes[0]); i++) {
-        if (httpd_register_uri_handler(server, &routes[i]) != ESP_OK) {
+        if (auth_register_uri_handler(server, &routes[i]) != ESP_OK) {
             ESP_LOGE(TAG, "register %s %d failed", routes[i].uri, routes[i].method);
         }
     }
 
+    auth_register(server);
+    service_access_register(server);
     ota_web_register(server);
     online_ota_register(server);
     wifi_lan_register(server);
@@ -416,7 +421,7 @@ static httpd_handle_t start_server(void)
     const httpd_uri_t captive = {
         .uri = "/*", .method = HTTP_GET, .handler = captive_redirect, .user_ctx = NULL,
     };
-    ESP_ERROR_CHECK(httpd_register_uri_handler(server, &captive));
+    ESP_ERROR_CHECK(auth_register_uri_handler(server, &captive));
     return server;
 }
 
@@ -452,14 +457,13 @@ static void button_task(void *arg)
         vTaskDelay(pdMS_TO_TICKS(50));
         bool down = (gpio_get_level((gpio_num_t)EPD_PIN_WAKE_BTN) == 0);
         if (down) {
+            power_activity();
             held++;
-            if (held == HOLD_RESET_S * 20) {
-                ESP_LOGW(TAG, "wake button held, keep holding %ds to factory reset", HOLD_RESET_S);
-            }
-            if (held >= HOLD_RESET_S * 20 + 5) {
-                ESP_LOGW(TAG, "long press: factory reset + reboot");
+            if (held >= HOLD_RESET_S * 20) {
+                weather_disable(); music_disable(); album_disable();
+                connection_card_reset_notice();
                 settings_factory_reset();
-                vTaskDelay(pdMS_TO_TICKS(300));
+                while (gpio_get_level((gpio_num_t)EPD_PIN_WAKE_BTN) == 0) vTaskDelay(pdMS_TO_TICKS(50));
                 esp_restart();
             }
         } else {
@@ -494,6 +498,8 @@ void app_main(void)
     }
 
     settings_init();
+    auth_init();
+    service_access_init();
     power_init();
     store_init();       /* 轮播存储底座（FB-017 第一部分）：只探测，不写入 */
 
@@ -505,7 +511,9 @@ void app_main(void)
     epd_set_hflip(settings_get()->hflip != 0);
 
     frame_init();
+    connection_card_init();
     netif_ap_init();
+    if (auth_first_boot()) connection_card_request();
     err = mdns_init();
     if (err == ESP_OK) {
         mdns_hostname_set("stillink");

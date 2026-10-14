@@ -7,7 +7,7 @@ const ids=[...page.matchAll(/id="(music[^" ]*|modeMusic|modeWeather|modeAlbum|ed
 const elements=Object.fromEntries(ids.map(id=>[id,el()])),modes=[el(),el()],queue=[],requests=[];
 const respond=body=>queue.push(body),flush=()=>new Promise(setImmediate),click=id=>elements[id].events.click();
 const notifications=[];
-const context={displayModeRevision:0,notifyDisplayMode:mode=>notifications.push(mode),supportServiceURL:"",$:id=>elements[id],api:p=>p,TextEncoder,Date,JSON,Promise,setTimeout:()=>1,clearTimeout(){},
+const context={serviceProxy:p=>"http://server"+p,authenticatedImage:(image,url)=>{image.src=url;},displayModeRevision:0,notifyDisplayMode:mode=>notifications.push(mode),supportServiceURL:"",$:id=>elements[id],api:p=>p,TextEncoder,Date,JSON,Promise,setTimeout:()=>1,clearTimeout(){},
  document:{querySelectorAll:()=>modes,createElement:()=>el()},fetch:async(url,options)=>{requests.push({url,options});assert(queue.length,url);return {ok:true,json:async()=>queue.shift()};}};
 vm.runInNewContext(source,context);
 (async()=>{
@@ -17,7 +17,7 @@ vm.runInNewContext(source,context);
  context.supportServiceURL="http://192.168.31.12:8787/";
  respond({saved:true});respond({enabled:true,service_url:"http://192.168.31.12:8787",status:"ready"});respond({playing:true,title:"<歌曲>",artist:"歌手",version:"abc"});click("musicSave");await flush();await flush();
  const post=requests.find(r=>r.options?.method==="POST");assert.deepEqual(JSON.parse(post.options.body),{enabled:true,service_url:"http://192.168.31.12:8787"});
- assert.equal(elements.musicScreen.children[0].alt,"<歌曲>专辑卡片");assert.equal(elements.musicScreen.children[0].src,"http://192.168.31.12:8787/v1/music.png?v=abc");
+ assert.equal(elements.musicScreen.children[0].alt,"<歌曲>专辑卡片");assert.equal(elements.musicScreen.children[0].src,"http://server/v1/music.png?v=abc");
  elements.modeWeather.events.click();assert.equal(elements.musicPane.hidden,true);
  elements.musicEnabled.checked=false;respond({saved:true});click("musicSave");await flush();
  assert.deepEqual(notifications,["music"],"Disabling music must not reenable weather");

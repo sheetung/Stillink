@@ -16,7 +16,7 @@ extra-services/
 
 ### Windows 免安装 ZIP
 
-从 [Release 下载 StillinkServices-win.zip](https://github.com/sheetung/Stillink/releases/latest/download/StillinkServices-win.zip)，完整解压并双击 `StillinkServices.exe`，无需 Python、uv 或额外字库。启动窗口显示局域网服务地址，点击「复制地址」，填入设备的「额外服务支持」并保存。
+从 [Release 下载 StillinkServices-win.zip](https://github.com/sheetung/Stillink/releases/latest/download/StillinkServices-win.zip)，完整解压并双击 `StillinkServices.exe`，无需 Python、uv 或额外字库。启动窗口显示局域网服务地址，分别点击「复制地址」「复制密钥」，填入设备的「额外服务支持」并保存。
 
 关闭窗口后留在托盘运行，右键可显示地址或退出。首次运行允许 Windows 防火墙的专用网络访问；照片保存在程序旁的 `data` 文件夹，升级时保留它与照片数据库。音乐仍需运行独立的 `StillinkMusic.exe` 广播工具。详细步骤见 [Windows 使用说明](../extra-services/server/WINDOWS.md)。
 
@@ -34,12 +34,14 @@ uv sync --frozen
 uv run --frozen app.py --host 0.0.0.0 --port 8787
 ```
 
+首次启动生成服务密钥，保存在 `data/service.key`，可用 `cat data/service.key` 查看。更换密钥时先停止服务，执行 `uv run --frozen app.py --rotate-service-key`，再启动；设备需要重新填写密钥，照片保留。
+
 默认 HTTP `8787`、音乐 UDP `8790`。服务器应允许所需端口的入站连接。仅音乐接收与渲染不访问天气 API；天气功能需要能访问 Open-Meteo。
 
 检查服务：
 
 ```bash
-curl http://127.0.0.1:8787/health
+curl -H "Authorization: Bearer $(cat data/service.key)" http://127.0.0.1:8787/health
 ```
 
 正常返回 `status: "ok"`。未收到 Windows 音乐广播时，设备显示「等待音乐」。
@@ -78,7 +80,7 @@ journalctl --user -u stillink-services -f
 ## 设备配置
 
 1. 让 ESP 连接路由器 Wi-Fi。
-2. 打开「设备设置 → 额外服务支持」，填写服务器的 HTTP 根地址，如 `http://服务器IP:8787`。
+2. 打开「设备设置 → 额外服务支持」，填写独立的服务密钥和服务器 HTTP 根地址，如 `http://服务器IP:8787`。
 3. 点击「测试连接」查看服务状态；保存时会先检测连接，检测失败时不修改已有配置。保存后显示天气、音乐和相簿三张状态卡片，并开启对应功能入口。展开服务设置时每 15 秒更新状态，Windows 未广播不会阻止保存地址。
 4. 按需启用天气、音乐或相簿，各功能无需重复填写服务地址。
 

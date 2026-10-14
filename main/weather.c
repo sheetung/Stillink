@@ -1,3 +1,6 @@
+#include "connection_card.h"
+#include "service_access.h"
+#include "auth.h"
 #include "weather.h"
 #include "music.h"
 #include "album.h"
@@ -195,6 +198,7 @@ static esp_err_t config_handler(httpd_req_t *req)
     xSemaphoreGive(s_lock);
     free(next);
     if (err != ESP_OK) return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Could not save weather settings");
+    connection_card_release();
     return httpd_resp_sendstr(req, "{\"saved\":true}");
 }
 
@@ -238,10 +242,10 @@ static bool fetch_weather(const weather_config_t *config, weather_data_t *data, 
     *out = 0;
     snprintf(url, sizeof(url), "%s/v1/weather.bin?latitude=%.5f&longitude=%.5f&name=%s", config->service_url, config->latitude, config->longitude, encoded);
     response_t response = {.data = data};
-    esp_http_client_config_t options = {.url = url, .timeout_ms = 30000, .crt_bundle_attach = esp_crt_bundle_attach,
+    esp_http_client_config_t options = {.url = url, .timeout_ms = 30000, .crt_bundle_attach = esp_crt_bundle_attach, .disable_auto_redirect = true,
         .event_handler = receive_event, .user_data = &response, .buffer_size = 2048, .user_agent = "Stillink/weather"};
     esp_http_client_handle_t client = esp_http_client_init(&options);
-    esp_err_t err = client ? esp_http_client_open(client, 0) : ESP_ERR_NO_MEM;
+    esp_err_t err = client ? (service_access_attach(client, url), esp_http_client_open(client, 0)) : ESP_ERR_NO_MEM;
     int result = -2, status = 0;
     if (err == ESP_OK && esp_http_client_fetch_headers(client) >= 0) {
         status = esp_http_client_get_status_code(client);
@@ -338,5 +342,5 @@ void weather_register(httpd_handle_t server)
         {.uri = "/api/weather", .method = HTTP_POST, .handler = config_handler},
         {.uri = "/api/weather/refresh", .method = HTTP_POST, .handler = refresh_handler},
     };
-    for (size_t i = 0; i < sizeof(routes) / sizeof(routes[0]); ++i) ESP_ERROR_CHECK(httpd_register_uri_handler(server, &routes[i]));
+    for (size_t i = 0; i < sizeof(routes) / sizeof(routes[0]); ++i) ESP_ERROR_CHECK(auth_register_uri_handler(server, &routes[i]));
 }

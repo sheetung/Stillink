@@ -22,7 +22,7 @@ const js = m[1];
 // 只取 DOM 代码之前的纯函数段：截止到 `var $ = function` 之前。
 const cut = js.indexOf("var $ = function");
 if (cut < 0) { console.error("pure-section marker not found"); process.exit(1); }
-const pure = js.slice(0, cut);
+const pure = js.slice(0, cut).replace(/\/\* ---------- Device authentication ---------- \*\/[\s\S]*?(?=\/\* =)/, "");
 
 const sandbox = { window: {}, console: console, Uint8Array: Uint8Array,
                   Float64Array: Float64Array, Int32Array: Int32Array,

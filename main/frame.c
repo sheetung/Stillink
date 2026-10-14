@@ -1,3 +1,4 @@
+#include "connection_card.h"
 #include "frame.h"
 #include "epd_drv.h"
 #include "power.h"
@@ -81,6 +82,7 @@ static bool read_exact(esp_http_client_handle_t client, uint8_t *out, size_t siz
 
 int frame_download_display(esp_http_client_handle_t client, bool (*allow)(void *), void *context)
 {
+    if (connection_card_holding()) return -1;
     uint8_t hdr[FRAME_HDR_LEN];
     if (!read_exact(client, hdr, sizeof(hdr))) return -2;
     uint16_t width = (hdr[4] << 8) | hdr[5], height = (hdr[6] << 8) | hdr[7];
@@ -207,9 +209,26 @@ esp_err_t frame_upload_handler(httpd_req_t *req)
 
     s_fw = width;                             /* 显示任务据此选写入路径 */
     s_fh = height;
+    connection_card_release();
     s_pending = true;
     xSemaphoreGive(s_frame_ready);            /* 唤醒显示任务 */
     xSemaphoreGive(s_fb_mutex);
     httpd_resp_set_type(req, "text/plain");
     return httpd_resp_sendstr(req, "OK");
+}
+
+int frame_render_card(void (*draw)(uint8_t *, uint16_t, uint16_t, void *), void *context)
+{
+    xSemaphoreTake(s_fb_mutex, portMAX_DELAY);
+    if (s_pending) { xSemaphoreGive(s_fb_mutex); return -1; }
+    uint16_t width = epd_profile()->w, height = epd_profile()->h;
+    memset(s_fb, 0x55, width * height / 4);
+    draw(s_fb, width, height, context);
+    power_panel_busy(true);
+    int result = epd_display_2bpp_wh(s_fb, width, height);
+    if (!result) epd_panel_deep_sleep();
+    power_panel_busy(false);
+    xSemaphoreGive(s_fb_mutex);
+    power_activity();
+    return result;
 }

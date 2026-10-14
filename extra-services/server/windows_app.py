@@ -12,6 +12,7 @@ from pathlib import Path
 import album
 import app
 import weather
+from service_security import load_key
 
 PORT = 8787
 
@@ -32,7 +33,9 @@ def service_addresses(port=PORT):
 
 class Service:
     def __init__(self, directory, host="0.0.0.0", port=PORT, music_port=8790):
-        app.ALBUM = album.Store(Path(directory) / "data")
+        self.data_dir = Path(directory) / "data"
+        app.AUTH_KEY = load_key(self.data_dir)
+        app.ALBUM = album.Store(self.data_dir)
         app.MUSIC.font_path = weather.find_font()
         self.http = app.ThreadingHTTPServer((host, port), WindowsHandler)
         self.http.daemon_threads = True
@@ -53,7 +56,7 @@ class Service:
 
 def packaged_check(output):
     """Exercise the bundled server and fonts without opening a window."""
-    from urllib.request import ProxyHandler, build_opener
+    from urllib.request import Request, ProxyHandler, build_opener
     from PIL import ImageFont
     import tkinter as tk
     import pystray
@@ -66,12 +69,12 @@ def packaged_check(output):
         try:
             base = f"http://127.0.0.1:{service.http.server_port}"
             opener = build_opener(ProxyHandler({}))
-            with opener.open(base + "/health", timeout=5) as response:
+            with opener.open(Request(base + "/health", headers={"Authorization": "Bearer " + app.AUTH_KEY}), timeout=5) as response:
                 health = json.load(response)
             assert health["status"] == "ok" and health["services"]["album"]["available"]
             assert health["services"]["music"]["receiver_ready"]
             ImageFont.truetype(weather.find_font(), 20).getmask("天气相簿")
-            with opener.open(base + "/v1/album/photos", timeout=5) as response:
+            with opener.open(Request(base + "/v1/album/photos", headers={"Authorization": "Bearer " + app.AUTH_KEY}), timeout=5) as response:
                 assert json.load(response) == {"photos": []}
             Path(output).write_text(json.dumps({"status": "ok"}), encoding="utf-8")
         finally:
@@ -92,8 +95,8 @@ def main():
     root = tk.Tk()
     root.withdraw()
     root.title("Stillink 额外服务")
-    root.geometry("480x300")
-    root.minsize(460, 300)
+    root.geometry("520x380")
+    root.minsize(500, 380)
     try:
         logging.basicConfig(filename=directory / "services.log", level=logging.INFO,
                             format="%(asctime)s %(levelname)s %(message)s")
@@ -112,6 +115,9 @@ def main():
     address = tk.StringVar()
     selector = ttk.Combobox(box, textvariable=address, state="readonly", font=("Segoe UI", 12))
     selector.pack(fill="x")
+    ttk.Label(box, text="服务密钥（填入设备的额外服务设置）").pack(anchor="w", pady=(12, 4))
+    key_text = tk.StringVar(value=app.AUTH_KEY)
+    ttk.Entry(box, textvariable=key_text, state="readonly", font=("Consolas", 11)).pack(fill="x")
     status = tk.StringVar()
 
     def refresh():
@@ -128,11 +134,26 @@ def main():
         root.clipboard_append(address.get())
         status.set("地址已复制。")
 
+    def copy_key():
+        root.clipboard_clear()
+        root.clipboard_append(app.AUTH_KEY)
+        status.set("服务密钥已复制。")
+
+    def rotate_key():
+        if messagebox.askyesno("更换服务密钥", "更换后所有设备需要重新填写服务密钥，照片不会删除。继续？", parent=root):
+            try:
+                app.AUTH_KEY = load_key(service.data_dir, rotate=True)
+                key_text.set(app.AUTH_KEY)
+                status.set("密钥已更换，请更新设备的服务设置。")
+            except OSError as exc:
+                messagebox.showerror("更换失败", str(exc), parent=root)
+
     buttons = ttk.Frame(box)
     buttons.pack(fill="x", pady=12)
     ttk.Button(buttons, text="复制地址", command=copy).pack(side="left")
-    ttk.Button(buttons, text="检查服务", command=lambda: webbrowser.open(address.get() + "/health")).pack(side="left", padx=8)
+    ttk.Button(buttons, text="复制密钥", command=copy_key).pack(side="left", padx=8)
     ttk.Button(buttons, text="刷新地址", command=refresh).pack(side="left")
+    ttk.Button(box, text="更换服务密钥", command=rotate_key).pack(anchor="w", pady=(0, 8))
     ttk.Label(box, textvariable=status, wraplength=430).pack(anchor="w")
     ttk.Label(box, text="关闭窗口后继续在托盘运行，右键托盘图标可退出。\n首次运行请允许专用网络访问；相簿保存在 data 文件夹。", wraplength=430).pack(anchor="w", pady=(12, 0))
 

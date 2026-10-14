@@ -80,9 +80,9 @@ Windows 通过 UDP 广播播放器的歌曲、歌手、专辑和封面，服务�
 
 ## 快速上手
 
-1. 用电脑 Chrome / Edge 打开 [在线烧录页](https://092399.xyz/Stillink/)，新设备选择「首次烧录 · 完整包」，点击「连接并选择设备」后烧录。连接设备热点 `Stillink-XXXX`，打开 `http://192.168.4.1`。
+1. 用电脑 Chrome / Edge 打开 [在线烧录页](https://092399.xyz/Stillink/)，新设备选择「首次烧录 · 完整包」，点击「连接并选择设备」后烧录。连接设备热点 `Stillink-XXXX`，打开 `http://192.168.4.1`，用墨水屏上的设备密钥登录。
 2. 在「拍立得」选图，或在「便签」编辑文字，预览后点击「上传并刷新屏幕」。
-3. 如需局域网访问，在「设备设置 → Wi-Fi 配网」选择家中的 2.4 GHz 网络并连接，之后可用 `http://stillink.local/` 访问。
+3. 如需局域网访问，在「设备设置 → Wi-Fi 配网」选择家中的 2.4 GHz 网络并连接，连接成功后屏幕显示局域网 IP 与二维码，可直接扫码访问。
 4. 如需天气、音乐或相簿，启动下方服务，在「设备设置 → 额外服务支持」保存 HTTP 根地址，再打开对应功能。
 
 `stillink.local` 使用局域网 mDNS，设备响应当前 IP，无需公网域名；设备和客户端需在同一网络，客户端须支持 mDNS。
@@ -130,13 +130,15 @@ python tools/package_bins.py
 
 本地打包输出到 `build/dist/`，构建产物不提交到 Git。Release 会分别提供 `esp32s3` 和 `esp32c3` 的完整包与 `-ota.bin`，两种芯片的固件不能混用。在线烧录页可按芯片选择，设备在线升级自动匹配芯片。
 
-固件 OTA 会重置屏幕与休眠等设备设置；Wi-Fi、天气、音乐和电池校准配置保留。升级后确认屏幕设置。
+设备设置可修改登录密钥；按住唤醒键 5 秒恢复出厂，松开后重新配网。服务器照片不会删除。所有 HTTP API 请求需携带认证，见 [API 说明](docs/API.md)。
+
+固件 OTA 会重置屏幕与休眠等设备设置；设备与服务密钥、Wi-Fi、天气、音乐和电池校准配置保留。升级后确认屏幕设置。
 
 固件可从 [Release](https://github.com/sheetung/Stillink/releases) 下载，或直接使用 [在线烧录页](https://092399.xyz/Stillink/)。
 
 ## 可选服务部署
 
-Windows 用户可下载 [免安装服务 ZIP](https://github.com/sheetung/Stillink/releases/latest/download/StillinkServices-win.zip)，完整解压后双击 **StillinkServices.exe**。窗口显示可复制的局域网地址，关闭后留在托盘运行；无需安装 Python，天气与相簿可直接使用，音乐另需运行下方的广播工具。照片保存在 `data` 文件夹，更新时请保留。建议在保持开机的设备上运行，详见 [总部署说明](docs/services.md)。
+Windows 用户可下载 [免安装服务 ZIP](https://github.com/sheetung/Stillink/releases/latest/download/StillinkServices-win.zip)，完整解压后双击 **StillinkServices.exe**。窗口显示可复制的局域网地址和服务密钥，关闭后留在托盘运行；无需安装 Python，天气与相簿可直接使用，音乐另需运行下方的广播工具。照片保存在 `data` 文件夹，更新时请保留。建议在保持开机的设备上运行，详见 [总部署说明](docs/services.md)。
 
 天气、音乐和相簿共用 `extra-services/server` 中的 Python 服务，需要 **Python 3.11+、uv 和中文字体**。Linux 示例：
 
@@ -148,7 +150,7 @@ uv sync --frozen
 uv run --frozen app.py --host 0.0.0.0 --port 8787
 ```
 
-在「设备设置 → 额外服务支持」填写 `http://服务器IP:8787` 并保存。服务默认使用 HTTP `8787` 和音乐 UDP `8790`；常驻运行与 systemd 配置见 [总部署说明](docs/services.md)。天气数据来自 [Open-Meteo](https://open-meteo.com/)，服务需要能访问互联网。
+在「设备设置 → 额外服务支持」填写 `http://服务器IP:8787` 与服务密钥并保存。服务默认使用 HTTP `8787` 和音乐 UDP `8790`；常驻运行与 systemd 配置见 [总部署说明](docs/services.md)。天气数据来自 [Open-Meteo](https://open-meteo.com/)，服务需要能访问互联网。
 
 音乐还需在 Windows 下载并解压 [音乐工具包](https://github.com/sheetung/Stillink/releases/latest/download/StillinkMusic-win.zip)，双击 **StillinkMusic.exe**，即可在后台广播当前歌曲，无需安装 Python 或填写地址。右键任务栏通知区域的音乐图标，选择「退出」可停止。Windows 与服务器需处于同一局域网；工具使用与构建见 [音乐说明](docs/music.md)。天气、音乐与相簿轮播互斥：启用并保存其中一项会关闭其他项。拍立得或便签上传成功后，所有自动刷新都会关闭，配置保留。
 

@@ -1,3 +1,6 @@
+#include "connection_card.h"
+#include "service_access.h"
+#include "auth.h"
 #include "music.h"
 #include "wifi_lan.h"
 #include "frame.h"
@@ -145,6 +148,7 @@ static esp_err_t config_handler(httpd_req_t *req)
     xSemaphoreGive(s_lock);
     if (!valid) return httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid music settings");
     if (err != ESP_OK) return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Could not save music settings");
+    connection_card_release();
     return httpd_resp_sendstr(req, "{\"saved\":true}");
 }
 static esp_err_t refresh_handler(httpd_req_t *req)
@@ -167,10 +171,10 @@ static esp_http_client_handle_t open_request(const char *base, const char *path)
 {
     char url[320]; snprintf(url, sizeof(url), "%s%s", base, path);
     esp_http_client_config_t opts = {.url=url, .timeout_ms=10000, .buffer_size=1024,
-        .crt_bundle_attach=esp_crt_bundle_attach};
+        .crt_bundle_attach=esp_crt_bundle_attach,.disable_auto_redirect=true};
     esp_http_client_handle_t client = esp_http_client_init(&opts);
     if (!client) return NULL;
-    if (esp_http_client_open(client, 0) != ESP_OK || esp_http_client_fetch_headers(client) < 0 ||
+    if ((service_access_attach(client, url), esp_http_client_open(client, 0)) != ESP_OK || esp_http_client_fetch_headers(client) < 0 ||
         esp_http_client_get_status_code(client) != 200) {
         esp_http_client_close(client); esp_http_client_cleanup(client); return NULL;
     }
@@ -239,5 +243,5 @@ void music_register(httpd_handle_t server)
         {.uri="/api/music",.method=HTTP_POST,.handler=config_handler},
         {.uri="/api/music/refresh",.method=HTTP_POST,.handler=refresh_handler},
     };
-    for(size_t i=0;i<sizeof(routes)/sizeof(routes[0]);++i) ESP_ERROR_CHECK(httpd_register_uri_handler(server,&routes[i]));
+    for(size_t i=0;i<sizeof(routes)/sizeof(routes[0]);++i) ESP_ERROR_CHECK(auth_register_uri_handler(server,&routes[i]));
 }

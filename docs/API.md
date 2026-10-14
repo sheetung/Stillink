@@ -1,6 +1,44 @@
 # Stillink HTTP API
 
-接口与内置网页使用同一套设备服务。热点直连时基础地址为 `http://192.168.4.1`；连接路由器后换成设备的局域网 IP，调用端与设备需在可互通的网络中。接口当前无需 Token，设备深睡或断电时不可访问。
+## 访问鉴权
+
+所有 `/api/` 接口都需要请求头 `Authorization: Bearer <设备密钥或登录 token>`，仅 `POST /api/auth/login` 和 CORS `OPTIONS` 预检无需认证。控制页可以公开打开，但读取设备信息、配网、上传图片、修改设置、升级和恢复出厂必须验证；未认证返回 `401`。
+
+连接卡片使用英文标签，无中文字库。首次启动会在墨水屏显示访问地址、地址二维码和随机设备密钥。首次配网成功后显示新的局域网地址；自动重连不覆盖画面。设备设置可主动显示连接信息，也可修改密钥（12–64 位 ASCII 字符，不含空格）。修改后所有旧会话立即失效，旧密钥不能继续调用 API。
+
+直接调用示例（下文其他示例也必须带相同请求头）：
+
+```bash
+curl -H "Authorization: Bearer $STILLINK_DEVICE_KEY" http://设备IP/api/info
+curl -H "Authorization: Bearer $STILLINK_DEVICE_KEY" -H "Content-Type: application/octet-stream" --data-binary @frame.bin http://设备IP/api/frame
+```
+
+登录：`POST /api/auth/login`，JSON 请求体 `{"key":"设备密钥"}`，成功返回 `{"token":"会话token","expires_in":86400}`。后续将 token 放入同一 Bearer 请求头即可。token 最长有效 24 小时，重启、恢复出厂或改密钥后失效。连续 5 次登录失败暂停登录 30 秒，返回 `429`。
+
+- `GET /api/auth/status`：验证当前认证是否有效。
+- `POST /api/auth/key`：JSON `{"key":"新设备密钥"}`，成功后重新登录。
+- `POST /api/auth/logout`：注销当前登录 token。
+- `POST /api/connection/show`：请求在墨水屏显示连接地址和密钥。
+
+短按唤醒按键唤醒设备，连续按住 5 秒（从固件开始检测时计）恢复出厂，松开后重启进入配网。恢复出厂清除设备密钥、Wi-Fi 和服务配置，但不删除服务器照片。正常固件升级保留设备密钥、Wi-Fi 和服务密钥。
+
+### 额外服务密钥
+
+额外服务首次启动生成独立服务密钥，保存在 `data/service.key`。所有服务 HTTP 接口（包括 `/health`、天气、音乐和相簿读写）均要求 `Authorization: Bearer <服务密钥>`，OPTIONS 预检除外。该密钥与设备密钥互不影响；更换服务密钥不会删除照片，但所有设备要更新服务配置。
+
+- `GET /api/service`：返回 `service_url` 与 `key_set`，不返回服务密钥。
+- `POST /api/service/check`：JSON `{"service_url":"http://服务IP:8787","key":"服务密钥"}`，检查连接和密钥，成功返回服务状态，不保存配置。
+- `POST /api/service`：相同 JSON，验证成功后保存；地址不变时省略 `key` 保持已有服务密钥；更换服务地址需重新提供密钥，空服务地址清除配置。
+- `GET/POST/DELETE /api/service/proxy?path=<URL编码的服务路径>`：通过 ESP 转发 `/health` 或 `/v1/` 请求。浏览器仅携带设备认证，ESP 自动附加服务密钥；上传相簿使用二进制帧请求体。
+
+```bash
+curl -H "Authorization: Bearer $STILLINK_SERVICE_KEY" http://服务IP:8787/v1/album/photos
+```
+
+HTTP 不加密传输，密钥仅提供访问控制。本功能用于可信局域网，避免对公网开放设备和服务端口。
+
+
+接口与内置网页使用同一套设备服务。热点直连时基础地址为 `http://192.168.4.1`；连接路由器后换成设备的局域网 IP，调用端与设备需在可互通的网络中。接口需要设备密钥或登录 token，设备深睡或断电时不可访问。
 
 连接路由器后不会因 `sleep_s` 超时进入深睡。热点关闭后，设备在空闲时自动轻睡，保持 Wi-Fi 连接并恢复处理网络请求；不需要先发送额外的唤醒请求。响应延迟取决于路由器的 DTIM 周期。未连接路由器时仍按 `sleep_s` 进入深睡，需按键或定时唤醒。
 
@@ -33,9 +71,9 @@
 Windows PowerShell 使用 `curl.exe`：
 
 ```powershell
-curl.exe http://192.168.4.1/api/info
-curl.exe http://192.168.4.1/api/settings
-curl.exe -X POST http://192.168.4.1/api/settings --data "sleep_s=180"
+curl.exe -H "Authorization: Bearer $env:STILLINK_DEVICE_KEY" http://192.168.4.1/api/info
+curl.exe -H "Authorization: Bearer $env:STILLINK_DEVICE_KEY" http://192.168.4.1/api/settings
+curl.exe -H "Authorization: Bearer $env:STILLINK_DEVICE_KEY" -X POST http://192.168.4.1/api/settings --data "sleep_s=180"
 ```
 
 常用设置字段：`panel`（0=A0，1=A1）、`hflip`（0/1）、`a1_mode`（1/2，仅 A1）、`sleep_s`（空闲休眠秒数，0=关闭）、`wake_s`（定时唤醒秒数，0=关闭）、`bat_cal_ppm`（电池校准系数，默认 1000000）。热点配置使用 `ssid`、`pass`；路由器配网使用独立的 Wi-Fi 接口。屏幕参数在空闲时修改，刷新中不要切换型号。
@@ -44,12 +82,14 @@ JavaScript 示例：
 
 ```javascript
 const base = 'http://192.168.4.1'; // 或局域网 IP
-const response = await fetch(`${base}/api/info`);
+const headers = { Authorization: 'Bearer ' + deviceKey }; // deviceKey 为设备密钥或登录 token
+const response = await fetch(`${base}/api/info`, { headers });
 if (!response.ok) throw new Error(await response.text());
 console.log(await response.json());
 
 const saved = await fetch(`${base}/api/settings`, {
   method: 'POST',
+  headers,
   body: new URLSearchParams({ sleep_s: '180' }),
 });
 if (!saved.ok) throw new Error(await saved.text());
@@ -81,7 +121,7 @@ CRC 为 CRC-16/CCITT-FALSE：多项式 `0x1021`，初值 `0xFFFF`，输入和输
 已有打包帧文件时：
 
 ```powershell
-curl.exe -X POST http://192.168.4.1/api/frame -H "Content-Type: application/octet-stream" --data-binary "@frame.bin"
+curl.exe -H "Authorization: Bearer $env:STILLINK_DEVICE_KEY" -X POST http://192.168.4.1/api/frame -H "Content-Type: application/octet-stream" --data-binary "@frame.bin"
 ```
 
 仓库已提供无需第三方依赖的 Python 示例，会生成并上传黑、白、黄、红四色条带：
@@ -95,9 +135,9 @@ python tools/test_frame_post.py 192.168.4.1
 ## 路由器配网
 
 ```powershell
-curl.exe http://192.168.4.1/api/wifi/scan
-curl.exe -X POST http://192.168.4.1/api/wifi/connect --data-urlencode "ssid=你的WiFi" --data-urlencode "password=你的密码"
-curl.exe http://192.168.4.1/api/wifi/status
+curl.exe -H "Authorization: Bearer $env:STILLINK_DEVICE_KEY" http://192.168.4.1/api/wifi/scan
+curl.exe -H "Authorization: Bearer $env:STILLINK_DEVICE_KEY" -X POST http://192.168.4.1/api/wifi/connect --data-urlencode "ssid=你的WiFi" --data-urlencode "password=你的密码"
+curl.exe -H "Authorization: Bearer $env:STILLINK_DEVICE_KEY" http://192.168.4.1/api/wifi/status
 ```
 
 `status` 为 `idle`、`connecting`、`connected` 或 `failed`。获得 IP 后，热点约 10 秒后关闭，后续请求换用返回的局域网 IP。扫描期间可能短暂影响热点通信；正在连接时扫描返回 HTTP 409，需要稍后重试。

@@ -50,3 +50,5 @@ int frame_clear_cycles(int cycles);
 esp_err_t frame_upload_handler(httpd_req_t *req);
 
 #endif /* EPAPER_FRAME_H */
+
+int frame_render_card(void (*draw)(uint8_t *, uint16_t, uint16_t, void *), void *context);

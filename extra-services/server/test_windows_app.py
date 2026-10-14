@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
-from urllib.request import ProxyHandler, build_opener
+from urllib.request import Request, ProxyHandler, build_opener
 
 import app
 from PIL import Image
@@ -21,7 +21,7 @@ class WindowsServiceTests(unittest.TestCase):
             self.assertEqual(service_addresses(), ["http://10.0.0.2:8787", "http://192.168.31.12:8787"])
 
     def test_service_health_storage_and_clean_shutdown(self):
-        old_music, old_album = app.MUSIC, app.ALBUM
+        old_music, old_album, old_key = app.MUSIC, app.ALBUM, app.AUTH_KEY
         app.MUSIC = Receiver()
         try:
             with tempfile.TemporaryDirectory() as directory, patch("weather.find_font", return_value="test-font"):
@@ -29,12 +29,13 @@ class WindowsServiceTests(unittest.TestCase):
                 try:
                     opener = build_opener(ProxyHandler({}))
                     base = f"http://127.0.0.1:{service.http.server_port}"
-                    with opener.open(base + "/health", timeout=5) as response:
+                    with opener.open(Request(base + "/health", headers={"Authorization": "Bearer " + app.AUTH_KEY}), timeout=5) as response:
                         health = json.load(response)
                     self.assertTrue(health["services"]["music"]["receiver_ready"])
                     self.assertTrue(health["services"]["album"]["available"])
                     self.assertTrue(Path(directory, "data/album.sqlite3").is_file())
                     frame = pack_frame(Image.new("P", (768, 552), 1))
+                    saved_key = app.AUTH_KEY
                     photo = app.ALBUM.add(frame)
                     playlist = app.ALBUM.playlist([photo["id"]])
                     udp_port = service.music.getsockname()[1]
@@ -47,13 +48,14 @@ class WindowsServiceTests(unittest.TestCase):
                 # A replacement EXE opens the same directory without clearing photos or playlists.
                 service = Service(directory, host="127.0.0.1", port=0, music_port=0)
                 try:
+                    self.assertEqual(app.AUTH_KEY, saved_key)
                     self.assertEqual(app.ALBUM.image(photo["id"], "bin"), frame)
                     self.assertEqual(app.ALBUM.photos()[0]["id"], photo["id"])
                     self.assertEqual(app.ALBUM.selection(playlist), [photo["id"]])
                 finally:
                     service.close()
         finally:
-            app.MUSIC, app.ALBUM = old_music, old_album
+            app.MUSIC, app.ALBUM, app.AUTH_KEY = old_music, old_album, old_key
 
 
 if __name__ == "__main__":

@@ -7,7 +7,7 @@ const elements=Object.fromEntries([...page.matchAll(/id="([^" ]+)"/g)].map(m=>[m
 const photos=[{id:"a".repeat(32),name:"<测试照片>",width:768,height:552},{id:"b".repeat(32),name:"照片二",width:768,height:552}];
 let state={enabled:false,playlist:"",mode:"sequence",interval:1800,current:"",status:"disabled"},selection=[],failSave=false;
 const posts=[],notifications=[],packed=new Uint8Array([165,90,1]),modes=[el(),el()];
-const context={supportServiceURL:"http://server",displayModeRevision:0,notifyDisplayMode:m=>notifications.push(m),$:id=>elements[id],api:p=>p,Set,Number,Date,JSON,Promise,Array,encodeURIComponent,confirm:()=>true,setTimeout:()=>1,clearTimeout(){},MODE:0,img:{},previewOK:true,fileEl:{files:[{name:"photo.jpg"}]},packFull:()=>packed,frameWithHeader:p=>p,showWorkLoading(){},hideWorkLoading(){},afterLoadingPaint:f=>f(),document:{querySelectorAll:()=>modes,createElement:()=>el()},fetch:async(url,options)=>{
+const context={serviceProxy:p=>"http://server"+p,authenticatedImage:(image,url)=>{image.src=url;},supportServiceURL:"http://server",displayModeRevision:0,notifyDisplayMode:m=>notifications.push(m),$:id=>elements[id],api:p=>p,Set,Number,Date,JSON,Promise,Array,encodeURIComponent,confirm:()=>true,setTimeout:()=>1,clearTimeout(){},MODE:0,img:{},previewOK:true,fileEl:{files:[{name:"photo.jpg"}]},packFull:()=>packed,frameWithHeader:p=>p,showWorkLoading(){},hideWorkLoading(){},afterLoadingPaint:f=>f(),document:{querySelectorAll:()=>modes,createElement:()=>el()},fetch:async(url,options)=>{
  let data={};let ok=true;const body=options?.body;
  if(url.startsWith("/api/album")){
    if(options?.method==="POST"){posts.push({url,body});if(failSave){ok=false;data={error:"NVS error"};}else{Object.assign(state,JSON.parse(body));data={saved:true};}}

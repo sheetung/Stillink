@@ -15,6 +15,8 @@ test_frame_post.py —— PC 直连传帧诊断（绕过手机页面，标准库
 """
 import struct
 import sys
+import os
+import getpass
 import urllib.request
 
 W, H = 768, 552
@@ -64,7 +66,7 @@ def main():
     body = build_frame()
     print("POST %s  (%d 字节, 头16 + 载荷%d)" % (url, len(body), len(body) - 16))
     req = urllib.request.Request(url, data=body, method="POST",
-                                 headers={"Content-Type": "application/octet-stream"})
+                                 headers={"Content-Type": "application/octet-stream", "Authorization": "Bearer " + (os.getenv("STILLINK_DEVICE_KEY") or getpass.getpass("Device key: "))})
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
             print("HTTP", resp.status, resp.read().decode(errors="replace"))

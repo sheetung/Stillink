@@ -1,3 +1,4 @@
+#include "auth.h"
 #include "ota_web.h"
 #include "version.h"
 #include "settings.h"
@@ -367,8 +368,8 @@ void ota_web_register(httpd_handle_t server)
     httpd_uri_t wclear = {
         .uri = "/api/web/clear", .method = HTTP_POST, .handler = web_clear_handler, .user_ctx = NULL,
     };
-    httpd_register_uri_handler(server, &up);
-    httpd_register_uri_handler(server, &wclear);
+    auth_register_uri_handler(server, &up);
+    auth_register_uri_handler(server, &wclear);
 }
 
 void ota_web_clear(void)

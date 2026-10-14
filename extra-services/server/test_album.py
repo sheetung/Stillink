@@ -20,6 +20,8 @@ urlopen = build_opener(ProxyHandler({})).open
 class AlbumTests(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory()
+        self.previous_key = app.AUTH_KEY
+        app.AUTH_KEY = ""
         self.previous = app.ALBUM
         app.ALBUM = album.Store(self.directory.name)
         self.server = app.ThreadingHTTPServer(("127.0.0.1", 0), app.Handler)
@@ -33,6 +35,7 @@ class AlbumTests(unittest.TestCase):
 
     def tearDown(self):
         self.server.shutdown(); self.server.server_close(); self.thread.join()
+        app.AUTH_KEY = self.previous_key
         app.ALBUM = self.previous
         self.directory.cleanup()
 

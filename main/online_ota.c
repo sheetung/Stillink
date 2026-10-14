@@ -1,3 +1,4 @@
+#include "auth.h"
 #include "online_ota.h"
 #include "ota_web.h"
 #include "version.h"
@@ -203,5 +204,5 @@ void online_ota_register(httpd_handle_t server)
         {.uri = "/api/ota/online/check", .method = HTTP_POST, .handler = start_handler},
         {.uri = "/api/ota/online/install", .method = HTTP_POST, .handler = start_handler},
     };
-    for (size_t i = 0; i < sizeof(routes)/sizeof(routes[0]); i++) ESP_ERROR_CHECK(httpd_register_uri_handler(server, &routes[i]));
+    for (size_t i = 0; i < sizeof(routes)/sizeof(routes[0]); i++) ESP_ERROR_CHECK(auth_register_uri_handler(server, &routes[i]));
 }

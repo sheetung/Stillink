@@ -1,3 +1,5 @@
+#include "auth.h"
+#include "service_access.h"
 #include "settings.h"
 #include "epd_drv.h"
 #include "wifi_lan.h"
@@ -201,6 +203,8 @@ esp_err_t settings_set_ap(const char *ssid, const char *pass)
 
 void settings_factory_reset(void)
 {
+    auth_factory_reset();
+    service_access_reset();
     wifi_lan_forget();
     weather_factory_reset();
     music_factory_reset();
