@@ -41,7 +41,7 @@ function eq(name, got, want) { ok(name + " (got " + got + " want " + want + ")",
 // 静态防线：脚本串里若出现字面量 </script>，浏览器会提前终结脚本块。
 // R1.0.12 起：合法闭合符数量随功能块增加而调整（R1.1.0 = 3），详见下方断言。
 // R1.1.0 起 = 3 个合法闭合符（内嵌 Cropper 块 + 页脚版本填充块 + 主脚本块），多一个都不行。
-eq("script closer count (cropper + footer + main = exactly 3)", (page.match(/<\/script>/g) || []).length, 3);
+eq("script closer count (theme + cropper + footer + main = exactly 4)", (page.match(/<\/script>/g) || []).length, 4);
 ok("offline export keeps </script> escaped in injected html", page.indexOf("<\\/script>") >= 0);
 ok("cropper.js inlined (first script block)", /<script>\s*\n?\/\* ===== Cropper\.js v1\.6\.2/.test(page));
 ok("startup block intact (loadSettings call present)", /loadSettings\(\)/.test(js));
@@ -225,7 +225,7 @@ ok("R1.2.1 正式配置页不含 iOS captive 专用渲染逻辑",
 ok("R1.2.1 上传前显示 loading",
    page.indexOf('id="workLoading"') >= 0 && page.indexOf('id="workLoadingText"') >= 0
    && js.indexOf("function afterLoadingPaint(fn)") >= 0
-   && js.indexOf('showWorkLoading("正在生成上传数据…")') >= 0
+   && js.indexOf('showWorkLoading("正在生成上传数据…",true)') >= 0
    && js.indexOf("afterLoadingPaint(buildAndUpload)") >= 0);
 ok("R1.2.1 裁剪手势松手后才生成目标预览",
    js.indexOf("crop: function(){ schedulePreview(true); }") < 0
