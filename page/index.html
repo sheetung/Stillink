@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="epaper-page-version" content="V1.2.7">
+<meta name="epaper-page-version" content="V1.2.8">
 <title>Stillink</title>
 <style>
 /* ===== Cropper.js v1.6.2 | MIT | https://github.com/fengyuanchen/cropperjs ===== */
@@ -2928,7 +2928,7 @@ function notifyDisplayMode(mode){
       var remove=document.createElement("button");remove.className="mini";remove.textContent="删除";remove.addEventListener("click",async function(){if(!confirm("从服务器删除这张照片？"))return;remove.disabled=true;try{await request(server("/v1/album/photos/"+photo.id),{method:"DELETE"});selected.delete(photo.id);if(previewKey===photo.id){previewKey="";$("albumScreen").textContent="照片已删除";}await list();}catch(e){$("albumMessage").textContent=e.message;remove.disabled=false;}});card.appendChild(remove);$("albumPhotos").appendChild(card);
     });
   }
-  async function list(){var data=await request(server("/v1/album/photos"));photos=data.photos;selected=new Set(Array.from(selected).filter(function(id){return photos.some(function(p){return p.id===id;});}));renderPhotos();}
+  async function list(){var data=await request(server("/v1/album/photos"));photos=data.photos;selected=new Set(Array.from(selected).filter(function(id){return photos.some(function(p){return p.id===id;});}));renderPhotos();if(!photos.length){previewKey="";$("albumScreen").textContent="在拍立得中处理照片，再保存到相簿。";}else if(!photos.some(function(p){return p.id===previewKey;})){preview(photos[0].id);}}
   async function load(){
     clearTimeout(timer);if(!active)return;var revision=displayModeRevision;
     try{
@@ -2944,7 +2944,7 @@ function notifyDisplayMode(mode){
     finally{if(active)timer=setTimeout(load,5000);}
   }
   function close(){active=false;$("albumPane").hidden=true;$("modeAlbum").classList.remove("on");clearTimeout(timer);}
-  $("modeAlbum").addEventListener("click",function(){active=true;$("albumPane").hidden=false;$("editorGrid").style.display="none";$("steps").style.display="none";$("modeAlbum").classList.add("on");document.querySelectorAll("#modes button[data-m]").forEach(function(b){b.classList.remove("on");});Promise.all([list(),load()]).catch(function(e){$("albumMessage").textContent=e.message;});});
+  $("modeAlbum").addEventListener("click",function(){active=true;$("albumPane").hidden=false;$("editorGrid").style.display="none";$("steps").style.display="none";$("modeAlbum").classList.add("on");document.querySelectorAll("#modes button[data-m]").forEach(function(b){b.classList.remove("on");});load().then(list).catch(function(e){$("albumMessage").textContent=e.message;});});
   ["modeWeather","modeMusic"].forEach(function(id){$(id).addEventListener("click",close);});document.querySelectorAll("#modes button[data-m]").forEach(function(b){b.addEventListener("click",close);});
   ["albumEnabled","albumMode","albumInterval"].forEach(function(id){$(id).addEventListener("change",function(){dirty=true;$("albumMessage").textContent="设置已修改，请保存轮播设置。";});});
   $("albumSelectAll").addEventListener("click",function(){selected=new Set(photos.map(function(p){return p.id;}));dirty=true;renderPhotos();});

@@ -22,6 +22,12 @@ vm.runInNewContext(source,context);
 const click=id=>elements[id].events.click(),flush=()=>new Promise(setImmediate);
 (async()=>{
  click("modeAlbum");await flush();assert.equal(elements.albumPane.hidden,false);assert.equal(elements.albumPhotos.children.length,2);
+ assert.equal(elements.albumScreen.children[0].src,"http://server/v1/album/photos/"+photos[0].id+".png","Opening the album previews the first photo without a click");
+ elements.albumPhotos.children[1].children[0].events.click();click("albumReload");await flush();
+ assert.equal(elements.albumScreen.children[0].src,"http://server/v1/album/photos/"+photos[1].id+".png","Reloading preserves the selected preview");
+ state.enabled=true;state.current=photos[0].id;click("modeAlbum");await flush();
+ assert.equal(elements.albumScreen.children[0].src,"http://server/v1/album/photos/"+state.current+".png","Opening an active album previews the photo displayed by the device");
+ state.enabled=false;state.current="";
  assert.match(elements.albumPhotos.children[0].children[1].children[1].textContent,/ · aaaaaaaa$/);
  assert(!elements.albumPhotos.children[0].children[1].children[1].textContent.includes("测试照片"));
  elements.albumEnabled.checked=true;click("albumSave");await flush();assert.equal(posts.length,0);assert.match(elements.albumMessage.textContent,/至少/);
