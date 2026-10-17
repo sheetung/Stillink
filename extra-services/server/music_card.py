@@ -94,11 +94,13 @@ def render_card(track, font_path=""):
     return image
 
 
-def pack_frame(image):
-    if image.size != (WIDTH, HEIGHT): raise ValueError("Expected 768x552 card")
+def pack_frame(image, panel=0):
+    if image.size not in ((WIDTH, HEIGHT), (800, 600)): raise ValueError("Unsupported card geometry")
+    if panel not in (0, 1): raise ValueError("Unsupported panel")
+    width, height = image.size
     pixels = image.transpose(Image.Transpose.ROTATE_180).tobytes()
     if any(value > 3 for value in pixels): raise ValueError("Expected four-colour pixels")
     payload = bytes((pixels[i] << 6) | (pixels[i+1] << 4) | (pixels[i+2] << 2) | pixels[i+3]
                     for i in range(0, len(pixels), 4))
-    return struct.pack(">2sBBHHIHH", b"\xa5\x5a", 1, 0, WIDTH, HEIGHT, len(payload),
+    return struct.pack(">2sBBHHIHH", b"\xa5\x5a", 2 if width == 800 else 1, 1 if width == 800 else panel, width, height, len(payload),
                        binascii.crc_hqx(payload, 0xffff), 0) + payload

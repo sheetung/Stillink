@@ -187,3 +187,7 @@ Windows UDP 广播和服务器部署见 [音乐功能说明](music.md)。
 - `POST /api/ota/online/install`：下载已检查到的新版本并升级，返回 202；未联网、正在升级或没有新版本时返回 409。
 
 `status` 为 `idle`、`checking`、`ready`、`downloading`、`rebooting` 或 `error`。下载期间可每 1.5 秒读取状态；重启后刷新网页。失败不会切换启动槽，可重新检查或使用文件上传升级。
+
+## 待办 API
+
+共享清单、PNG 预览和二进制图片由额外服务提供，接口及鉴权见 [待办 API](todo.md#http-接口)。清单修改只更新服务存储；使用设备 Bearer 登录令牌向现有 POST /api/frame 上传二进制图片后才刷新屏幕，成功上传会停止其他自动卡片。

@@ -21,7 +21,7 @@ class WindowsServiceTests(unittest.TestCase):
             self.assertEqual(service_addresses(), ["http://10.0.0.2:8787", "http://192.168.31.12:8787"])
 
     def test_service_health_storage_and_clean_shutdown(self):
-        old_music, old_album, old_key = app.MUSIC, app.ALBUM, app.AUTH_KEY
+        old_music, old_album, old_key, old_todo = app.MUSIC, app.ALBUM, app.AUTH_KEY, app.TODO
         app.MUSIC = Receiver()
         try:
             with tempfile.TemporaryDirectory() as directory, patch("weather.find_font", return_value="test-font"):
@@ -36,6 +36,7 @@ class WindowsServiceTests(unittest.TestCase):
                     self.assertTrue(Path(directory, "data/album.sqlite3").is_file())
                     frame = pack_frame(Image.new("P", (768, 552), 1))
                     saved_key = app.AUTH_KEY
+                    app.TODO.add("Keep shared task after upgrade")
                     photo = app.ALBUM.add(frame)
                     playlist = app.ALBUM.playlist([photo["id"]])
                     udp_port = service.music.getsockname()[1]
@@ -48,6 +49,7 @@ class WindowsServiceTests(unittest.TestCase):
                 # A replacement EXE opens the same directory without clearing photos or playlists.
                 service = Service(directory, host="127.0.0.1", port=0, music_port=0)
                 try:
+                    self.assertEqual(app.TODO.items()[0]["text"], "Keep shared task after upgrade")
                     self.assertEqual(app.AUTH_KEY, saved_key)
                     self.assertEqual(app.ALBUM.image(photo["id"], "bin"), frame)
                     self.assertEqual(app.ALBUM.photos()[0]["id"], photo["id"])
@@ -55,7 +57,7 @@ class WindowsServiceTests(unittest.TestCase):
                 finally:
                     service.close()
         finally:
-            app.MUSIC, app.ALBUM, app.AUTH_KEY = old_music, old_album, old_key
+            app.MUSIC, app.ALBUM, app.AUTH_KEY, app.TODO = old_music, old_album, old_key, old_todo
 
 
 if __name__ == "__main__":

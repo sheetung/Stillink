@@ -44,6 +44,7 @@ class WeatherTests(unittest.TestCase):
                 with urlopen(f"http://127.0.0.1:{server.server_port}/health") as response:
                     data=json.load(response)
                 self.assertEqual(data["status"],"ok")
+                self.assertEqual(data["version"], app.VERSION)
                 self.assertTrue(data["services"]["weather"]["available"])
                 self.assertFalse(data["services"]["music"]["available"])
                 fetch.assert_not_called()

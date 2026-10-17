@@ -10,6 +10,7 @@ import threading
 from pathlib import Path
 
 import album
+import todo
 import app
 import weather
 from service_security import load_key
@@ -36,6 +37,7 @@ class Service:
         self.data_dir = Path(directory) / "data"
         app.AUTH_KEY = load_key(self.data_dir)
         app.ALBUM = album.Store(self.data_dir)
+        app.TODO = todo.Store(self.data_dir)
         app.MUSIC.font_path = weather.find_font()
         self.http = app.ThreadingHTTPServer((host, port), WindowsHandler)
         self.http.daemon_threads = True
@@ -73,6 +75,9 @@ def packaged_check(output):
                 health = json.load(response)
             assert health["status"] == "ok" and health["services"]["album"]["available"]
             assert health["services"]["music"]["receiver_ready"]
+            assert health["services"]["todo"]["available"]
+            with opener.open(Request(base + "/v1/todo/items", headers={"Authorization": "Bearer " + app.AUTH_KEY}), timeout=5) as response:
+                assert json.load(response) == {"items": [], "page_size": 8}
             ImageFont.truetype(weather.find_font(), 20).getmask("天气相簿")
             with opener.open(Request(base + "/v1/album/photos", headers={"Authorization": "Bearer " + app.AUTH_KEY}), timeout=5) as response:
                 assert json.load(response) == {"photos": []}
@@ -94,7 +99,7 @@ def main():
     directory = Path(sys.executable).parent if getattr(sys, "frozen", False) else Path(__file__).parent
     root = tk.Tk()
     root.withdraw()
-    root.title("Stillink 额外服务")
+    root.title(f"Stillink 额外服务 {app.VERSION}")
     root.geometry("520x380")
     root.minsize(500, 380)
     try:
@@ -163,7 +168,7 @@ def main():
     draw.rounded_rectangle((15, 12, 49, 52), radius=4, outline="white", width=4)
     draw.line((22, 25, 42, 25), fill="white", width=3)
     draw.line((22, 36, 42, 36), fill="white", width=3)
-    icon = pystray.Icon("StillinkServices", image, "Stillink 额外服务 · 运行中", pystray.Menu(
+    icon = pystray.Icon("StillinkServices", image, f"Stillink 额外服务 {app.VERSION} · 运行中", pystray.Menu(
         pystray.MenuItem("显示服务地址", lambda *_: events.put("show"), default=True),
         pystray.MenuItem("退出", lambda *_: events.put("quit"))))
     tray_thread = threading.Thread(target=icon.run, daemon=True)

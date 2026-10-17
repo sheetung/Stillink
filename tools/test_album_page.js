@@ -1,7 +1,7 @@
 "use strict";
 const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm"),path=require("node:path");
 const page=fs.readFileSync(path.join(__dirname,"../page/index.html"),"utf8");
-const source=page.slice(page.indexOf("/* ---------- 相簿："),page.lastIndexOf("</script>"));
+const source=page.slice(page.indexOf("/* ---------- 相簿："),page.indexOf("/* ---------- 画板："));
 function el(){return {value:"",checked:false,hidden:false,disabled:false,textContent:"",style:{},children:[],events:{},classList:{toggle(){},remove(){},add(){}},addEventListener(k,f){this.events[k]=f;},replaceChildren(...v){this.children=v;},appendChild(v){this.children.push(v);}};}
 const elements=Object.fromEntries([...page.matchAll(/id="([^" ]+)"/g)].map(m=>[m[1],el()]));
 const photos=[{id:"a".repeat(32),name:"<测试照片>",width:768,height:552},{id:"b".repeat(32),name:"照片二",width:768,height:552}];

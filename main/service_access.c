@@ -247,7 +247,7 @@ static esp_err_t proxy(httpd_req_t *r) {
   httpd_resp_set_hdr(r, "Access-Control-Allow-Origin", "*");
   httpd_resp_set_hdr(r, "Cache-Control", "no-store");
   httpd_resp_set_type(r,
-                      strstr(path, ".png") ? "image/png" : "application/json");
+                      strstr(path, ".png") ? "image/png" : strstr(path, ".bin") ? "application/octet-stream" : "application/json");
   int n;
   while ((n = esp_http_client_read(c, buffer, sizeof(buffer))) > 0) {
     if (httpd_resp_send_chunk(r, buffer, n) != ESP_OK) {

@@ -8,10 +8,13 @@ from urllib.parse import parse_qs, urlsplit
 
 import weather
 import album
+import todo
 from music_receiver import Receiver
 
+VERSION = "V1.5.0"
 MUSIC = Receiver()
 ALBUM = None
+TODO = None
 AUTH_KEY = ""
 
 class Handler(BaseHTTPRequestHandler):
@@ -37,13 +40,15 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if not self.authorized(): return
         url = urlsplit(self.path)
+        if url.path.startswith("/v1/todo/"):
+            return todo.handle(self, TODO, url, weather.FONT_PATH)
         if url.path.startswith("/v1/album/"):
             return self.album_request(url)
         if url.path in ("/v1/music.json", "/v1/music.png", "/v1/music.bin"):
             status, body, kind = MUSIC.response(url.path, parse_qs(url.query).get("v", [""])[0])
             return self.send(status, body, kind)
         if url.path == "/health":
-            return self.send(200, json.dumps({"status":"ok", "services":{"weather":{"available":True}, "music":MUSIC.health(), "album":{"available":ALBUM is not None}}}).encode(), "application/json")
+            return self.send(200, json.dumps({"status":"ok", "version":VERSION, "services":{"weather":{"available":True}, "music":MUSIC.health(), "album":{"available":ALBUM is not None}, "todo":{"available":TODO is not None}}}).encode(), "application/json")
         weather.handle(self, url)
 
     def album_request(self, url):
@@ -61,10 +66,14 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         if not self.authorized(): return
+        if urlsplit(self.path).path.startswith("/v1/todo/"):
+            return todo.handle(self, TODO, urlsplit(self.path), weather.FONT_PATH)
         self.album_request(urlsplit(self.path))
 
     def do_DELETE(self):
         if not self.authorized(): return
+        if urlsplit(self.path).path.startswith("/v1/todo/"):
+            return todo.handle(self, TODO, urlsplit(self.path), weather.FONT_PATH)
         self.album_request(urlsplit(self.path))
 
 
@@ -81,6 +90,7 @@ if __name__ == "__main__":
     print(f"Service key: {AUTH_KEY}", flush=True)
     if args.rotate_service_key: raise SystemExit(0)
     ALBUM = album.Store(args.data_dir)
+    TODO = todo.Store(args.data_dir)
     weather.FONT_PATH = args.font
     MUSIC.font_path = weather.find_font()
     MUSIC.start(port=args.music_port)

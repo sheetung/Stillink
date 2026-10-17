@@ -23,6 +23,12 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
+      - name: Sync release version
+        if: inputs.release_tag != ''
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: uv run --no-project python tools/set_release_version.py $env:RELEASE_TAG
       - name: Test and build Windows tool
         working-directory: extra-services/music-client-win
         shell: pwsh

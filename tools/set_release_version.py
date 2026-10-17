@@ -1,4 +1,4 @@
-"""Set the firmware and embedded page version from a release tag."""
+"""Set firmware, page and extra-service versions from a release tag."""
 from pathlib import Path
 import re
 import sys
@@ -15,3 +15,19 @@ for path, pattern, replacement in (
     text, count = re.subn(pattern, replacement, path.read_text(encoding="utf-8"))
     if count != 1: raise SystemExit(f"Expected one version in {path}")
     path.write_text(text, encoding="utf-8")
+
+for folder, package in (("server", "stillink-services"), ("music-client-win", "stillink-music")):
+    directory = root / "extra-services" / folder
+    for filename, pattern in (
+        ("pyproject.toml", r'(?m)^(version = ")[^"]+("$)'),
+        ("uv.lock", rf'(name = "{package}"\nversion = ")[^"]+(")'),
+    ):
+        path = directory / filename
+        text, count = re.subn(pattern, rf'\g<1>{tag[1:]}\g<2>', path.read_text(encoding="utf-8"), count=1)
+        if count != 1: raise SystemExit(f"Expected package version in {path}")
+        path.write_text(text, encoding="utf-8")
+
+path = root / "extra-services/server/app.py"
+text, count = re.subn(r'(?m)^VERSION = "[^"]+"', f'VERSION = "{version}"', path.read_text(encoding="utf-8"))
+if count != 1: raise SystemExit(f"Expected service version in {path}")
+path.write_text(text, encoding="utf-8")
