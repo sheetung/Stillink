@@ -16,7 +16,7 @@
 
 需要 Windows 10 / 11 以及接入系统媒体控件的播放器。
 
-1. 从 [Release 下载 Windows 工具包](https://github.com/sheetung/Stillink/releases/latest/download/StillinkMusic-win.zip)，解压后双击 **StillinkMusic.exe**。
+1. 从 [Release 下载 Windows 工具包](https://github.com/sheetung/Stillink/releases/latest)，解压后双击 **StillinkMusic.exe**。
 2. 工具在后台运行，任务栏右侧通知区域显示音乐图标，不弹出命令行窗口，也无需填写服务器地址。重复双击不会产生多个实例。
 3. 开始播放音乐，服务器即可收到歌曲和封面。
 4. 右键托盘图标选择「退出」停止工具。图标可能收在隐藏图标中。

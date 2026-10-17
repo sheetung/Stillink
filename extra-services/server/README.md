@@ -9,6 +9,6 @@
 
 部署与 systemd 常驻运行见 [额外服务总部署说明](../../docs/services.md)，相簿操作见 [相簿说明](../../docs/album.md)。各功能可单独使用。
 
-Windows 用户可直接下载 [免安装服务 ZIP](https://github.com/sheetung/Stillink/releases/latest/download/StillinkServices-win.zip)，使用与升级步骤见 [Windows 说明](WINDOWS.md)。
+Windows 用户可直接下载 [免安装服务 ZIP](https://github.com/sheetung/Stillink/releases/latest)，使用与升级步骤见 [Windows 说明](WINDOWS.md)。
 
 待办支持共享增删与完成状态，手动上传屏幕。使用说明见 [待办](../../docs/todo.md)。升级服务时保留 `data`，其中 `todo.sqlite3` 保存清单。

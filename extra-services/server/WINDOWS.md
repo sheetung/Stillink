@@ -1,6 +1,6 @@
 # Windows 免安装额外服务
 
-1. 将 `StillinkServices-win.zip` 完整解压到可写目录，不要直接在压缩包中运行。
+1. 将 `StillinkServices-vX.Y.Z-win.zip` 完整解压到可写目录，不要直接在压缩包中运行。
 2. 双击 `StillinkServices.exe`，无需安装 Python、uv 或中文字库，依赖已包含在单个 EXE 中。
 3. 启动窗口会列出本机局域网地址，分别复制地址和服务密钥，填入 ESP 的「设备设置 → 额外服务支持」并保存。多网卡时选择与 ESP 同一网络的地址。
 4. Windows 防火墙首次提示时允许专用网络访问。HTTP 使用 TCP 8787，音乐接收使用 UDP 8790。

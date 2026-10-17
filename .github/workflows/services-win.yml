@@ -41,7 +41,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: StillinkServices-win
-          path: extra-services/server/dist/StillinkServices-win.zip
+          path: extra-services/server/dist/StillinkServices-v*-win.zip
           if-no-files-found: error
       - name: Attach service ZIP to Release
         shell: pwsh
@@ -55,5 +55,13 @@ jobs:
             $servicesTag = gh release view --json tagName --jq '.tagName'
             if ($LASTEXITCODE -ne 0) { throw 'No published Release found' }
           }
-          gh release upload $servicesTag extra-services/server/dist/StillinkServices-win.zip --clobber
+          $releaseZip = @(Get-Item 'extra-services/server/dist/StillinkServices-v*-win.zip')
+          if ($releaseZip.Count -ne 1) { throw 'Expected one versioned ZIP' }
+          gh release upload $servicesTag ($releaseZip[0].FullName) --clobber
           if ($LASTEXITCODE -ne 0) { throw 'Service ZIP upload failed' }
+          $legacyZip = gh release view $servicesTag --json assets --jq '.assets[] | select(.name == "StillinkServices-win.zip") | .name'
+          if ($LASTEXITCODE -ne 0) { throw 'Release asset lookup failed' }
+          if ($legacyZip) {
+            gh release delete-asset $servicesTag StillinkServices-win.zip --yes
+            if ($LASTEXITCODE -ne 0) { throw 'Legacy ZIP removal failed' }
+          }

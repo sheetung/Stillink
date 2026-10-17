@@ -4,7 +4,7 @@
 
 ## 使用
 
-从 [Release 下载 Windows 工具包](https://github.com/sheetung/Stillink/releases/latest/download/StillinkMusic-win.zip)，解压后双击 **StillinkMusic.exe**。工具在后台运行，任务栏右侧通知区域显示音乐图标，不弹出命令行窗口。无需安装 Python 或 uv，也无需填写地址。重复双击不会启动多个实例。
+从 [Release 下载 Windows 工具包](https://github.com/sheetung/Stillink/releases/latest)，解压后双击 **StillinkMusic.exe**。工具在后台运行，任务栏右侧通知区域显示音乐图标，不弹出命令行窗口。无需安装 Python 或 uv，也无需填写地址。重复双击不会启动多个实例。
 
 电脑与接收服务器连接同一局域网，打开支持 Windows 系统媒体控件的播放器即可。右键托盘图标选择「退出」停止广播；图标可能在任务栏右侧的隐藏图标中。
 
@@ -18,7 +18,7 @@ Windows 10 / 11 安装 uv 后，在本目录执行：
 .\build.ps1
 ```
 
-生成 `dist/StillinkMusic-win.zip`。源码调试可用 `uv run --frozen app.py`，按 Ctrl+C 退出。
+生成 `dist/StillinkMusic-vX.Y.Z-win.zip`。源码调试可用 `uv run --frozen app.py`，按 Ctrl+C 退出。
 
 默认使用 UDP `255.255.255.255:8790`。确需改变默认值时，将 `config.example.yml` 复制为同目录的 `config.yml`，修改后停止并重新启动。EXE 读取其所在目录的配置，源码读取本目录的配置。
 

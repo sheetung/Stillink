@@ -165,7 +165,7 @@ python tools/package_bins.py
 
 ## 可选服务部署
 
-Windows 用户可下载 [免安装服务 ZIP](https://github.com/sheetung/Stillink/releases/latest/download/StillinkServices-win.zip)，完整解压后双击 **StillinkServices.exe**。窗口显示可复制的局域网地址和服务密钥，关闭后留在托盘运行；无需安装 Python，天气与相簿可直接使用，音乐另需运行下方的广播工具。照片保存在 `data` 文件夹，更新时请保留。建议在保持开机的设备上运行，详见 [总部署说明](docs/services.md)。
+Windows 用户可下载 [免安装服务 ZIP](https://github.com/sheetung/Stillink/releases/latest)，完整解压后双击 **StillinkServices.exe**。窗口显示可复制的局域网地址和服务密钥，关闭后留在托盘运行；无需安装 Python，天气与相簿可直接使用，音乐另需运行下方的广播工具。照片保存在 `data` 文件夹，更新时请保留。建议在保持开机的设备上运行，详见 [总部署说明](docs/services.md)。
 
 天气、音乐和相簿共用 `extra-services/server` 中的 Python 服务，需要 **Python 3.11+、uv 和中文字体**。Linux 示例：
 
@@ -179,7 +179,7 @@ uv run --frozen app.py --host 0.0.0.0 --port 8787
 
 在「设备设置 → 额外服务支持」填写 `http://服务器IP:8787` 与服务密钥并保存。服务默认使用 HTTP `8787` 和音乐 UDP `8790`；常驻运行与 systemd 配置见 [总部署说明](docs/services.md)。天气数据来自 [Open-Meteo](https://open-meteo.com/)，服务需要能访问互联网。
 
-音乐还需在 Windows 下载并解压 [音乐工具包](https://github.com/sheetung/Stillink/releases/latest/download/StillinkMusic-win.zip)，双击 **StillinkMusic.exe**，即可在后台广播当前歌曲，无需安装 Python 或填写地址。右键任务栏通知区域的音乐图标，选择「退出」可停止。Windows 与服务器需处于同一局域网；工具使用与构建见 [音乐说明](docs/music.md)。天气、音乐与相簿轮播互斥：启用并保存其中一项会关闭其他项。拍立得或便签上传成功后，所有自动刷新都会关闭，配置保留。
+音乐还需在 Windows 下载并解压 [音乐工具包](https://github.com/sheetung/Stillink/releases/latest)，双击 **StillinkMusic.exe**，即可在后台广播当前歌曲，无需安装 Python 或填写地址。右键任务栏通知区域的音乐图标，选择「退出」可停止。Windows 与服务器需处于同一局域网；工具使用与构建见 [音乐说明](docs/music.md)。天气、音乐与相簿轮播互斥：启用并保存其中一项会关闭其他项。拍立得或便签上传成功后，所有自动刷新都会关闭，配置保留。
 
 ## 文档
 

@@ -16,7 +16,7 @@ extra-services/
 
 ### Windows 免安装 ZIP
 
-从 [Release 下载 StillinkServices-win.zip](https://github.com/sheetung/Stillink/releases/latest/download/StillinkServices-win.zip)，完整解压并双击 `StillinkServices.exe`，无需 Python、uv 或额外字库。启动窗口显示局域网服务地址，分别点击「复制地址」「复制密钥」，填入设备的「额外服务支持」并保存。
+从 [Release 下载 StillinkServices-vX.Y.Z-win.zip](https://github.com/sheetung/Stillink/releases/latest)，完整解压并双击 `StillinkServices.exe`，无需 Python、uv 或额外字库。启动窗口显示局域网服务地址，分别点击「复制地址」「复制密钥」，填入设备的「额外服务支持」并保存。
 
 关闭窗口后留在托盘运行，右键可显示地址或退出。首次运行允许 Windows 防火墙的专用网络访问；照片保存在程序旁的 `data` 文件夹，升级时保留它与照片数据库。音乐仍需运行独立的 `StillinkMusic.exe` 广播工具。详细步骤见 [Windows 使用说明](../extra-services/server/WINDOWS.md)。
 
@@ -90,7 +90,7 @@ journalctl --user -u stillink-services -f
 
 仅使用音乐时，需要额外运行 Windows 10 / 11 工具。它读取接入系统媒体控件的播放器，广播歌曲信息和原始封面；服务器接收并绘图。
 
-下载并解压 [Windows 工具包](https://github.com/sheetung/Stillink/releases/latest/download/StillinkMusic-win.zip)，双击 **StillinkMusic.exe** 后即在后台运行，无需填写配置。电脑与服务器连接同一局域网，默认通过 UDP `8790` 广播。右键任务栏通知区域的音乐图标，选择「退出」停止。
+下载并解压 [Windows 工具包](https://github.com/sheetung/Stillink/releases/latest)，双击 **StillinkMusic.exe** 后即在后台运行，无需填写配置。电脑与服务器连接同一局域网，默认通过 UDP `8790` 广播。右键任务栏通知区域的音乐图标，选择「退出」停止。
 
 工具构建、播放器支持和卡片使用见 [音乐说明](music.md)。
 
