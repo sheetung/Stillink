@@ -3006,7 +3006,7 @@ function notifyDisplayMode(mode){
   $("albumRefresh").addEventListener("click",function(){request(api("/api/album/refresh"),{method:"POST"}).then(function(){$("albumMessage").textContent="已请求切换下一张照片。";load();}).catch(function(e){$("albumMessage").textContent=e.message;});});
   $("saveAlbumPhoto").addEventListener("click",function(){
     if(MODE===0&&(!img||!previewOK)){$("albumUploadMessage").textContent="请先选择照片并等待预览完成。";return;}
-    $("saveAlbumPhoto").disabled=true;showWorkLoading("正在保存当前画面到相簿…");
+    $("saveAlbumPhoto").disabled=true;showWorkLoading("正在保存当前画面到相簿…",true);
     afterLoadingPaint(async function(){
       try{
         var frame=frameWithHeader(packFull());
