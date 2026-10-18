@@ -26,7 +26,7 @@ class ServiceSecurityTests(unittest.TestCase):
             def request(path, method="GET", body=None, token=None):
                 return opener.open(Request(base+path, data=body, method=method, headers={"Authorization":"Bearer "+token} if token else {}))
             try:
-                for path, method in [("/health","GET"),("/v1/weather.json","GET"),("/v1/music.png","GET"),("/v1/album/photos","GET"),("/v1/album/photos","POST"),("/v1/album/photos/anything","DELETE")]:
+                for path, method in [("/v1/calendar/month","GET"),("/v1/calendar/anniversaries","POST"),("/v1/calendar/schedules/anything","DELETE"),("/health","GET"),("/v1/weather.json","GET"),("/v1/music.png","GET"),("/v1/album/photos","GET"),("/v1/album/photos","POST"),("/v1/album/photos/anything","DELETE")]:
                     with self.assertRaises(HTTPError) as caught: request(path,method,token="wrong")
                     self.assertEqual(caught.exception.code,401)
                 with request("/health",token=key) as response:self.assertEqual(json.load(response)["status"],"ok")

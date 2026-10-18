@@ -11,6 +11,7 @@ from pathlib import Path
 
 import album
 import todo
+import calendar_cards
 import app
 import weather
 from service_security import load_key
@@ -38,6 +39,7 @@ class Service:
         app.AUTH_KEY = load_key(self.data_dir)
         app.ALBUM = album.Store(self.data_dir)
         app.TODO = todo.Store(self.data_dir)
+        app.CALENDAR = calendar_cards.Store(self.data_dir)
         app.MUSIC.font_path = weather.find_font()
         self.http = app.ThreadingHTTPServer((host, port), WindowsHandler)
         self.http.daemon_threads = True

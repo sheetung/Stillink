@@ -1,11 +1,11 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const page=fs.readFileSync(require('node:path').join(__dirname,'../page/index.html'),'utf8');
 const source=page.slice(page.indexOf('/* ---------- 额外服务支持：'),page.indexOf('/* ---------- 天气卡片：'));
-const elements=Object.fromEntries(['supportServiceKey','supportService','saveSupportService','supportServiceMessage','checkSupportService','supportWeatherStatus','supportMusicStatus','supportWeatherDetail','supportMusicDetail','supportServiceCards','supportSettings','modeWeather','modeMusic','modeAlbum','saveAlbumPhoto','supportAlbumStatus','supportAlbumDetail','modeTodo','supportTodoStatus','supportTodoDetail'].map(id=>[id,{value:'',hidden:true,events:{},addEventListener(k,f){this.events[k]=f;}}]));
+const elements=Object.fromEntries(['annTab','calTab','supportCalendarStatus','supportCalendarDetail','supportServiceKey','supportService','saveSupportService','supportServiceMessage','checkSupportService','supportWeatherStatus','supportMusicStatus','supportWeatherDetail','supportMusicDetail','supportServiceCards','supportSettings','modeWeather','modeMusic','modeAlbum','saveAlbumPhoto','supportAlbumStatus','supportAlbumDetail','modeTodo','supportTodoStatus','supportTodoDetail'].map(id=>[id,{value:'',hidden:true,events:{},addEventListener(k,f){this.events[k]=f;}}]));
 const states=[{enabled:true,service_url:'http://server:8787'},{enabled:false,service_url:'http://server:8787'},{enabled:false,service_url:'http://server:8787'}],posts=[];
 let healthError=false,musicAvailable=false;
 const context={AbortController,setTimeout,clearTimeout,setInterval(){},document:{querySelector:()=>({click(){}})},$:id=>elements[id],api:p=>p,TextEncoder,Promise,JSON,fetch:async(path,options)=>{
-  if(path.startsWith('http')||path==='/api/service/check'){if(healthError)throw new Error('offline');return {ok:true,json:async()=>({status:'ok',services:{weather:{available:true},music:{available:musicAvailable,receiver_ready:true,broadcast_active:musicAvailable,playing:musicAvailable},album:{available:true},todo:{available:true}}})};}
+  if(path.startsWith('http')||path==='/api/service/check'){if(healthError)throw new Error('offline');return {ok:true,json:async()=>({status:'ok',services:{weather:{available:true},music:{available:musicAvailable,receiver_ready:true,broadcast_active:musicAvailable,playing:musicAvailable},album:{available:true},todo:{available:true},calendar:{available:true}}})};}
   if(path==='/api/service')return {ok:true,json:async()=>({service_url:JSON.parse(options.body).service_url,key_set:true})};
   const i=path.includes('music')?1:path.includes('album')?2:0;
   if(options){const body=JSON.parse(options.body);posts.push(body);Object.assign(states[i],body);}
@@ -14,7 +14,7 @@ const context={AbortController,setTimeout,clearTimeout,setInterval(){},document:
 vm.runInNewContext(source,context);
 (async()=>{
   await new Promise(setImmediate);
-  assert.equal(elements.supportService.value,'http://server:8787');assert.equal(elements.modeMusic.hidden,false);assert.equal(elements.modeTodo.hidden,false);
+  assert.equal(elements.supportService.value,'http://server:8787');assert.equal(elements.modeMusic.hidden,false);assert.equal(elements.modeTodo.hidden,false);assert.equal(elements.calTab.hidden,false);assert.equal(elements.annTab.hidden,false);
   elements.supportService.value='http://new-server:8787/';await elements.saveSupportService.events.click();
   assert.equal(states[0].service_url,states[1].service_url);assert.equal(states[0].enabled,true);assert.equal(states[1].enabled,false);
   assert.equal(elements.supportServiceCards.hidden,false);

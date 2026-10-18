@@ -87,6 +87,25 @@ def description(code):
     return "小雨"
 
 
+def draw_icon(draw, code, x, y, size):
+    def point(a, b): return (x + a * size / 160, y + b * size / 160)
+    def circle(a, b, r, fill):
+        draw.ellipse((*point(a-r, b-r), *point(a+r, b+r)), fill=fill, outline=BLACK, width=max(1, round(size/32)))
+    thick = max(1, round(size/32))
+    if code <= 2:
+        circle(80 if code == 0 else 100, 70 if code == 0 else 45, 34, YELLOW)
+        cx, cy = (80, 70) if code == 0 else (100, 45)
+        for angle in range(0, 360, 45):
+            a = math.radians(angle)
+            draw.line([point(cx+math.cos(a)*44, cy+math.sin(a)*44), point(cx+math.cos(a)*56, cy+math.sin(a)*56)], fill=BLACK, width=thick)
+    if code != 0:
+        circle(52, 77, 29, WHITE); circle(86, 59, 38, WHITE); circle(119, 81, 27, WHITE)
+        draw.rounded_rectangle((*point(27, 70), *point(146, 108)), radius=max(1, round(size/10)), fill=WHITE, outline=BLACK, width=thick)
+        draw.rectangle((*point(44, 65), *point(129, 97)), fill=WHITE)
+        if code >= 51:
+            for a in (50, 84, 118): draw.line([point(a, 120), point(a-10, 138)], fill=BLACK, width=thick)
+
+
 def render(name, data):
     image = Image.new("P", (WIDTH, HEIGHT), WHITE)
     image.putpalette(PALETTE)
@@ -96,22 +115,7 @@ def render(name, data):
         draw.text((x, y), str(value), font=font(size), fill=fill, anchor=anchor)
 
     def icon(code, x, y, size):
-        def point(a, b): return (x + a * size / 160, y + b * size / 160)
-        def circle(a, b, r, fill):
-            draw.ellipse((*point(a-r, b-r), *point(a+r, b+r)), fill=fill, outline=BLACK, width=max(1, round(size/32)))
-        thick = max(1, round(size/32))
-        if code <= 2:
-            circle(80 if code == 0 else 100, 70 if code == 0 else 45, 34, YELLOW)
-            cx, cy = (80, 70) if code == 0 else (100, 45)
-            for angle in range(0, 360, 45):
-                a = math.radians(angle)
-                draw.line([point(cx+math.cos(a)*44, cy+math.sin(a)*44), point(cx+math.cos(a)*56, cy+math.sin(a)*56)], fill=BLACK, width=thick)
-        if code != 0:
-            circle(52, 77, 29, WHITE); circle(86, 59, 38, WHITE); circle(119, 81, 27, WHITE)
-            draw.rounded_rectangle((*point(27, 70), *point(146, 108)), radius=max(1, round(size/10)), fill=WHITE, outline=BLACK, width=thick)
-            draw.rectangle((*point(44, 65), *point(129, 97)), fill=WHITE)
-            if code >= 51:
-                for a in (50, 84, 118): draw.line([point(a, 120), point(a-10, 138)], fill=BLACK, width=thick)
+        draw_icon(draw, code, x, y, size)
 
     # Fit long location names within the left header column.
     location_size = 26

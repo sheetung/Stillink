@@ -1,9 +1,12 @@
 [project]
 name = "stillink-services"
-version = "1.5.0"
+version = "1.6.0"
 description = "Weather and music cards as Stillink binary frames"
 requires-python = ">=3.11"
-dependencies = ["pillow>=11.3,<13"]
+dependencies = [
+    "lunar-python>=1.4,<2",
+    "pillow>=11.3,<13",
+]
 
 [tool.uv]
 package = false

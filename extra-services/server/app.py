@@ -9,12 +9,14 @@ from urllib.parse import parse_qs, urlsplit
 import weather
 import album
 import todo
+import calendar_cards
 from music_receiver import Receiver
 
-VERSION = "V1.5.0"
+VERSION = "V1.6.0"
 MUSIC = Receiver()
 ALBUM = None
 TODO = None
+CALENDAR = None
 AUTH_KEY = ""
 
 class Handler(BaseHTTPRequestHandler):
@@ -40,6 +42,8 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if not self.authorized(): return
         url = urlsplit(self.path)
+        if url.path.startswith("/v1/calendar/"):
+            return calendar_cards.handle(self, CALENDAR, url, weather.FONT_PATH)
         if url.path.startswith("/v1/todo/"):
             return todo.handle(self, TODO, url, weather.FONT_PATH)
         if url.path.startswith("/v1/album/"):
@@ -48,7 +52,7 @@ class Handler(BaseHTTPRequestHandler):
             status, body, kind = MUSIC.response(url.path, parse_qs(url.query).get("v", [""])[0])
             return self.send(status, body, kind)
         if url.path == "/health":
-            return self.send(200, json.dumps({"status":"ok", "version":VERSION, "services":{"weather":{"available":True}, "music":MUSIC.health(), "album":{"available":ALBUM is not None}, "todo":{"available":TODO is not None}}}).encode(), "application/json")
+            return self.send(200, json.dumps({"status":"ok", "version":VERSION, "services":{"weather":{"available":True}, "music":MUSIC.health(), "album":{"available":ALBUM is not None}, "todo":{"available":TODO is not None}, "calendar":{"available":CALENDAR is not None}, "anniversary":{"available":CALENDAR is not None}}}).encode(), "application/json")
         weather.handle(self, url)
 
     def album_request(self, url):
@@ -66,12 +70,16 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         if not self.authorized(): return
+        if urlsplit(self.path).path.startswith("/v1/calendar/"):
+            return calendar_cards.handle(self, CALENDAR, urlsplit(self.path), weather.FONT_PATH)
         if urlsplit(self.path).path.startswith("/v1/todo/"):
             return todo.handle(self, TODO, urlsplit(self.path), weather.FONT_PATH)
         self.album_request(urlsplit(self.path))
 
     def do_DELETE(self):
         if not self.authorized(): return
+        if urlsplit(self.path).path.startswith("/v1/calendar/"):
+            return calendar_cards.handle(self, CALENDAR, urlsplit(self.path), weather.FONT_PATH)
         if urlsplit(self.path).path.startswith("/v1/todo/"):
             return todo.handle(self, TODO, urlsplit(self.path), weather.FONT_PATH)
         self.album_request(urlsplit(self.path))
@@ -91,6 +99,7 @@ if __name__ == "__main__":
     if args.rotate_service_key: raise SystemExit(0)
     ALBUM = album.Store(args.data_dir)
     TODO = todo.Store(args.data_dir)
+    CALENDAR = calendar_cards.Store(args.data_dir)
     weather.FONT_PATH = args.font
     MUSIC.font_path = weather.find_font()
     MUSIC.start(port=args.music_port)

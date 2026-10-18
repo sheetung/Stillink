@@ -99,3 +99,5 @@ journalctl --user -u stillink-services -f
 服务接口见 [HTTP API](API.md) 及各功能使用说明。
 
 待办支持共享增删与完成状态，手动上传屏幕。使用说明见 [待办](todo.md)。升级服务时保留 `data`，其中 `todo.sqlite3` 保存清单。
+
+日历、共享日程与纪念日功能需 V1.6.0 及以上服务，使用方法见 [日历与纪念日](calendar.md)。升级保留 data 目录。

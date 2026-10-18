@@ -1,7 +1,7 @@
 "use strict";
 const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
 const page=fs.readFileSync(require("node:path").join(__dirname,"../page/index.html"),"utf8");
-const source=page.slice(page.indexOf("/* ---------- 待办："),page.lastIndexOf("</script>"));
+const source=page.slice(page.indexOf("/* ---------- 待办："),page.indexOf("</script>",page.indexOf("/* ---------- 待办：")));
 function el(){return {value:"",disabled:false,hidden:false,children:[],style:{},events:{},classList:{add(){},remove(){}},setAttribute(k,v){this[k]=v;},appendChild(v){this.children.push(v);},replaceChildren(...v){this.children=v;},addEventListener(k,f){this.events[k]=f;},set src(v){this.url=v;if(this.onload)this.onload();}};}
 const elements=Object.fromEntries([...page.matchAll(/id="([^"]+)"/g)].map(m=>[m[1],el()])),notifications=[],loads=[],requests=[];
 let items=[{id:"one",text:"<script>read a book</script>",done:false},{id:"two",text:"Take a walk",done:false}],failMutation=false,xhr;
