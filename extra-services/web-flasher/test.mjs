@@ -8,13 +8,14 @@ const source=(await readFile(new URL('app.js',import.meta.url),'utf8')).replace(
 const data=new Uint8Array([0xe9,1,2,3]),writes=[],reports=[];
 const image={file:'stillink-v1.2.1-esp32s3-ota.bin',url:'firmware/test.bin',size:data.length,sha256:createHash('sha256').update(data).digest('hex')};
 const manifest={releases:[{version:'v1.2.1',chip:'esp32s3',ota:image,full:{...image,file:'stillink-v1.2.1-esp32s3.bin'}},{version:'v1.2.1',chip:'esp32c3',ota:{...image,file:'stillink-v1.2.1-esp32c3-ota.bin'},full:{...image,file:'stillink-v1.2.1-esp32c3.bin'}}]};
+let allowMismatch=false;
 const nodes=new Map();
-function node(id){if(!nodes.has(id))nodes.set(id,{textContent:'',value:id==='baud'?'460800':id==='address'?'0x0':'',checked:false,files:[],classList:{toggle(){},add(){},remove(){}},setAttribute(){},children:[],append(...items){this.children.push(...items);},replaceChildren(...items){this.children=items;},addEventListener(event,fn){this[event]=fn;}});return nodes.get(id);}
+function node(id){if(!nodes.has(id))nodes.set(id,{textContent:'',value:id==='baud'?'460800':id==='address'?'0x0':'',checked:false,files:[],classList:{toggle(){},add(){},remove(){}},setAttribute(){},showModal(){this.returnValue=allowMismatch?'continue':'cancel';queueMicrotask(()=>this.close());},children:[],append(...items){this.children.push(...items);},replaceChildren(...items){this.children=items;},addEventListener(event,fn){this[event]=fn;}});return nodes.get(id);}
 node('firmwareManifest').textContent=JSON.stringify(manifest);
 let chip='ESP32-S3',badDownload=false,writeError=false,resetError=false;
 class Transport{disconnect(){return Promise.resolve();}getInfo(){return 'USB test';}}
 class ESPLoader{constructor(){this.chip={CHIP_NAME:chip};}async main(){}async writeFlash(options){if(writeError)throw new Error('simulated USB failure');writes.push(options);options.reportProgress(0,4,4);assert.equal(options.calculateMD5Hash(data),createHash('md5').update(data).digest('hex'));}async after(){if(resetError)throw new Error('simulated reset failure');}}
-const context={document:{getElementById:node,createElement:()=>({value:'',textContent:''})},window:{isSecureContext:true,confirm:()=>false},navigator:{serial:{requestPort:async()=>({}),addEventListener(){}}},location:{hostname:'localhost'},ESPLoader,Transport,SparkMD5:{ArrayBuffer:{hash:b=>createHash('md5').update(new Uint8Array(b)).digest('hex')}},crypto:webcrypto,Uint8Array,fetch:async()=>({ok:true,arrayBuffer:async()=>badDownload?new Uint8Array([0]).buffer:data.buffer})};
+const context={document:{getElementById:node,createElement:()=>({value:'',textContent:''})},window:{isSecureContext:true},navigator:{serial:{requestPort:async()=>({}),addEventListener(){}}},location:{hostname:'localhost'},ESPLoader,Transport,SparkMD5:{ArrayBuffer:{hash:b=>createHash('md5').update(new Uint8Array(b)).digest('hex')}},crypto:webcrypto,Uint8Array,fetch:async()=>({ok:true,arrayBuffer:async()=>badDownload?new Uint8Array([0]).buffer:data.buffer})};
 context.createPublicCounters=createPublicCounters;
 context.createTelemetry=()=>({start(kind,metadata){let done=false;return(result,error='',details={})=>{if(done)return;done=true;reports.push({kind,result,error,...metadata,...details});};}});
 vm.runInNewContext(source,context);
@@ -44,7 +45,7 @@ assert(!JSON.stringify(reports).includes('USB test'));
 assert.equal(createTelemetry('').start('flash')('success'),undefined);
 console.log('Flasher events: PASS (categorized failures, cancel, verified write with reset failure, no serial details)');
 
-context.window.confirm=()=>true;
+allowMismatch=true;
 chip='ESP32-S3';await node('connect').click();const before=writes.length;await node('flash').click();
 assert.equal(writes.length,before+1,'confirmed mismatch must proceed to write');
 console.log('Confirmed model mismatch proceeds: PASS');

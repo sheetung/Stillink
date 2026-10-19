@@ -79,11 +79,25 @@ $('connect').addEventListener('click',async()=>{
   finally{busy=false;controls();}
 });
 $('disconnect').addEventListener('click',async()=>{busy=true;controls();try{await disconnect();message('已断开连接。');}catch(e){message(e.message,'error');}finally{busy=false;controls();}});
+function confirmModel(expected,actual){
+  const dialog=$('modelConfirm');
+  $('confirmFirmware').textContent=expected;$('confirmDevice').textContent=actual;
+  dialog.returnValue='cancel';
+  return new Promise(resolve=>{
+    dialog.addEventListener('close',()=>resolve(dialog.returnValue==='continue'),{once:true});
+    dialog.showModal();
+  });
+}
 $('flash').addEventListener('click',async()=>{
+  if(busy||!loader)return;
   if(mode==='stillink'&&selectedFirmware()){
     const expected=catalog.releases[Number($('release').value)].chip==='esp32c3'?'ESP32-C3':'ESP32-S3';
-    if(loader.chip.CHIP_NAME!==expected&&!window.confirm('所选固件：'+expected+'\n连接设备：'+loader.chip.CHIP_NAME+'\n型号不一致，写入后设备可能无法启动，需要重新烧录正确固件。是否仍要继续？')){
-      message('已取消烧录，请检查设备型号。');return;
+    if(loader.chip.CHIP_NAME!==expected){
+      busy=true;controls();
+      const proceed=await confirmModel(expected,loader.chip.CHIP_NAME);
+      busy=false;controls();
+      if(!proceed){message('已取消烧录，请检查设备型号。');return;}
+      if(!loader){message('设备已断开，请重新连接。','error');return;}
     }
   }
   const report=stats.start('flash',{chip:statsChip(),version:mode==='stillink'?(catalog.releases[Number($('release').value)||0]?.version||'custom'):'custom',mode:mode==='stillink'?$('imageType').value:'custom'});
