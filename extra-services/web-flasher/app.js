@@ -11,7 +11,7 @@ const statsEndpoint=typeof __STATS_ENDPOINT__==='string'?__STATS_ENDPOINT__:'';
 const refreshCounters=createPublicCounters(statsEndpoint,document);
 refreshCounters();
 const stats=createTelemetry(statsEndpoint,refreshCounters);
-function statsChip(){return loader?.chip.CHIP_NAME==='ESP32-S3'?'esp32s3':loader?.chip.CHIP_NAME==='ESP32-C3'?'esp32c3':'unknown';}
+function statsChip(){const chip=(loader?.chip.CHIP_NAME||'').toLowerCase().replaceAll('-','');return ['esp32', 'esp32s2', 'esp32s3', 'esp32s31', 'esp32c2', 'esp32c3', 'esp32c5', 'esp32c6', 'esp32c61', 'esp32e22', 'esp32h2', 'esp32h21', 'esp32h4', 'esp32p4', 'esp8266', 'unknown'].includes(chip)?chip:'unknown';}
 const supported=window.isSecureContext&&'serial' in navigator;
 function message(text,kind=''){ $('status').textContent=text;$('status').className='status '+kind; }
 function log(text){$('log').textContent+=text;$('log').scrollTop=$('log').scrollHeight;}

@@ -49,3 +49,8 @@ allowMismatch=true;
 chip='ESP32-S3';await node('connect').click();const before=writes.length;await node('flash').click();
 assert.equal(writes.length,before+1,'confirmed mismatch must proceed to write');
 console.log('Confirmed model mismatch proceeds: PASS');
+
+chip='ESP32-C6';await node('chooseCustom').click();await node('connect').click();node('address').value='0x10000';await node('flash').click();
+assert.equal(reports.at(-1).chip,'esp32c6');assert.equal(reports.at(-1).mode,'custom');
+assert.equal(reports.at(-1).result,'success');
+console.log('Custom ESP32-C6 reports actual chip: PASS');
