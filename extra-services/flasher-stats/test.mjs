@@ -4,6 +4,9 @@ import { randomUUID } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
 import worker from './worker.mjs';
 
+const { Script } = await import('node:vm');
+const dashboard = await (await worker.fetch(new Request('https://stats.test/'), {})).text();
+new Script(dashboard.match(/<script>([\s\S]*?)<\/script>/)[1]);
 const sqlite = new DatabaseSync(':memory:');
 sqlite.exec(await readFile(new URL('schema.sql', import.meta.url), 'utf8'));
 const env = { ADMIN_KEY: 'test-admin-key', DB: {
@@ -63,6 +66,13 @@ assert.equal((await worker.fetch(new Request('https://stats.test/public-stats', 
 assert.equal(JSON.stringify(stats).includes(visitor), false, 'admin report contains aggregates, not visitor IDs');
 assert.equal((await worker.fetch(new Request('https://stats.test/'), env)).status, 200);
 assert.equal((await worker.fetch(new Request('https://stats.test/unknown'), env)).status, 404);
+assert.deepEqual(stats.duration, { samples: 1, average_ms: 42000, median_ms: 42000 });
+const platformEvent = event('flash_success', { attempt_id: randomUUID(), duration_ms: 18000 });
+await worker.fetch(new Request('https://stats.test/events', { method: 'POST', headers: { Origin: origin, 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0) Chrome/130.0 Safari/537.36 Edg/130.0' }, body: JSON.stringify(platformEvent) }), env);
+const extended = await (await report()).json();
+assert.deepEqual(extended.duration, { samples: 2, average_ms: 30000, median_ms: 30000 });
+assert.equal(extended.platforms.find(p => p.browser === 'Edge' && p.os === 'Windows').success, 1);
+assert.equal(JSON.stringify(extended).includes('Mozilla'), false);
 for (let i = 0; i < 60; ++i) await send(event('visit'));
 assert.equal((await send(event('visit'))).status, 429);
 sqlite.close();

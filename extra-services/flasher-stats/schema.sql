@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS events (
   mode TEXT NOT NULL DEFAULT '',
   duration_ms INTEGER,
   error TEXT NOT NULL DEFAULT '',
+  browser TEXT NOT NULL DEFAULT 'unknown',
+  os TEXT NOT NULL DEFAULT 'unknown',
   UNIQUE(attempt_id, event_type)
 );
 CREATE INDEX IF NOT EXISTS events_time ON events(created_at);
