@@ -20,3 +20,7 @@
 设备联网后，可在「设备设置 → 系统维护与升级」检查新版本并下载升级，也可从 [Release](https://github.com/sheetung/Stillink/releases) 下载对应芯片的 `-ota.bin`，通过设备网页上传。
 
 新设备的 USB 首次烧录使用完整 `.bin`，不要将完整包上传到设备网页。升级后请确认屏幕与休眠设置。
+
+## 匿名统计
+
+部署者启用统计后，烧录页会匿名记录访问与烧录结果，不上传固件内容、本地文件名、串口序列号或设备密钥。统计上报失败不影响烧录，浏览器开启 Do Not Track 时不发送统计。[部署说明](../extra-services/flasher-stats/README.md)

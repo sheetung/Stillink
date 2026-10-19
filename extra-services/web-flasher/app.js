@@ -1,10 +1,17 @@
 import { ESPLoader, Transport } from 'esptool-js';
 import SparkMD5 from 'spark-md5';
+import { createTelemetry } from './telemetry.js';
+import { createPublicCounters } from './counters.js';
 
 const $=id=>document.getElementById(id);
 const catalog=JSON.parse($('firmwareManifest').textContent);
 function selectedFirmware(){return catalog.releases[Number($('release').value)||0]?.[$('imageType').value];}
 let mode='stillink',transport=null,loader=null,busy=false;
+const statsEndpoint=typeof __STATS_ENDPOINT__==='string'?__STATS_ENDPOINT__:'';
+const refreshCounters=createPublicCounters(statsEndpoint,document);
+refreshCounters();
+const stats=createTelemetry(statsEndpoint,refreshCounters);
+function statsChip(){return loader?.chip.CHIP_NAME==='ESP32-S3'?'esp32s3':loader?.chip.CHIP_NAME==='ESP32-C3'?'esp32c3':'unknown';}
 const supported=window.isSecureContext&&'serial' in navigator;
 function message(text,kind=''){ $('status').textContent=text;$('status').className='status '+kind; }
 function log(text){$('log').textContent+=text;$('log').scrollTop=$('log').scrollHeight;}
@@ -46,6 +53,7 @@ $('chooseStillink').addEventListener('click',()=>select('stillink'));
 $('chooseCustom').addEventListener('click',()=>select('custom'));
 $('connect').addEventListener('click',async()=>{
   if(!window.isSecureContext){location.href='http://localhost:8788/';return;}
+  const report=stats.start('connect');
   busy=true;controls();$('log').textContent='';
   try{
     const port=await navigator.serial.requestPort();
@@ -53,24 +61,29 @@ $('connect').addEventListener('click',async()=>{
     const candidate=new ESPLoader({transport,baudrate:Number($('baud').value),terminal:{clean(){},write:log,writeLine:text=>log(text+'\n')}});
     message('正在连接并识别芯片…');$('phase').textContent='识别芯片';
     await candidate.main();loader=candidate;
+    report('success','',{chip:statsChip()});
     $('deviceName').textContent=loader.chip.CHIP_NAME;$('deviceInfo').textContent=transport.getInfo();$('deviceDot').classList.add('online');
     message('设备已连接，可以开始烧录。');$('phase').textContent='设备已连接';
-  }catch(error){await disconnect().catch(()=>{});message(error.name==='NotFoundError'?'已取消选择串口。':'连接失败：'+error.message,'error');}
+  }catch(error){report(error.name==='NotFoundError'?'cancel':'failure',error.name==='NotFoundError'?'':['SecurityError','NotAllowedError'].includes(error.name)?'permission':'connection');await disconnect().catch(()=>{});message(error.name==='NotFoundError'?'已取消选择串口。':'连接失败：'+error.message,'error');}
   finally{busy=false;controls();}
 });
 $('disconnect').addEventListener('click',async()=>{busy=true;controls();try{await disconnect();message('已断开连接。');}catch(e){message(e.message,'error');}finally{busy=false;controls();}});
 $('flash').addEventListener('click',async()=>{
+  const report=stats.start('flash',{chip:statsChip(),version:mode==='stillink'?(catalog.releases[Number($('release').value)||0]?.version||'custom'):'custom',mode:mode==='stillink'?$('imageType').value:'custom'});
   busy=true;controls();$('progress').value=0;$('percent').textContent='0%';
-  let written=false;
+  let written=false,errorType='invalid_file';
   try{
     let data,address=0,ota=false;
     if(mode==='stillink'){
       const firmware=selectedFirmware();if(!firmware)throw new Error('当前版本尚未提供所选固件，请选择其他版本或烧录方式');
       const expectedChip=catalog.releases[Number($('release').value)||0].chip==='esp32c3'?'ESP32-C3':'ESP32-S3';
+      errorType='chip_mismatch';
       if(loader.chip.CHIP_NAME!==expectedChip)throw new Error('所选固件仅支持 '+expectedChip+'，当前设备为 '+loader.chip.CHIP_NAME);
       message('正在读取 Stillink 固件…');
+      errorType='download';
       const response=await fetch(firmware.url);if(!response.ok)throw new Error('固件下载失败：'+response.status);
       data=new Uint8Array(await response.arrayBuffer());
+      errorType='integrity';
       const sha=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',data)),x=>x.toString(16).padStart(2,'0')).join('');
       if(sha!==firmware.sha256)throw new Error('固件校验失败，请刷新页面后重试');
       ota=$('imageType').value==='ota';if(ota)address=0x10000;
@@ -84,12 +97,13 @@ $('flash').addEventListener('click',async()=>{
     const fileArray=[{data,address}];
     if(ota)fileArray.push({data:new Uint8Array(0x2000).fill(255),address:0xd000});
     const fractions=fileArray.map(()=>0),totalBytes=fileArray.reduce((sum,file)=>sum+file.data.length,0);
+    errorType='write';
     await loader.writeFlash({fileArray,flashMode:mode==='stillink'?'dio':'keep',flashFreq:mode==='stillink'?'40m':'keep',flashSize:mode==='stillink'?'4MB':'keep',eraseAll:!ota&&$('erase').checked,compress:true,
       calculateMD5Hash:bytes=>SparkMD5.ArrayBuffer.hash(bytes.slice().buffer),
       reportProgress(file,done,total){fractions[file]=done/total;const progress=Math.round(fileArray.reduce((sum,item,i)=>sum+item.data.length*fractions[i],0)/totalBytes*100);$('progress').value=progress;$('percent').textContent=progress+'%';}});
-    written=true;await loader.after('hard_reset');
+    written=true;report('success');await loader.after('hard_reset');
     message(mode==='stillink'?'烧录成功！请断开 ESP 的 USB／电源，再重新通电。启动后连接 Stillink 热点，打开 192.168.4.1。':'固件烧录成功！请断开 ESP 的 USB／电源，再重新通电。','success');$('phase').textContent='烧录完成';$('progress').value=100;$('percent').textContent='100%';
-  }catch(error){message(written?'固件已写入并校验，请重新插拔 USB 启动设备。':'烧录失败：'+error.message,written?'success':'error');$('phase').textContent=written?'写入完成':'烧录未完成';log('\n'+error.message+'\n');}
+  }catch(error){report(written?'success':'failure',written?'':errorType);message(written?'固件已写入并校验，请重新插拔 USB 启动设备。':'烧录失败：'+error.message,written?'success':'error');$('phase').textContent=written?'写入完成':'烧录未完成';log('\n'+error.message+'\n');}
   finally{await disconnect().catch(()=>{});busy=false;controls();}
 });
 navigator.serial?.addEventListener('disconnect',()=>{if(!busy)disconnect().catch(()=>{});});

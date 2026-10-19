@@ -47,7 +47,9 @@ if(process.argv.includes('--local')){
     if(++versions===5)break;
   }
 }
-const bundled=await build({entryPoints:[path.join(dir,'app.js')],bundle:true,write:false,minify:true,format:'iife',legalComments:'inline'});
+const statsEndpoint=process.env.FLASHER_STATS_URL||'';
+if(statsEndpoint){const url=new URL(statsEndpoint);if(url.protocol!=='https:'||url.username||url.password||url.search||url.hash||url.pathname!=='/events')throw new Error('FLASHER_STATS_URL must be an HTTPS /events URL');}
+const bundled=await build({entryPoints:[path.join(dir,'app.js')],bundle:true,write:false,minify:true,format:'iife',legalComments:'inline',define:{__STATS_ENDPOINT__:JSON.stringify(statsEndpoint)}});
 let html=await readFile(path.join(dir,'index.html'),'utf8');
 html=html.replace('__MANIFEST__',()=>JSON.stringify(manifest)).replace('__BUNDLE__',()=>bundled.outputFiles[0].text.replace(/<\/script/gi,'<\\/script'));
 const licenses=await Promise.all(['esptool-js/LICENSE','spark-md5/LICENSE','pako/LICENSE','atob-lite/LICENSE.md'].map(async name=>name+'\n'+await readFile(path.join(dir,'node_modules',name),'utf8')));

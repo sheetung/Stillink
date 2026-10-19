@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'extra-services/web-flasher/**'
+      - 'extra-services/flasher-stats/**'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
   workflow_call:
@@ -32,6 +33,7 @@ jobs:
         working-directory: extra-services/web-flasher
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          FLASHER_STATS_URL: ${{ vars.FLASHER_STATS_URL }}
         run: |
           npm ci
           npm test
