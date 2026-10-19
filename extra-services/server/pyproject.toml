@@ -1,6 +1,6 @@
 [project]
 name = "stillink-services"
-version = "1.6.0"
+version = "1.6.1"
 description = "Weather and music cards as Stillink binary frames"
 requires-python = ">=3.11"
 dependencies = [

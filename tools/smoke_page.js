@@ -41,7 +41,7 @@ function eq(name, got, want) { ok(name + " (got " + got + " want " + want + ")",
 // 静态防线：脚本串里若出现字面量 </script>，浏览器会提前终结脚本块。
 // R1.0.12 起：合法闭合符数量随功能块增加而调整（R1.1.0 = 3），详见下方断言。
 // R1.1.0 起 = 3 个合法闭合符（内嵌 Cropper 块 + 页脚版本填充块 + 主脚本块），多一个都不行。
-eq("script closer count (theme + cropper + footer + main = exactly 4)", (page.match(/<\/script>/g) || []).length, 4);
+eq("script closer count (theme + cropper + footer + main + calendar = exactly 5)", (page.match(/<\/script>/g) || []).length, 5);
 ok("offline export keeps </script> escaped in injected html", page.indexOf("<\\/script>") >= 0);
 ok("cropper.js inlined (first script block)", /<script>\s*\n?\/\* ===== Cropper\.js v1\.6\.2/.test(page));
 ok("startup block intact (loadSettings call present)", /loadSettings\(\)/.test(js));

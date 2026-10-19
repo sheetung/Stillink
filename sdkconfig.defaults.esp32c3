@@ -1,2 +1,7 @@
 # ESP32-C3, 4MB Flash, native USB Serial/JTAG.
 CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
+
+# Keep RAM available for the 120 KB framebuffer and HTTP/TCP buffers.
+# These speed optimizations otherwise consume >27 KB of shared internal RAM.
+CONFIG_ESP_WIFI_IRAM_OPT=n
+CONFIG_ESP_WIFI_RX_IRAM_OPT=n

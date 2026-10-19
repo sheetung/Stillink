@@ -15,7 +15,14 @@
 
 static const char *TAG = "frame";
 
+#if CONFIG_IDF_TARGET_ESP32C3
+/* Reserve the largest frame at link time: peripheral allocations otherwise split
+ * the C3's limited data RAM before a contiguous 120 KB block can be allocated. */
+static uint8_t s_frame_storage[EPD_MAX_BUF_LEN];
+static uint8_t *s_fb = s_frame_storage;
+#else
 static uint8_t *s_fb = NULL;
+#endif
 static SemaphoreHandle_t s_fb_mutex = NULL;
 static SemaphoreHandle_t s_frame_ready = NULL;
 static bool s_pending = false;
@@ -38,11 +45,13 @@ static uint16_t crc16_update(uint16_t crc, const uint8_t *d, size_t n)
 
 void frame_init(void)
 {
+#if !CONFIG_IDF_TARGET_ESP32C3
     s_fb = malloc(EPD_MAX_BUF_LEN);
     if (!s_fb) {
         ESP_LOGE(TAG, "OOM allocating %d-byte frame buffer", EPD_MAX_BUF_LEN);
         abort();
     }
+#endif
     s_fb_mutex = xSemaphoreCreateMutex();
     s_frame_ready = xSemaphoreCreateBinary();
     s_fw = epd_profile()->w;
