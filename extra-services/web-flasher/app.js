@@ -5,7 +5,7 @@ import { createPublicCounters } from './counters.js';
 
 const $=id=>document.getElementById(id);
 const catalog=JSON.parse($('firmwareManifest').textContent);
-function selectedFirmware(){return catalog.releases[Number($('release').value)||0]?.[$('imageType').value];}
+function selectedFirmware(){return $('release').value===''?undefined:catalog.releases[Number($('release').value)]?.[$('imageType').value];}
 let mode='stillink',transport=null,loader=null,busy=false;
 const statsEndpoint=typeof __STATS_ENDPOINT__==='string'?__STATS_ENDPOINT__:'';
 const refreshCounters=createPublicCounters(statsEndpoint,document);
@@ -18,7 +18,7 @@ function log(text){$('log').textContent+=text;$('log').scrollTop=$('log').scroll
 function controls(){
   $('connect').disabled=busy||!!loader||(!supported&&window.isSecureContext);$('disconnect').disabled=busy||!transport;
   $('flash').disabled=busy||!loader||(mode==='stillink'&&!selectedFirmware());$('baud').disabled=busy||!!transport;
-  ['chooseStillink','chooseCustom','customFile','address','erase','release','imageType'].forEach(id=>$(id).disabled=busy);
+  ['chooseStillink','chooseCustom','customFile','address','erase','chip','release','imageType'].forEach(id=>$(id).disabled=busy);
   if(mode==='stillink'&&$('imageType').value==='ota'){$('erase').disabled=true;$('erase').checked=false;}
 }
 function select(value){mode=value;['stillink','custom'].forEach(name=>{
@@ -30,10 +30,21 @@ async function disconnect(){
   if(transport){try{await transport.disconnect();}finally{transport=null;}}
   $('deviceDot').classList.remove('online');$('deviceName').textContent='尚未连接设备';$('deviceInfo').textContent='通过 USB 数据线连接电脑';controls();
 }
-for(const [i,release] of catalog.releases.entries()){const option=document.createElement('option');option.value=String(i);option.textContent=release.version+' · '+(release.chip==='esp32c3'?'ESP32-C3':'ESP32-S3');$('release').append(option);}
+function updateVersions(){
+  const previous=catalog.releases[Number($('release').value)]?.version;
+  const options=[];
+  for(const [i,release] of catalog.releases.entries()){
+    if(release.chip!==$('chip').value)continue;
+    const option=document.createElement('option');option.value=String(i);option.textContent=release.version;options.push(option);
+  }
+  $('release').replaceChildren(...options);
+  $('release').value=options.find(option=>catalog.releases[Number(option.value)].version===previous)?.value||options[0]?.value||'';
+  showFirmware();
+}
+$('chip').value='esp32s3';
 $('imageType').value='ota';
 function showFirmware(){
-  const release=catalog.releases[Number($('release').value)||0],firmware=selectedFirmware();
+  const release=$('release').value===''?undefined:catalog.releases[Number($('release').value)],firmware=selectedFirmware();
   $('version').textContent=release?.version||'';
   $('firmwareChip').textContent=release?.chip==='esp32c3'?'ESP32-C3':'ESP32-S3';
   $('chipBadge').textContent='推荐 · '+$('firmwareChip').textContent;
@@ -43,7 +54,7 @@ function showFirmware(){
   $('imageHint').textContent=$('imageType').value==='ota'?'仅用于已安装 Stillink 且分区表一致的设备；保留启动程序、分区表和配置。':'包含启动程序、分区表与应用，从 0x0 烧录，适用于首次安装。';
   controls();
 }
-$('release').addEventListener('change',showFirmware);$('imageType').addEventListener('change',showFirmware);showFirmware();
+$('chip').addEventListener('change',updateVersions);$('release').addEventListener('change',showFirmware);$('imageType').addEventListener('change',showFirmware);updateVersions();
 if(!supported){
   if(!window.isSecureContext){
     message('点击“连接并选择设备”，将在本机烧录页选择 USB 串口。');
@@ -69,6 +80,12 @@ $('connect').addEventListener('click',async()=>{
 });
 $('disconnect').addEventListener('click',async()=>{busy=true;controls();try{await disconnect();message('已断开连接。');}catch(e){message(e.message,'error');}finally{busy=false;controls();}});
 $('flash').addEventListener('click',async()=>{
+  if(mode==='stillink'&&selectedFirmware()){
+    const expected=catalog.releases[Number($('release').value)].chip==='esp32c3'?'ESP32-C3':'ESP32-S3';
+    if(loader.chip.CHIP_NAME!==expected&&!window.confirm('所选固件：'+expected+'\n连接设备：'+loader.chip.CHIP_NAME+'\n型号不一致，写入后设备可能无法启动，需要重新烧录正确固件。是否仍要继续？')){
+      message('已取消烧录，请检查设备型号。');return;
+    }
+  }
   const report=stats.start('flash',{chip:statsChip(),version:mode==='stillink'?(catalog.releases[Number($('release').value)||0]?.version||'custom'):'custom',mode:mode==='stillink'?$('imageType').value:'custom'});
   busy=true;controls();$('progress').value=0;$('percent').textContent='0%';
   let written=false,errorType='invalid_file';
@@ -76,9 +93,6 @@ $('flash').addEventListener('click',async()=>{
     let data,address=0,ota=false;
     if(mode==='stillink'){
       const firmware=selectedFirmware();if(!firmware)throw new Error('当前版本尚未提供所选固件，请选择其他版本或烧录方式');
-      const expectedChip=catalog.releases[Number($('release').value)||0].chip==='esp32c3'?'ESP32-C3':'ESP32-S3';
-      errorType='chip_mismatch';
-      if(loader.chip.CHIP_NAME!==expectedChip)throw new Error('所选固件仅支持 '+expectedChip+'，当前设备为 '+loader.chip.CHIP_NAME);
       message('正在读取 Stillink 固件…');
       errorType='download';
       const response=await fetch(firmware.url);if(!response.ok)throw new Error('固件下载失败：'+response.status);
