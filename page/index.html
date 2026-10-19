@@ -2300,6 +2300,7 @@ function refreshInfo(){
     DEV_FW = j.fw || "";
     var el = $("i-verD");
     el.textContent = ver || "—";
+    if (ver && $("footVer")) $("footVer").textContent = " · 版本 " + ver;
     if (DEV_FW && verNum(ver) < verNum(DEV_FW)){
       el.style.color = "var(--err)";
       el.title = "控制页版本低于固件（" + ver + " < " + DEV_FW + "），建议重新上传固件";
