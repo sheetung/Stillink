@@ -192,7 +192,9 @@ Windows UDP 广播和服务器部署见 [音乐功能说明](music.md)。
 
 ## GitHub Release 在线固件升级
 
-设备连接可访问 GitHub 的 Wi-Fi 后使用。设备自动选择最新稳定版中与自身芯片匹配的 `-ota.bin`，HTTPS 下载并通过 ESP-IDF 镜像与芯片校验后切换 OTA 槽重启。
+控制页通过 `GET /api/ota/online` 读取设备版本和芯片，由浏览器读取在线烧录站的 `releases.json`（由 Release 发布流程生成；不可用时回退 GitHub API），从在线烧录站下载对应 `-ota.bin`，检查长度、应用头、芯片和版本后，携带设备认证上传到 `POST /api/upload`。设备校验镜像、切换 OTA 槽并重启；ESP 无需访问互联网。烧录站尚未同步新版本时可稍后重试，或使用本地文件上传。
+
+以下设备端直接访问 GitHub 的接口仍保留兼容，当前控制页不再调用其检查和下载操作：
 
 - `GET /api/ota/online`：当前版本、芯片、联网状态、最新版本、升级状态、字节进度和错误；`release_notes` 返回该版本的 GitHub Release 更新说明。
 - `POST /api/ota/online/check`：异步检查最新稳定版，返回 202。

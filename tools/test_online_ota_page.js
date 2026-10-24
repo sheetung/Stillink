@@ -1,27 +1,29 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const page=fs.readFileSync('page/index.html','utf8');
 const source=page.split('/* ---------- GitHub Release 在线升级 ---------- */')[1].split('/* ---------- 统一升级入口')[0];
-const nodes=new Map(),requests=[];
+const nodes=new Map(),requests=[],uploads=[];
 const $=id=>{if(!nodes.has(id))nodes.set(id,{disabled:false,hidden:true,value:0,textContent:'',open:false,shown:0,showModal(){this.open=true;this.shown++;},close(){this.open=false;},events:{},addEventListener(name,fn){this.events[name]=fn;}});return nodes.get(id);};
-let state={current:'V1.2.2',chip:'esp32s3',connected:false,status:'idle',latest:'',update_available:false,size:0,received:0,error:''},accept=true;
-vm.runInNewContext(source,{$,LOCAL_PREVIEW:false,api:p=>'http://192.168.31.14'+p,setTimeout(){return 1;},clearTimeout(){},confirm:()=>accept,fetch:async(url,options)=>{requests.push({url,options});return {ok:true,json:async()=>({...state})};}});
-const flush=()=>new Promise(setImmediate);
+let device={current:'V1.6.1',chip:'esp32s3',connected:false,status:'idle'},accept=true,downloadError=false,uploadStatus=200,networkError=false;
+let release={tag_name:'v2.0.0',body:'- 新 UI\n<script>unsafe</script>',assets:[{name:'stillink-v2.0.0-esp32s3-ota.bin',size:256}]};
+function image(chip=9,ver='V2.0.0'){const d=new Uint8Array(256);d[0]=0xe9;d[12]=chip;d.set([0x32,0x54,0xcd,0xab],32);d.set(Buffer.from(ver),48);return d;}
+let bytes=image(),stream=false,manifestDown=false,api403=true;
+class XHR{constructor(){this.upload={};this.headers={};}open(method,url){this.method=method;this.url=url;}setRequestHeader(k,v){this.headers[k]=v;}send(data){uploads.push(this);this.data=data;this.upload.onprogress({lengthComputable:true,loaded:256,total:256});this.status=uploadStatus;this.responseText=uploadStatus===200?'OK firmware, rebooting':'ota verify failed';networkError?this.onerror():this.onload();}}
+vm.runInNewContext(source,{$,LOCAL_PREVIEW:false,api:p=>'http://192.168.1.20'+p,deviceToken:'device-only-token',setTimeout(){return 1;},clearTimeout(){},confirm:()=>accept,AbortController,Blob,Uint8Array,XMLHttpRequest:XHR,fetch:async(url,options)=>{requests.push({url,options});if(url.includes('/api/ota/online'))return{ok:true,json:async()=>({...device})};if(url.endsWith('/releases.json'))return manifestDown?{ok:false,status:404}:{ok:true,json:async()=>({releases:release.assets.map(a=>({version:release.tag_name,notes:release.body,chip:a.name.includes('esp32c3')?'esp32c3':'esp32s3',ota:{file:a.name,size:a.size}}))})};if(url.includes('api.github.com'))return api403?{ok:false,status:403}:{ok:true,json:async()=>release};if(downloadError)return{ok:false,status:404};let offset=0;return{ok:true,body:stream?{getReader:()=>({read:async()=>{if(offset>=bytes.length)return{done:true};const value=bytes.slice(offset,offset+64);offset+=value.length;return{done:false,value};},cancel:async()=>{}})}:null,arrayBuffer:async()=>bytes.buffer};}});
+const flush=()=>new Promise(setImmediate),click=id=>$(id).events.click();
 (async()=>{
- await flush();assert($('onlineOtaCheck').disabled);assert($('onlineOtaInstall').disabled);
- state.connected=true;await $('gearBtn').events.click();assert(!$('onlineOtaCheck').disabled);assert($('onlineOtaInstall').disabled);
- state={...state,status:'ready',latest:'v1.2.3',update_available:true,size:1000};await $('gearBtn').events.click();assert(!$('onlineOtaInstall').disabled);
- assert.equal($('onlineOtaNotesDialog').shown,0);
- state.status='checking';await $('onlineOtaCheck').events.click();await flush();assert.equal($('onlineOtaNotesDialog').shown,0);
- state={...state,status:'ready',release_notes:'- 新增相簿\n<script>unsafe</script>'};await $('gearBtn').events.click();
- assert.equal($('onlineOtaNotesDialog').shown,1);assert.equal($('onlineOtaNotesBody').textContent,state.release_notes);
- assert.match($('onlineOtaNotesTitle').textContent,/v1.2.3/);assert.match($('onlineOtaNotesLink').href,/\/v1.2.3$/);
- await $('onlineOtaNotesClose').events.click();await $('gearBtn').events.click();assert.equal($('onlineOtaNotesDialog').shown,1);
- state.status='error';await $('onlineOtaCheck').events.click();await flush();assert.equal($('onlineOtaNotesDialog').shown,1);
- state={...state,status:'ready',release_notes:''};await $('onlineOtaCheck').events.click();await flush();assert.equal($('onlineOtaNotesDialog').shown,2);assert.match($('onlineOtaNotesBody').textContent,/未提供更新说明/);await $('onlineOtaNotesClose').events.click();
- accept=false;let count=requests.length;await $('onlineOtaInstall').events.click();await flush();assert.equal(requests.length,count);
- accept=true;state={...state,status:'downloading',received:500};await $('onlineOtaInstall').events.click();await flush();assert.equal(requests.at(-1).url,'http://192.168.31.14/api/ota/online/install');assert.equal(requests.at(-1).options.method,'POST');assert.equal($('onlineOtaProgress').value,50);assert($('upGo').disabled);
- state={...state,status:'error',error:'GitHub HTTP 403'};await $('gearBtn').events.click();assert.match($('onlineOtaMessage').textContent,/403/);assert(!$('upGo').disabled);assert($('onlineOtaInstall').disabled);
- state={...state,status:'ready',latest:'v1.2.2',update_available:false};await $('gearBtn').events.click();assert.match($('onlineOtaMessage').textContent,/已是最新/);assert($('onlineOtaInstall').disabled);
- state.status='rebooting';await $('gearBtn').events.click();assert.match($('onlineOtaMessage').textContent,/校验通过/);
- console.log('ONLINE OTA UI: PASS (offline, LAN target, confirmation, progress, error, latest, reboot)');
+ await flush();assert(!$('onlineOtaCheck').disabled,'ESP Internet connection is not required');
+ await click('onlineOtaCheck');assert(!$('onlineOtaInstall').disabled);assert(!$('upGo').disabled);assert.equal($('onlineOtaNotesBody').textContent,release.body);assert.equal($('onlineOtaNotesDialog').shown,1);
+ accept=false;await click('onlineOtaInstall');assert.equal(uploads.length,0);accept=true;
+ stream=true;await click('onlineOtaInstall');assert.equal(uploads.length,1);assert.equal(uploads[0].url,'http://192.168.1.20/api/upload');assert.equal(uploads[0].headers.Authorization,'Bearer device-only-token');assert.match($('onlineOtaMessage').textContent,/校验通过/);
+ assert(!requests.some(r=>r.url.endsWith('/check')||r.url.endsWith('/install')));
+ assert(requests.some(r=>r.url==='https://092399.xyz/Stillink/firmware/stillink-v2.0.0-esp32s3-ota.bin'));
+ assert(!requests.filter(r=>r.url.startsWith('https:')).some(r=>r.options.headers?.Authorization));
+ await click('onlineOtaCheck');downloadError=true;await click('onlineOtaInstall');assert.match($('onlineOtaMessage').textContent,/尚未同步/);assert.equal(uploads.length,1);downloadError=false;
+ for(const bad of [new Uint8Array(4),image(5),image(9,'V1.6.1')]){bytes=bad;await click('onlineOtaInstall');assert.equal(uploads.length,1);assert.match($('onlineOtaMessage').textContent,/不完整|不匹配/);}
+ bytes=image();uploadStatus=500;await click('onlineOtaInstall');assert.match($('onlineOtaMessage').textContent,/HTTP 500/);assert(!/校验通过/.test($('onlineOtaMessage').textContent));
+ uploadStatus=200;networkError=true;await click('onlineOtaInstall');assert.match($('onlineOtaMessage').textContent,/未确认升级结果/);networkError=false;
+ device={...device,current:'V2.0.0'};await click('gearBtn');await click('onlineOtaCheck');assert($('onlineOtaInstall').disabled);assert.match($('onlineOtaMessage').textContent,/已是最新/);
+ device={...device,current:'V1.6.1',chip:'esp32c3'};release.assets=[{name:'stillink-v2.0.0-esp32c3-ota.bin',size:256}];bytes=image(5);await click('gearBtn');await click('onlineOtaCheck');await click('onlineOtaInstall');assert.match($('onlineOtaMessage').textContent,/校验通过/);
+ assert(!requests.some(r=>r.url.includes('api.github.com')),'static manifest must avoid rate-limited API');manifestDown=true;api403=false;await click('onlineOtaCheck');assert.match($('onlineOtaMessage').textContent,/新版本/);release={tag_name:'v2.0.1',assets:[]};await click('onlineOtaCheck');assert($('onlineOtaInstall').disabled);assert.match($('onlineOtaMessage').textContent,/未提供/);
+ console.log('ONLINE OTA UI: PASS (static manifest with rate-limited GitHub, API fallback and browser download, S3/C3, no ESP Internet dependency, confirmation, auth upload, size/chip/version validation, download failure, write failure, unconfirmed reset, latest)');
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -32,7 +32,7 @@ if(process.argv.includes('--local')){
   for(const item of await response.json()){
     if(item.draft||item.prerelease||!/^v\d+\.\d+\.\d+$/.test(item.tag_name))continue;
     for(const chip of ['esp32s3','esp32c3']){
-    const release={version:item.tag_name,chip};
+    const release={version:item.tag_name,chip,notes:item.body||""};
     for(const [type,suffix] of [['ota','-ota'],['full','']]){
       const file=`stillink-${item.tag_name}-${chip}${suffix}.bin`;
       const found=item.assets.find(a=>a.name===file);if(!found)continue;
@@ -55,5 +55,6 @@ html=html.replace('__MANIFEST__',()=>JSON.stringify(manifest)).replace('__BUNDLE
 const licenses=await Promise.all(['esptool-js/LICENSE','spark-md5/LICENSE','pako/LICENSE','atob-lite/LICENSE.md'].map(async name=>name+'\n'+await readFile(path.join(dir,'node_modules',name),'utf8')));
 html=html.replace('</body>',()=>'<script type="text/plain" id="thirdPartyLicenses">'+licenses.join('\n\n').replace(/<\/script/gi,'<\\/script')+'</script></body>');
 await writeFile(path.join(output,'index.html'),html);
+await writeFile(path.join(output,'releases.json'),JSON.stringify(manifest));
 await writeFile(path.join(output,'.nojekyll'),'');
 console.log(`Built page with ${manifest.releases.length} firmware releases`);
