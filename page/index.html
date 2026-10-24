@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="epaper-page-version" content="V2.0.2">
+<meta name="epaper-page-version" content="V2.0.3">
 <title>Stillink</title>
 <style>
 /* ===== Cropper.js v1.6.2 | MIT | https://github.com/fengyuanchen/cropperjs ===== */
@@ -1098,6 +1098,7 @@ input[type=date],input[type=time]{font:inherit;color:var(--ink);background:var(-
  .slider label{width:68px;}
 }
 #updateNotice{display:inline-flex;align-items:center;gap:5px;flex-shrink:0;min-height:28px;padding:4px 9px;border:1px solid var(--line);border-radius:999px;background:var(--soft);color:var(--acc);font-size:12px;white-space:nowrap;}
+#updateNotice[hidden]{display:none;}
 #updateNotice:hover{border-color:var(--acc);}
 @media(max-width:600px){#updateNoticeVersion{display:none;}#updateNotice{width:28px;height:28px;padding:0;justify-content:center;}#conn{flex-shrink:1;min-width:0;max-width:140px;overflow:hidden;text-overflow:ellipsis;}#hdrL{flex-shrink:0;}}
 </style>
@@ -3258,7 +3259,7 @@ function verNum(v){
   var m = /(\d+)\.(\d+)\.(\d+)/.exec(v || "");
   return m ? (+m[1] * 10000 + +m[2] * 100 + +m[3]) : 0;
 }
-var infoInFlight=null,infoController=null;
+var infoInFlight=null,infoController=null,onDeviceConnectionInfo=null;
 function refreshInfo(){
   if(LOCAL_PREVIEW){$("conn").textContent="本地预览（未连设备）";$("conn").classList.toggle("ok",false);return Promise.resolve();}
   if(infoInFlight)return infoInFlight;
@@ -3292,6 +3293,7 @@ function refreshInfo(){
     var ok = true;
     $("conn").textContent = j.ssid ? ("已连接 · " + j.ssid) : "已连接";
     $("conn").classList.toggle("ok", ok);
+    if(onDeviceConnectionInfo)onDeviceConnectionInfo(j);
     if (j.panel) PANEL.name = j.panel;
     if (j.panel === "A1") PANEL.id = 1; else PANEL.id = 0;
     /* 设备实际在用的 A1 驱动模式决定帧几何（旧固件无 a1_mode -> 恒 768x552）。 */
@@ -3301,6 +3303,7 @@ function refreshInfo(){
   }).catch(function(e){
     $("conn").textContent=e.message==="auth"?"需要登录":"未连接";
     $("conn").classList.toggle("ok",false);
+    if(onDeviceConnectionInfo)onDeviceConnectionInfo(null);
   }).finally(function(){clearTimeout(timeout);infoController=null;infoInFlight=null;});
   return infoInFlight;
 }
@@ -3624,12 +3627,23 @@ $("savePanel").addEventListener("click", function(){
 /* ---------- 维护 ---------- */
 /* ---------- GitHub Release 在线升级 ---------- */
 (function(){
-  var state=null,asset=null,busy=false,autoChecked=false,autoTimer=null,lastCheck=0;
+  var state=null,asset=null,busy=false,autoChecked=false,reachable=true,lastUptime=null,recheckPending=false;
   function updateNotice(){
-    $("updateNotice").hidden=!asset;
-    if(asset){$("updateNoticeVersion").textContent=asset.version;$("updateNotice").title="发现新版本 "+asset.version+"，前往固件升级";$("updateNotice").setAttribute("aria-label",$("updateNotice").title);}
+    var available=!!(reachable&&state&&asset&&newer(version(asset.version),version(state.current)));
+    $("updateNotice").hidden=!available;
+    if(!available)$("updateNoticeVersion").textContent="";
+    if(available){$("updateNoticeVersion").textContent=asset.version;$("updateNotice").title="发现新版本 "+asset.version+"，前往固件升级";$("updateNotice").setAttribute("aria-label",$("updateNotice").title);}
   }
-  function scheduleCheck(){clearTimeout(autoTimer);if(!document.hidden&&!LOCAL_PREVIEW)autoTimer=setTimeout(function(){check(true);},1800000);}
+  function refreshAfterConnection(){if(busy){recheckPending=true;return;}autoChecked=false;load();}
+  onDeviceConnectionInfo=function(info){
+    if(!info){reachable=false;updateNotice();return;}
+    var reconnected=!reachable,restarted=lastUptime!=null&&info.uptime!=null&&info.uptime<lastUptime;
+    var changed=state&&info.fw&&state.current!==info.fw;
+    reachable=true;if(info.uptime!=null)lastUptime=info.uptime;
+    if(changed){state.current=info.fw;if(asset&&!newer(version(asset.version),version(state.current)))asset=null;display("idle",asset?"发现新版本，可下载并升级。":"正在重新检查固件版本…");}
+    updateNotice();
+    if(changed||reconnected||restarted)refreshAfterConnection();
+  };
   var releaseAPI="https://api.github.com/repos/sheetung/Stillink/releases/latest";
   var firmwareBase="https://092399.xyz/Stillink/firmware/";
   function version(v){var m=/^v?(\d+)\.(\d+)\.(\d+)$/i.exec(v||"");return m?m.slice(1).map(Number):null;}
@@ -3659,7 +3673,7 @@ $("savePanel").addEventListener("click", function(){
   }
   async function check(silent){
     silent=silent===true;
-    if(busy||!state)return;busy=true;asset=null;lastCheck=Date.now();
+    if(busy||!state)return;busy=true;asset=null;
     if(!silent)display("checking","正在检查最新固件…");
     try{
       var release,found;
@@ -3686,7 +3700,7 @@ $("savePanel").addEventListener("click", function(){
       $("onlineOtaNotesLink").href="https://github.com/sheetung/Stillink/releases/tag/"+encodeURIComponent(release.tag_name);
       if(!silent&&!$("onlineOtaNotesDialog").open)$("onlineOtaNotesDialog").showModal();
     }catch(e){if(!silent)display("error","检查失败："+(e.name==="AbortError"?"请求超时":e.message)+"。请检查网络后重试，也可使用文件上传升级。");}
-    finally{busy=false;$("onlineOtaCheck").disabled=!state;$("onlineOtaInstall").disabled=!asset;$("upGo").disabled=false;updateNotice();scheduleCheck();}
+    finally{busy=false;$("onlineOtaCheck").disabled=!state;$("onlineOtaInstall").disabled=!asset;$("upGo").disabled=false;updateNotice();if(recheckPending){recheckPending=false;refreshAfterConnection();}}
   }
   async function download(selected){
     var controller=new AbortController(),timer=setTimeout(function(){controller.abort();},120000);
@@ -3723,10 +3737,10 @@ $("savePanel").addEventListener("click", function(){
     var selected=asset;busy=true;display("downloading","浏览器正在下载固件…",0);
     try{var data=await download(selected);display("uploading","正在上传至设备，请勿断电。",0);await upload(data);asset=null;updateNotice();display("rebooting","固件已校验通过，设备重启中；45 秒内勿断电，随后刷新页面。");}
     catch(e){display("error","升级失败："+(e.name==="AbortError"?"下载超时":e.message)+"。可重试或使用文件上传升级。");}
-    finally{busy=false;$("onlineOtaCheck").disabled=!state;$("onlineOtaInstall").disabled=!asset;$("upGo").disabled=false;}
+    finally{busy=false;$("onlineOtaCheck").disabled=!state;$("onlineOtaInstall").disabled=!asset;$("upGo").disabled=false;if(recheckPending){recheckPending=false;refreshAfterConnection();}}
   }
   $("updateNotice").addEventListener("click",function(){setTab("device");$("maintenanceSettings").open=true;$("onlineOtaInfo").scrollIntoView({block:"center",behavior:"smooth"});$("onlineOtaCheck").focus({preventScroll:true});});
-  document.addEventListener("visibilitychange",function(){clearTimeout(autoTimer);if(!document.hidden){if(!state)load();else if(Date.now()-lastCheck>=1800000)check(true);else scheduleCheck();}});
+  document.addEventListener("visibilitychange",function(){if(!document.hidden&&!autoChecked)load();});
   $("onlineOtaCheck").addEventListener("click",function(){return check(false);});
   $("onlineOtaInstall").addEventListener("click",install);
   $("onlineOtaNotesClose").addEventListener("click",function(){$("onlineOtaNotesDialog").close();});
