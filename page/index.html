@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="epaper-page-version" content="V2.0.1">
+<meta name="epaper-page-version" content="V2.0.2">
 <title>Stillink</title>
 <style>
 /* ===== Cropper.js v1.6.2 | MIT | https://github.com/fengyuanchen/cropperjs ===== */
@@ -1097,6 +1097,9 @@ input[type=date],input[type=time]{font:inherit;color:var(--ink);background:var(-
  .slider{gap:8px;}.slider>input[type=range]{min-width:0;flex:1;}
  .slider label{width:68px;}
 }
+#updateNotice{display:inline-flex;align-items:center;gap:5px;flex-shrink:0;min-height:28px;padding:4px 9px;border:1px solid var(--line);border-radius:999px;background:var(--soft);color:var(--acc);font-size:12px;white-space:nowrap;}
+#updateNotice:hover{border-color:var(--acc);}
+@media(max-width:600px){#updateNoticeVersion{display:none;}#updateNotice{width:28px;height:28px;padding:0;justify-content:center;}#conn{flex-shrink:1;min-width:0;max-width:140px;overflow:hidden;text-overflow:ellipsis;}#hdrL{flex-shrink:0;}}
 </style>
 <body>
 <dialog id="loginDialog" class="releaseDialog" aria-labelledby="loginTitle">
@@ -1127,6 +1130,7 @@ input[type=date],input[type=time]{font:inherit;color:var(--ink);background:var(-
   </div>
   <div id="hdrR">
     <div id="conn">未连接</div>
+    <button id="updateNotice" type="button" hidden title="前往固件升级" aria-label="有可用更新，前往固件升级"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 16v5h14v-5"/></svg><span id="updateNoticeVersion">有更新</span></button>
     <div class="themePicker" id="themePicker">
       <button class="iconbtn" id="themeBtn" aria-label="主题换肤" title="主题换肤" aria-expanded="false" aria-controls="themePalette"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18h1.5a2.5 2.5 0 0 0 1.7-4.3 1.5 1.5 0 0 1 1.1-2.5H18a4 4 0 0 0 4-4C22 6 17 3 12 3Z"/><circle cx="7.5" cy="10" r=".7"/><circle cx="10" cy="6.8" r=".7"/><circle cx="14" cy="6.8" r=".7"/><circle cx="17" cy="9" r=".7"/></svg></button>
       <div class="themePalette" id="themePalette" hidden><p>主题配色 · 仅改变网页外观</p><div class="themeSwatches" id="themeSwatches" role="group" aria-label="选择主题颜色"></div><div class="themeModeRow"><button class="mini" id="modeLight" type="button">浅色</button><button class="mini" id="modeDark" type="button">深色</button></div></div>
@@ -1562,10 +1566,10 @@ input[type=date],input[type=time]{font:inherit;color:var(--ink);background:var(-
     <div class="row"><button class="mini" id="savePanel">保存</button><span class="savestate" id="panelmsg"></span></div>
     </details>
 
-    <details>
+    <details id="maintenanceSettings">
       <summary>系统维护与升级</summary>
       <div class="row"><b style="font-size:13px">在线固件升级</b></div>
-      <p class="hint" id="onlineOtaInfo">连接 Wi-Fi 后，可从 GitHub Release 检查并下载对应芯片的 OTA 固件。</p>
+      <p class="hint" id="onlineOtaInfo">浏览器检查并下载固件，再上传至设备完成升级。</p>
       <div class="row"><button class="mini" id="onlineOtaCheck" disabled>检查新版本</button><button class="mini" id="onlineOtaInstall" disabled>下载并升级</button></div>
       <progress id="onlineOtaProgress" max="100" value="0" hidden style="width:100%"></progress>
       <p class="hint" id="onlineOtaMessage"></p>
@@ -3254,8 +3258,17 @@ function verNum(v){
   var m = /(\d+)\.(\d+)\.(\d+)/.exec(v || "");
   return m ? (+m[1] * 10000 + +m[2] * 100 + +m[3]) : 0;
 }
+var infoInFlight=null,infoController=null;
 function refreshInfo(){
-  fetch(api("/api/info")).then(function(r){ return r.json(); }).then(function(j){
+  if(LOCAL_PREVIEW){$("conn").textContent="本地预览（未连设备）";$("conn").classList.toggle("ok",false);return Promise.resolve();}
+  if(infoInFlight)return infoInFlight;
+  infoController=new AbortController();
+  var timeout=setTimeout(function(){if(infoController)infoController.abort();},4000);
+  infoInFlight=fetch(api("/api/info"),{cache:"no-store",signal:infoController.signal}).then(function(r){
+    if(!r.ok)throw new Error(r.status===401?"auth":"HTTP "+r.status);
+    return r.json();
+  }).then(function(j){
+    if(!j||!(j.ver||j.fw))throw new Error("Invalid device info");
     var ver = j.ver || j.fw || "";
     DEV_FW = j.fw || "";
     var el = $("i-verD");
@@ -3276,8 +3289,8 @@ function refreshInfo(){
     $("i-heap").textContent = j.heap != null ? (j.heap/1024).toFixed(0) + " KB" : "—";
     $("i-bat").textContent = (j.bat_mv > 0) ? (j.bat_mv/1000).toFixed(2) + " V" : "未连接";
     $("i-clients").textContent = j.clients != null ? j.clients : "—";
-    var ok = (j.ssid != null);
-    $("conn").textContent = ok ? ("已连接 · " + j.ssid) : "未连接";
+    var ok = true;
+    $("conn").textContent = j.ssid ? ("已连接 · " + j.ssid) : "已连接";
     $("conn").classList.toggle("ok", ok);
     if (j.panel) PANEL.name = j.panel;
     if (j.panel === "A1") PANEL.id = 1; else PANEL.id = 0;
@@ -3285,8 +3298,30 @@ function refreshInfo(){
     if (j.a1_mode != null) A1MODE = clamp(+j.a1_mode || 1, 1, A1MODE_MAX);
     if (applyPanelGeom(PANEL.id, A1MODE)) onGeomChanged();
     syncPanelRows();
-  }).catch(function(){ $("conn").textContent = LOCAL_PREVIEW ? "本地预览（未连设备）" : "未连接"; });
+  }).catch(function(e){
+    $("conn").textContent=e.message==="auth"?"需要登录":"未连接";
+    $("conn").classList.toggle("ok",false);
+  }).finally(function(){clearTimeout(timeout);infoController=null;infoInFlight=null;});
+  return infoInFlight;
 }
+/* ---------- 设备连接心跳 ---------- */
+(function(){
+  var timer=null,generation=0;
+  function stop(){clearTimeout(timer);timer=null;generation++;}
+  function check(){
+    stop();
+    if(document.hidden||LOCAL_PREVIEW)return;
+    var run=generation;
+    refreshInfo().finally(function(){if(run===generation&&!document.hidden)timer=setTimeout(check,10000);});
+  }
+  document.addEventListener("visibilitychange",function(){
+    stop();if(document.hidden){if(infoController)infoController.abort();}else check();
+  });
+  window.addEventListener("online",check);
+  window.addEventListener("offline",check);
+  check();
+})();
+/* ---------- 设备连接心跳结束 ---------- */
 function loadSettings(){
   refreshWifiStatus();
   fetch(api("/api/settings")).then(function(r){ return r.json(); }).then(function(s){
@@ -3589,7 +3624,12 @@ $("savePanel").addEventListener("click", function(){
 /* ---------- 维护 ---------- */
 /* ---------- GitHub Release 在线升级 ---------- */
 (function(){
-  var state=null,asset=null,busy=false;
+  var state=null,asset=null,busy=false,autoChecked=false,autoTimer=null,lastCheck=0;
+  function updateNotice(){
+    $("updateNotice").hidden=!asset;
+    if(asset){$("updateNoticeVersion").textContent=asset.version;$("updateNotice").title="发现新版本 "+asset.version+"，前往固件升级";$("updateNotice").setAttribute("aria-label",$("updateNotice").title);}
+  }
+  function scheduleCheck(){clearTimeout(autoTimer);if(!document.hidden&&!LOCAL_PREVIEW)autoTimer=setTimeout(function(){check(true);},1800000);}
   var releaseAPI="https://api.github.com/repos/sheetung/Stillink/releases/latest";
   var firmwareBase="https://092399.xyz/Stillink/firmware/";
   function version(v){var m=/^v?(\d+)\.(\d+)\.(\d+)$/i.exec(v||"");return m?m.slice(1).map(Number):null;}
@@ -3613,11 +3653,14 @@ $("savePanel").addEventListener("click", function(){
     try{var s=await request(api("/api/ota/online"),15000);if(!version(s.current)||!/^esp32(s3|c3)$/.test(s.chip))throw new Error("无法识别设备版本或芯片");
       if(state&&(state.current!==s.current||state.chip!==s.chip)){asset=null;state=null;}
       state=Object.assign(state||{}, {current:s.current,chip:s.chip});
-      display("idle",asset?"发现新版本，可下载并升级。":"点击检查新版本。");
-    }catch(e){state=null;asset=null;display("error","无法读取设备信息，请检查连接或使用文件上传升级。");}
+      display("idle",asset?"发现新版本，可下载并升级。":"点击检查新版本。");updateNotice();
+      if(!autoChecked&&!document.hidden){autoChecked=true;check(true);}
+    }catch(e){state=null;asset=null;autoChecked=false;updateNotice();display("error","无法读取设备信息，请检查连接或使用文件上传升级。");}
   }
-  async function check(){
-    if(busy||!state)return;busy=true;asset=null;display("checking","正在检查最新固件…");
+  async function check(silent){
+    silent=silent===true;
+    if(busy||!state)return;busy=true;asset=null;lastCheck=Date.now();
+    if(!silent)display("checking","正在检查最新固件…");
     try{
       var release,found;
       try{
@@ -3641,9 +3684,9 @@ $("savePanel").addEventListener("click", function(){
       $("onlineOtaNotesTitle").textContent=release.tag_name+" · 更新内容";
       $("onlineOtaNotesBody").textContent=release.body||"此版本未提供更新说明，可前往 Release 页面查看。";
       $("onlineOtaNotesLink").href="https://github.com/sheetung/Stillink/releases/tag/"+encodeURIComponent(release.tag_name);
-      if(!$("onlineOtaNotesDialog").open)$("onlineOtaNotesDialog").showModal();
-    }catch(e){display("error","检查失败："+(e.name==="AbortError"?"请求超时":e.message)+"。请检查网络后重试，也可使用文件上传升级。");}
-    finally{busy=false;$("onlineOtaCheck").disabled=!state;$("onlineOtaInstall").disabled=!asset;$("upGo").disabled=false;}
+      if(!silent&&!$("onlineOtaNotesDialog").open)$("onlineOtaNotesDialog").showModal();
+    }catch(e){if(!silent)display("error","检查失败："+(e.name==="AbortError"?"请求超时":e.message)+"。请检查网络后重试，也可使用文件上传升级。");}
+    finally{busy=false;$("onlineOtaCheck").disabled=!state;$("onlineOtaInstall").disabled=!asset;$("upGo").disabled=false;updateNotice();scheduleCheck();}
   }
   async function download(selected){
     var controller=new AbortController(),timer=setTimeout(function(){controller.abort();},120000);
@@ -3678,11 +3721,13 @@ $("savePanel").addEventListener("click", function(){
     if(busy||!state||!asset)return;
     if(!confirm("下载 "+asset.version+" 并升级？设备将重启，屏幕等设置恢复默认，Wi-Fi、热点凭据和服务配置保留。升级期间请勿断电。"))return;
     var selected=asset;busy=true;display("downloading","浏览器正在下载固件…",0);
-    try{var data=await download(selected);display("uploading","正在上传至设备，请勿断电。",0);await upload(data);asset=null;display("rebooting","固件已校验通过，设备重启中；45 秒内勿断电，随后刷新页面。");}
+    try{var data=await download(selected);display("uploading","正在上传至设备，请勿断电。",0);await upload(data);asset=null;updateNotice();display("rebooting","固件已校验通过，设备重启中；45 秒内勿断电，随后刷新页面。");}
     catch(e){display("error","升级失败："+(e.name==="AbortError"?"下载超时":e.message)+"。可重试或使用文件上传升级。");}
     finally{busy=false;$("onlineOtaCheck").disabled=!state;$("onlineOtaInstall").disabled=!asset;$("upGo").disabled=false;}
   }
-  $("onlineOtaCheck").addEventListener("click",check);
+  $("updateNotice").addEventListener("click",function(){setTab("device");$("maintenanceSettings").open=true;$("onlineOtaInfo").scrollIntoView({block:"center",behavior:"smooth"});$("onlineOtaCheck").focus({preventScroll:true});});
+  document.addEventListener("visibilitychange",function(){clearTimeout(autoTimer);if(!document.hidden){if(!state)load();else if(Date.now()-lastCheck>=1800000)check(true);else scheduleCheck();}});
+  $("onlineOtaCheck").addEventListener("click",function(){return check(false);});
   $("onlineOtaInstall").addEventListener("click",install);
   $("onlineOtaNotesClose").addEventListener("click",function(){$("onlineOtaNotesDialog").close();});
   $("gearBtn").addEventListener("click",load);
