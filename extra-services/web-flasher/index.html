@@ -1,9 +1,87 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Stillink · 在线烧录</title>
 <style>
-:root{font-family:system-ui,"Microsoft YaHei",sans-serif;color:#252c37;background:#f5f7fa;font-synthesis:none}*{box-sizing:border-box}body{margin:0}header,main,footer{max-width:1120px;margin:auto;padding:24px}header{display:flex;align-items:center;justify-content:space-between}a{color:#365b80;text-decoration:none}header strong{font-size:24px;letter-spacing:-1px}header span{font-size:13px;color:#657387}h1{font-size:38px;letter-spacing:-1px;margin:20px 0 12px}p{line-height:1.7;color:#657387}.intro{max-width:650px;margin-bottom:28px}.steps{display:flex;gap:24px;margin:26px 0;color:#657387;font-size:13px}.steps b{color:#2e5c9e;margin-right:7px}.grid{display:grid;grid-template-columns:1.05fr 1fr;gap:20px}.card{background:white;border:1px solid #dae0e7;border-radius:20px;padding:26px}h2{font-size:18px;margin:0 0 20px}.choices{display:flex;gap:8px;margin-bottom:20px}.choices button{flex:1}button{font:inherit;cursor:pointer;border:1px solid #dae0e7;border-radius:11px;padding:11px 16px;background:#e4e9f1;color:#435773}button.selected{color:#2e5c9e;background:#e8eef7;border-color:#94a3b8}button:disabled{opacity:.5;cursor:not-allowed}.primary{background:#2e5c9e;border-color:#2e5c9e;color:white;font-weight:600}.firmware{background:#f5f7fa;border:1px solid #dae0e7;border-radius:14px;padding:20px}.badge{display:inline-block;font-size:11px;color:#365b80;background:#e8eef7;padding:5px 9px;border-radius:6px}.firmware h3{margin:14px 0 10px;font-size:23px}.meta{font-size:13px;color:#657387;line-height:1.9}.hint{font-size:12px;margin:12px 0}.device{display:flex;align-items:center;gap:12px;padding:17px;background:#eef1f6;border-radius:13px;margin-bottom:18px}.dot{width:9px;height:9px;background:#bbb;border-radius:50%}.dot.online{background:#365b80}.device small{display:block;color:#657387;margin-top:5px}.actions{display:flex;gap:9px;margin:18px 0}.actions button{flex:1}.flash{width:100%;padding:14px}.status{min-height:48px;font-size:13px;line-height:1.7;color:#657387;margin:15px 0}.status.error{color:#b3433a}.status.success{color:#365b80}progress{width:100%;height:9px;accent-color:#365b80}.progressLabel{display:flex;justify-content:space-between;font-size:12px;color:#657387;margin-top:9px}label{display:block;font-size:13px;margin:15px 0 7px}input,select{width:100%;font:inherit;padding:10px;border:1px solid #dae0e7;border-radius:9px;background:white}input[type=checkbox]{width:auto;margin-right:7px}.erase{display:flex;align-items:center;font-size:13px}.notice{background:#fff0db;border:1px solid #edd4ae;padding:16px 20px;border-radius:14px;font-size:13px;line-height:1.8;margin-bottom:20px}.notice code{display:block;overflow-wrap:anywhere;font-size:12px;margin-top:8px}details{margin-top:20px}summary{cursor:pointer;color:#657387;font-size:13px}pre{background:#f3f3f1;color:#555;padding:16px;border-radius:12px;max-height:240px;overflow:auto;font-size:11px;white-space:pre-wrap;overflow-wrap:anywhere}footer{font-size:12px;color:#657387;text-align:center;padding:28px}[hidden]{display:none!important}button:focus-visible,a:focus-visible{outline:3px solid #a6b9d5;outline-offset:3px}@media(max-width:760px){.grid{grid-template-columns:1fr}header,main{padding:20px}h1{font-size:30px}.card{padding:20px}.steps{gap:15px}}
-.firmware-selects{display:grid;grid-template-columns:1fr 1fr;gap:12px}.firmware-selects>div{min-width:0}dialog{width:min(440px,calc(100% - 32px));border:1px solid #dae0e7;border-radius:20px;padding:26px;color:#252c37;box-shadow:0 20px 70px #25384c26}dialog::backdrop{background:#25384c66}dialog h2{margin-bottom:16px}dialog dl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0;background:#f5f7fa;padding:16px;border-radius:12px}dialog dt{color:#657387}dialog dd{margin:0;text-align:right;font-weight:600}dialog p{font-size:13px}dialog .actions{justify-content:flex-end;margin-bottom:0}dialog .actions button{flex:initial}</style></head><body>
-<header><strong>Stillink<span> · 在线烧录</span></strong><a href="https://github.com/sheetung/Stillink" target="_blank" rel="noopener">GitHub ↗</a></header>
+:root{--bg:#f7f8fa;--card:#fff;--line:#e2e5e9;--ink:#1d232b;--mut:#6c7480;--faint:#9299a2;--acc:#396aa2;--acc-hover:#315d90;--acc-ink:#fff;--soft:#f0f3f7;--field:#fafbfc;--ring:#396aa233;--danger:#b44343;--ok:#348567;--r-1:8px;--r-3:14px;--sh-2:0 12px 32px #18253818;color-scheme:light}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 -apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;-webkit-font-smoothing:antialiased}header,main,footer{width:min(100%,1020px);margin:auto;padding:18px}header{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding-block:12px}header strong{display:flex;align-items:center;gap:9px;font-size:17px;letter-spacing:-.2px}header strong::before{content:'';width:16px;height:16px;border:1.6px solid currentColor;border-radius:4px;background:linear-gradient(currentColor,currentColor) center/100% 1.6px no-repeat}header strong span{font-size:12px;color:var(--mut);font-weight:400}.headerActions{display:flex;align-items:center;gap:14px}a{color:var(--ink);text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}a:hover{text-decoration-color:currentColor}header a{font-size:12px}h1{font-size:25px;letter-spacing:-.5px;margin:14px 0 5px}p{color:var(--mut);line-height:1.7}.intro{font-size:13px;margin:0 0 24px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:stretch}.grid>*{min-width:0}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px}h2{font-size:16px;margin:0 0 20px;letter-spacing:-.2px}.choices{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-bottom:20px;padding-bottom:12px}.choices button{flex:1}button{font:inherit;font-size:13px;cursor:pointer;min-height:40px;border:1px solid var(--line);border-radius:11px;padding:9px 14px;background:var(--card);color:var(--ink);transition:background-color .16s,border-color .16s}button:hover{background:var(--soft)}button.selected,button[aria-pressed=true]{background:var(--soft);border-color:var(--acc);color:var(--acc)}button:disabled{opacity:.45;cursor:not-allowed}.primary{background:var(--acc);color:var(--acc-ink);border-color:var(--acc);font-weight:600}.primary:hover{background:var(--acc-hover)}.firmware{background:var(--field);border:1px solid var(--line);border-radius:14px;padding:18px}.badge{display:inline-block;font-size:11px;color:var(--acc);background:var(--soft);padding:4px 8px;border-radius:6px}.firmware h3{margin:12px 0 8px;font-size:23px;letter-spacing:-.5px}.meta{font-size:12px;color:var(--mut);line-height:1.9}.hint{font-size:12px;margin:12px 0;overflow-wrap:anywhere}.device{display:flex;align-items:center;gap:12px;padding:16px;background:var(--field);border:1px solid var(--line);border-radius:12px;margin-bottom:20px}.device strong{font-size:13px}.dot{flex:none;width:7px;height:7px;background:var(--faint);border-radius:50%}.dot.online{background:var(--ok);box-shadow:0 0 0 3px #34856718}.device small{display:block;color:var(--mut);margin-top:4px;font-size:12px}.actions{display:flex;gap:8px;margin:18px 0}.actions button{flex:1;min-width:0}.flash{width:100%;margin-top:4px}.status{min-height:48px;font-size:13px;line-height:1.7;color:var(--mut);margin:15px 0;overflow-wrap:anywhere}.status.error{color:var(--danger)}.status.success{color:var(--ok)}progress{width:100%;height:8px;accent-color:var(--acc)}.progressLabel{display:flex;justify-content:space-between;font-size:12px;color:var(--mut);margin-top:8px;font-variant-numeric:tabular-nums}label{display:block;font-size:12px;color:var(--mut);margin:14px 0 6px}input,select{min-width:0;width:100%;min-height:40px;font:inherit;font-size:13px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink)}input[type=checkbox]{width:16px;height:16px;min-height:0;margin:0;flex:none;accent-color:var(--acc)}.erase{display:flex;gap:8px;align-items:center;font-size:13px;margin-top:18px}.notice{background:var(--soft);border:1px solid var(--line);padding:16px;border-radius:14px;font-size:13px;margin-bottom:20px}.notice code{display:block;overflow-wrap:anywhere;font-size:12px;margin-top:8px}details{margin-top:20px;border:1px solid var(--line);border-radius:14px;background:var(--card);padding:14px 18px}summary{cursor:pointer;color:var(--mut);font-size:12px}pre{background:var(--field);color:var(--mut);padding:14px;border-radius:10px;max-height:240px;overflow:auto;font-size:11px;white-space:pre-wrap;overflow-wrap:anywhere}footer{font-size:11px;color:var(--faint);text-align:center;padding-block:26px}[hidden]{display:none!important}:is(button,a,input,select,summary):focus-visible{outline:3px solid var(--ring);outline-offset:3px}.firmware-selects{display:grid;grid-template-columns:1fr 1fr;gap:12px}.firmware-selects>div{min-width:0}dialog{width:min(440px,calc(100% - 32px));border:1px solid var(--line);border-radius:18px;padding:24px;background:var(--card);color:var(--ink);box-shadow:var(--sh-2)}dialog::backdrop{background:#18253866}dialog dl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0;background:var(--field);padding:16px;border-radius:12px;font-size:13px}dialog dt{color:var(--mut)}dialog dd{margin:0;text-align:right;font-weight:600}dialog p{font-size:13px}dialog .actions{justify-content:flex-end;margin-bottom:0}dialog .actions button{flex:initial}.iconbtn{width:36px;height:36px;min-height:36px;padding:0;display:grid;place-items:center;background:transparent;border-color:transparent}.themePicker{position:relative}.themePalette{position:absolute;right:0;top:44px;z-index:30;width:300px;max-width:calc(100vw - 28px);padding:16px;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh-2)}.themePalette p{margin:0 0 12px;font-size:11px}.themeSwatches{display:grid;grid-template-columns:repeat(10,1fr);gap:7px}.themeSwatch{padding:0;width:100%;aspect-ratio:1;min-height:0;border-radius:6px;background:var(--swatch);border:1px solid #8884}.themeSwatch:hover,.themeSwatch[aria-pressed=true]{background:var(--swatch)}.themeSwatch[aria-pressed=true]{box-shadow:0 0 0 2px var(--card),0 0 0 3px var(--ink)}.themeModeRow{display:flex;gap:6px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}.themeModeRow button{flex:1}[data-mode=dark]{color-scheme:dark;--danger:#eb8383;--ok:#6fbf9c}
+@media(max-width:700px){.grid{grid-template-columns:1fr}header,main{padding-inline:16px}.card{padding:18px}header strong span{display:none}h1{font-size:23px}.firmware-selects{gap:10px}.actions button{padding-inline:8px}}@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style></head><body>
+<header><strong>Stillink<span> · 在线烧录</span></strong><div class="headerActions"><div class="themePicker" id="themePicker">
+      <button class="iconbtn" id="themeBtn" aria-label="主题换肤" title="主题换肤" aria-expanded="false" aria-controls="themePalette"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18h1.5a2.5 2.5 0 0 0 1.7-4.3 1.5 1.5 0 0 1 1.1-2.5H18a4 4 0 0 0 4-4C22 6 17 3 12 3Z"/><circle cx="7.5" cy="10" r=".7"/><circle cx="10" cy="6.8" r=".7"/><circle cx="14" cy="6.8" r=".7"/><circle cx="17" cy="9" r=".7"/></svg></button>
+      <div class="themePalette" id="themePalette" hidden><p>主题配色 · 仅改变网页外观</p><div class="themeSwatches" id="themeSwatches" role="group" aria-label="选择主题颜色"></div><div class="themeModeRow"><button class="mini" id="modeLight" type="button">浅色</button><button class="mini" id="modeDark" type="button">深色</button></div></div>
+    </div><a href="https://github.com/sheetung/Stillink" target="_blank" rel="noopener">GitHub ↗</a></div></header><script>
+/* Browser-only theme; photo processing and screen colors stay unchanged. */
+(function(){
+  /* 10 套主题：同一套版式，只换「色相」——强调色与底色同属一个色系 */
+  var themes=[
+    ['slate','雾蓝','#5b7fa6',215],['teal','青碧','#3d9a8f',174],
+    ['green','草绿','#5a9e4d',130],['sand','浅砂','#a8845c',34],
+    ['rose','玫红','#c05e6e',350],['violet','黛紫','#8a6fb0',265],
+    ['blue','海蓝','#4a7fb5',212],['gold','琥珀','#b8862f',42],
+    ['graphite','石墨','#6b7280',220],['jade','翡翠','#3f9e7d',160]
+  ];
+
+    var root=document.documentElement,button=document.getElementById('themeBtn'),panel=document.getElementById('themePalette'),swatches=document.getElementById('themeSwatches');
+  /* v2.2：主题 = 一个色相；强调色取同色相中深色，底色/边框同色系派生 */
+  var currentTheme = themes[0];
+  function tokensFor(hue, dark){
+    var accLight = dark ? 68 : 42, accSat = dark ? 42 : 46;
+    function m(s, l){ return 'hsl('+hue+' '+s+'% '+l+'%)'; }
+    return {
+      '--acc': m(accSat, accLight),
+      '--acc-hover': m(accSat+4, accLight + (dark?6:-4)),
+      '--acc-active': m(accSat+6, accLight + (dark?10:-7)),
+      '--acc-ink': '#fff',
+      '--bg': m(dark?12:18, dark?9:97.2),
+      '--surface-2': m(dark?10:18, dark?12.5:96.2),
+      '--card': dark ? m(12,12.5) : '#fff',
+      '--line': m(dark?8:15, dark?20:90),
+      '--line-strong': m(dark?7:13, dark?26:82),
+      '--ink': dark ? m(9,92) : m(20,14),
+      '--mut': dark ? m(7,62) : m(11,44),
+      '--faint': dark ? m(6,48) : m(9,60),
+      '--soft': m(dark?10:20, dark?17:95),
+      '--soft-ink': dark ? m(9,76) : m(14,32),
+      '--field': m(dark?10:24, dark?14:98),
+      '--ring': 'hsl('+hue+' '+accSat+'% '+accLight+'% / '+(dark?'.30':'.18')+')',
+      '--hi': 'hsl(45 94% '+(dark?58:55)+'%)',
+      '--hi-soft': dark ? 'hsl(46 45% 20%)' : 'hsl(46 100% 93%)',
+      '--acc-soft': m(dark?18:accSat, dark?20:94)
+    };
+  }
+  function isDark(){ return root.dataset.mode === 'dark'; }
+  function apply(theme){
+    currentTheme = theme || currentTheme;
+    var map = tokensFor(currentTheme[3], isDark());
+    Object.keys(map).forEach(function(k){ root.style.setProperty(k, map[k]); });
+    root.dataset.theme = currentTheme[0];
+    Array.from(swatches.children).forEach(function(b){
+      b.setAttribute('aria-pressed', String(b.dataset.theme === currentTheme[0]));
+    });
+    try{ localStorage.setItem('stillink-mode', isDark() ? 'dark' : 'light'); }catch(e){}
+  }
+  function setMode(mode){
+    root.dataset.mode = mode;
+    apply();
+    var l=document.getElementById('modeLight'), d=document.getElementById('modeDark');
+    if(l) l.setAttribute('aria-pressed', String(mode!=='dark'));
+    if(d) d.setAttribute('aria-pressed', String(mode==='dark'));
+  }
+  window.stillinkSetMode = setMode;
+  window.stillinkApplyTheme = apply;
+  var ml=document.getElementById('modeLight'), md=document.getElementById('modeDark');
+  if(ml) ml.addEventListener('click', function(){ setMode('light'); });
+  if(md) md.addEventListener('click', function(){ setMode('dark'); });
+  var savedMode=null; try{ savedMode=localStorage.getItem('stillink-mode'); }catch(e){}
+  if(!savedMode){ savedMode = (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light'; }
+  root.dataset.mode = savedMode;
+  themes.forEach(function(theme){var b=document.createElement('button');b.type='button';b.className='themeSwatch';b.dataset.theme=theme[0];b.style.setProperty('--swatch',theme[2]);b.title=theme[1];b.setAttribute('aria-label',theme[1]);b.addEventListener('click',function(){apply(theme);try{localStorage.setItem('stillink-theme',theme[0]);}catch(e){}});swatches.appendChild(b);});
+  var saved='slate';try{saved=localStorage.getItem('stillink-theme')||saved;}catch(e){}apply(themes.find(function(t){return t[0]===saved;})||themes[0]);
+  function close(){panel.hidden=true;button.setAttribute('aria-expanded','false');}
+  button.addEventListener('click',function(){panel.hidden=!panel.hidden;button.setAttribute('aria-expanded',String(!panel.hidden));});
+  document.addEventListener('click',function(e){if(!document.getElementById('themePicker').contains(e.target))close();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!panel.hidden){close();button.focus();}});
+})();
+</script>
 <main><h1>在线烧录</h1><p class="intro">选择固件，连接 USB 设备，开始烧录。</p>
 <div class="grid"><section class="card"><h2>选择固件</h2><div class="choices"><button id="chooseStillink" class="selected" aria-pressed="true">Stillink 固件</button><button id="chooseCustom" aria-pressed="false">其他固件</button></div>
 <div id="stillinkPane" class="firmware"><span class="badge" id="chipBadge">推荐 · ESP32-S3</span><h3>Stillink <span id="version"></span></h3><div class="firmware-selects"><div><label for="chip">设备型号</label><select id="chip"><option value="esp32s3">ESP32-S3</option><option value="esp32c3">ESP32-C3</option></select></div><div><label for="release">固件版本</label><select id="release"></select></div></div><label for="imageType">烧录方式</label><select id="imageType"><option value="ota">更新固件 · OTA 应用</option><option value="full">首次烧录 · 完整包</option></select><p class="hint" id="imageHint"></p><div class="meta">芯片 <span id="firmwareChip">ESP32-S3</span> · Flash 4 MB<br><span id="firmwareSize"></span></div><p class="hint" id="firmwareName"></p><a id="download" class="hint" download>下载固件 ↓</a> · <a href="https://github.com/sheetung/Stillink/releases" target="_blank" rel="noopener" class="hint">Release ↗</a></div>
