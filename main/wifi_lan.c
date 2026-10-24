@@ -1,3 +1,4 @@
+#include "display_scheduler.h"
 #include "connection_card.h"
 #include "auth.h"
 #include "wifi_lan.h"
@@ -49,8 +50,14 @@ static void set_hotspot_enabled(bool enabled)
         if (err == ESP_OK) {
             if (enabled) netif_ap_apply();
             if (!enabled) {
+#ifdef STILLINK_MDNS_DIAGNOSTIC
+                ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_NONE));
+                power_set_lan_light_sleep(false);
+                ESP_LOGW(TAG, "mDNS diagnostic: STA awake; Wi-Fi power saving and automatic light sleep disabled");
+#else
                 ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_MIN_MODEM));
                 power_set_lan_light_sleep(true);
+#endif
             }
             ESP_LOGI(TAG, "hotspot %s", enabled ? "restored" : "disabled; LAN only");
         } else {
@@ -96,21 +103,26 @@ static void station_event(void *arg, esp_event_base_t base, int32_t id, void *da
         ip_event_got_ip_t *event = data;
         xEventGroupClearBits(s_events, DISCONNECTED);
         xEventGroupSetBits(s_events, CONNECTED);
+        display_scheduler_wake();
         ESP_LOGI(TAG, "LAN ready: http://" IPSTR, IP2STR(&event->ip_info.ip));
+        ESP_LOGI(TAG, "STA acquired IP; mDNS component handles interface enable/announcement");
         if (auth_first_boot() && !s_first_ip_card) {
             s_first_ip_card = true;
             connection_card_request();
         }
     } else if (base == WIFI_EVENT && id == WIFI_EVENT_STA_DISCONNECTED) {
         wifi_event_sta_disconnected_t *event = data;
+        ESP_LOGW(TAG, "STA disconnected, reason=%u", (unsigned)event->reason);
         portENTER_CRITICAL(&s_lock);
         s_reason = event->reason;
         portEXIT_CRITICAL(&s_lock);
         xEventGroupClearBits(s_events, CONNECTED);
         xEventGroupSetBits(s_events, DISCONNECTED);
+        display_scheduler_wake();
     } else if (base == IP_EVENT && id == IP_EVENT_STA_LOST_IP) {
         xEventGroupClearBits(s_events, CONNECTED);
         xEventGroupSetBits(s_events, DISCONNECTED);
+        display_scheduler_wake();
     }
 }
 
@@ -291,8 +303,8 @@ static esp_err_t status_handler(httpd_req_t *req)
     json_escape(escaped, ssid);
     char response[384];
     snprintf(response, sizeof(response),
-             "{\"status\":\"%s\",\"ssid\":\"%s\",\"ip\":\"%s\",\"saved\":%s,\"reason\":%d}",
-             status, escaped, ip, saved ? "true" : "false", reason);
+             "{\"status\":\"%s\",\"ssid\":\"%s\",\"ip\":\"%s\",\"hostname\":\"%s.local\",\"saved\":%s,\"reason\":%d}",
+             status, escaped, ip, netif_hostname(), saved ? "true" : "false", reason);
     httpd_resp_set_type(req, "application/json");
     httpd_resp_set_hdr(req, "Cache-Control", "no-store");
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");

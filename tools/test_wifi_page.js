@@ -12,7 +12,7 @@ assert(start >= 0 && end > start);
 assert(!page.includes('id="scanWifi"') && !page.includes('id="chooseWifi"'), "extra buttons removed");
 const elements = Object.create(null);
 const requests = [], responses = [], timers = [];
-for (const id of ["wifiStatus", "staSsid", "staPass", "connectWifi", "forgetWifi", "lanAddress", "lanLink", "wifiNetworks"]) {
+for (const id of ["wifiStatus", "staSsid", "staPass", "connectWifi", "forgetWifi", "lanAddress", "lanLink", "mdnsAddress", "mdnsLink", "wifiNetworks"]) {
   assert(page.includes('id="' + id + '"'));
   elements[id] = { value:"", style:{}, hidden:false, disabled:false, textContent:"", options:[], events:{},
     setAttribute(name, value){ this[name] = value; },
@@ -73,9 +73,11 @@ const click = id => elements[id].events.click.call(elements[id]);
   assert.equal(elements.connectWifi.disabled, true);
   assert(timers.length, "connecting polls asynchronously");
 
-  context.renderWifiStatus({status:"connected", ssid:quoted, ip:"192.168.1.42", saved:true});
+  context.renderWifiStatus({status:"connected", ssid:quoted, ip:"192.168.1.42", hostname:"stillink-8120.local", saved:true});
   assert.equal(elements.lanAddress.hidden, false);
   assert.equal(elements.lanLink.href, "http://192.168.1.42/");
+  assert.equal(elements.mdnsLink.href, "http://stillink-8120.local/");
+  assert.equal(elements.mdnsAddress.hidden, false);
   assert.equal(elements.staPass.value, "", "password field clears after connection");
   assert.equal(elements.connectWifi.disabled, false);
 

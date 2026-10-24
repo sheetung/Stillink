@@ -1,3 +1,5 @@
+#include "display_scheduler.h"
+#include "dates.h"
 #include "connection_card.h"
 #include "frame.h"
 #include "epd_drv.h"
@@ -24,7 +26,6 @@ static uint8_t *s_fb = s_frame_storage;
 static uint8_t *s_fb = NULL;
 #endif
 static SemaphoreHandle_t s_fb_mutex = NULL;
-static SemaphoreHandle_t s_frame_ready = NULL;
 static bool s_pending = false;
 
 /* 最近一次被接受的帧几何（768x552 或 A1 原生 800x600），显示时交给驱动。 */
@@ -53,16 +54,10 @@ void frame_init(void)
     }
 #endif
     s_fb_mutex = xSemaphoreCreateMutex();
-    s_frame_ready = xSemaphoreCreateBinary();
     s_fw = epd_profile()->w;
     s_fh = epd_profile()->h;
     ESP_LOGI(TAG, "frame buffer %d bytes ready (profile %ux%u)",
              EPD_MAX_BUF_LEN, (unsigned)s_fw, (unsigned)s_fh);
-}
-
-void frame_wait(void)
-{
-    xSemaphoreTake(s_frame_ready, portMAX_DELAY);
 }
 
 int frame_display_now(void)
@@ -179,7 +174,7 @@ esp_err_t frame_upload_handler(httpd_req_t *req)
 
     /* 面板类型字段（hdr[3]）仅信息性；实际面板由设置决定，不随帧切换。 */
 
-    if (xSemaphoreTake(s_fb_mutex, pdMS_TO_TICKS(5000)) != pdTRUE) {
+    if (xSemaphoreTake(s_fb_mutex, 0) != pdTRUE) {
         return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "busy");
     }
     if (s_pending) {
@@ -208,7 +203,7 @@ esp_err_t frame_upload_handler(httpd_req_t *req)
 
     /* Only accepted manual frames turn off scheduled cards. The framebuffer lock
        and revision checks prevent an older download overwriting this upload. */
-    if (weather_disable() != ESP_OK || music_disable() != ESP_OK || album_disable() != ESP_OK) {
+    if (weather_disable() != ESP_OK || music_disable() != ESP_OK || album_disable() != ESP_OK || dates_disable() != ESP_OK) {
         xSemaphoreGive(s_fb_mutex);
         return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Could not disable scheduled cards");
     }
@@ -220,8 +215,11 @@ esp_err_t frame_upload_handler(httpd_req_t *req)
     s_fh = height;
     connection_card_release();
     s_pending = true;
-    xSemaphoreGive(s_frame_ready);            /* 唤醒显示任务 */
     xSemaphoreGive(s_fb_mutex);
+    uint32_t task_id=display_scheduler_manual_ready();
+    char task_text[16];snprintf(task_text,sizeof(task_text),"%lu",(unsigned long)task_id);
+    httpd_resp_set_hdr(req,"X-Display-Task",task_text);
+    httpd_resp_set_hdr(req,"Access-Control-Expose-Headers","X-Display-Task");
     httpd_resp_set_type(req, "text/plain");
     return httpd_resp_sendstr(req, "OK");
 }

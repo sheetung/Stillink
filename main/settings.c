@@ -1,3 +1,4 @@
+#include "dates.h"
 #include "auth.h"
 #include "service_access.h"
 #include "settings.h"
@@ -31,6 +32,7 @@ static const epaper_settings_t DEFAULTS = {
 static epaper_settings_t s_cfg;
 static nvs_handle_t s_nvs;
 static bool s_ok = false;
+static bool s_write_failed;
 
 static void read_u8(const char *key, uint8_t *out)
 {
@@ -92,113 +94,57 @@ void settings_init(void)
 
 const epaper_settings_t *settings_get(void) { return &s_cfg; }
 
-static void store_u8(const char *key, uint8_t v)
+esp_err_t settings_save(const epaper_settings_t *next)
 {
-    if (s_ok && nvs_set_u8(s_nvs, key, v) != ESP_OK) ESP_LOGW(TAG, "set %s failed", key);
-}
-
-static void store_u32(const char *key, uint32_t v)
-{
-    if (s_ok && nvs_set_u32(s_nvs, key, v) != ESP_OK) ESP_LOGW(TAG, "set %s failed", key);
-}
-
-static void store_str(const char *key, const char *v)
-{
-    if (s_ok && nvs_set_str(s_nvs, key, v) != ESP_OK) ESP_LOGW(TAG, "set %s failed", key);
-}
-
-/* R1.0.8：commit 收敛到 setter 末尾，一次保存一次落盘（NVS 擦写均衡友好）。 */
-static void settings_commit(void)
-{
-    if (s_ok) nvs_commit(s_nvs);
-}
-
-esp_err_t settings_set_panel(uint8_t v)
-{
-    if (v >= EPD_PANEL_COUNT) return ESP_ERR_INVALID_ARG;
-    s_cfg.panel = v;
-    store_u8("panel", v);
-    settings_commit();
-    return ESP_OK;
-}
-
-esp_err_t settings_set_hflip(uint8_t v)
-{
-    s_cfg.hflip = v ? 1 : 0;
-    store_u8("hflip", s_cfg.hflip);
-    settings_commit();
-    return ESP_OK;
-}
-
-esp_err_t settings_set_a1_mode(uint8_t v)
-{
-    if (v < EPD_A1_MODE_SEQ552 || v > EPD_A1_MODE_NATIVE800) v = EPD_A1_MODE_DEFAULT;
-    s_cfg.a1_mode = v;
-    store_u8("a1_mode", v);
-    settings_commit();
-    return ESP_OK;
-}
-
-esp_err_t settings_set_wifi_pwr(uint8_t v)
-{
-    if (v > SETT_WIFI_PWR_LOW) return ESP_ERR_INVALID_ARG;
-    s_cfg.wifi_pwr = v;
-    store_u8("wifi_pwr", v);
-    settings_commit();
-    return ESP_OK;
-}
-
-esp_err_t settings_set_sleep(uint32_t v)
-{
-    /* 仅接受档位值（或任意 >0 秒，上限 86400）。 */
-    if (v > SETT_WAKE_1D) return ESP_ERR_INVALID_ARG;
-    s_cfg.sleep_s = v;
-    store_u32("sleep_s", v);
-    settings_commit();
-    return ESP_OK;
-}
-
-esp_err_t settings_set_wake(uint32_t v)
-{
-    if (v > SETT_WAKE_1D) return ESP_ERR_INVALID_ARG;
-    s_cfg.wake_s = v;
-    store_u32("wake_s", v);
-    settings_commit();
-    return ESP_OK;
-}
-
-esp_err_t settings_set_battery_cal(uint32_t ppm)
-{
-    if (ppm < 500000 || ppm > 1500000) return ESP_ERR_INVALID_ARG;
+    if (!next || next->panel >= EPD_PANEL_COUNT || next->hflip > 1 ||
+        next->a1_mode < EPD_A1_MODE_SEQ552 || next->a1_mode > EPD_A1_MODE_NATIVE800 ||
+        next->wifi_pwr > SETT_WIFI_PWR_LOW || next->sleep_s > SETT_WAKE_1D ||
+        next->wake_s > SETT_WAKE_1D || next->bat_cal_ppm < 500000 ||
+        next->bat_cal_ppm > 1500000 ||
+        strnlen(next->ap_ssid, SETT_SSID_MAX) >= SETT_SSID_MAX ||
+        strnlen(next->ap_pass, SETT_PASS_MAX) >= SETT_PASS_MAX)
+        return ESP_ERR_INVALID_ARG;
     if (!s_ok) return ESP_ERR_INVALID_STATE;
-    esp_err_t err = nvs_set_u32(s_nvs, "bat_cal_ppm", ppm);
-    if (err == ESP_OK) err = nvs_commit(s_nvs);
-    if (err == ESP_OK) s_cfg.bat_cal_ppm = ppm;
-    return err;
-}
 
-esp_err_t settings_set_ap(const char *ssid, const char *pass)
-{
-    /* FB-014①：单字段更新 —— 任一参数为 NULL 表示「保持当前值」；
-       pass 为空串表示清除密码（热点转开放）。两个都给则整体替换。 */
-    if (!ssid && !pass) return ESP_ERR_INVALID_ARG;
-
-    if (ssid) {
-        if (!pass) pass = s_cfg.ap_pass;      /* 只改名字：密码保持不变 */
-        if (strlen(ssid) >= SETT_SSID_MAX || strlen(pass) >= SETT_PASS_MAX)
-            return ESP_ERR_INVALID_ARG;
-        strlcpy(s_cfg.ap_ssid, ssid, SETT_SSID_MAX);
-        strlcpy(s_cfg.ap_pass, pass, SETT_PASS_MAX);
-        store_str("ap_ssid", s_cfg.ap_ssid);
-        store_str("ap_pass", s_cfg.ap_pass);
-    } else {
-        /* 只改密码：热点名保持不变。 */
-        if (strlen(pass) >= SETT_PASS_MAX) return ESP_ERR_INVALID_ARG;
-        strlcpy(s_cfg.ap_pass, pass, SETT_PASS_MAX);
-        store_str("ap_pass", s_cfg.ap_pass);
+    bool changed = false;
+    esp_err_t err = ESP_OK;
+    /* Keep the existing NVS keys; unchanged values cause no writes or commit. */
+#define SAVE_FIELD(member, key, type) do { \
+    if (s_write_failed || next->member != s_cfg.member) { \
+        err = nvs_set_##type(s_nvs, key, next->member); \
+        if (err != ESP_OK) goto failed; \
+        changed = true; \
+    } \
+} while (0)
+    SAVE_FIELD(panel, "panel", u8);
+    SAVE_FIELD(hflip, "hflip", u8);
+    SAVE_FIELD(a1_mode, "a1_mode", u8);
+    SAVE_FIELD(wifi_pwr, "wifi_pwr", u8);
+    SAVE_FIELD(sleep_s, "sleep_s", u32);
+    SAVE_FIELD(wake_s, "wake_s", u32);
+    SAVE_FIELD(bat_cal_ppm, "bat_cal_ppm", u32);
+#undef SAVE_FIELD
+    if (s_write_failed || strcmp(next->ap_ssid, s_cfg.ap_ssid)) {
+        err = nvs_set_str(s_nvs, "ap_ssid", next->ap_ssid);
+        if (err != ESP_OK) goto failed;
+        changed = true;
     }
-    settings_commit();
+    if (s_write_failed || strcmp(next->ap_pass, s_cfg.ap_pass)) {
+        err = nvs_set_str(s_nvs, "ap_pass", next->ap_pass);
+        if (err != ESP_OK) goto failed;
+        changed = true;
+    }
+    if (changed) {
+        err = nvs_commit(s_nvs);
+        if (err != ESP_OK) goto failed;
+        s_cfg = *next;
+    }
+    s_write_failed = false;
     return ESP_OK;
+failed:
+    s_write_failed = true;
+    ESP_LOGE(TAG, "settings save failed: %s", esp_err_to_name(err));
+    return err;
 }
 
 void settings_factory_reset(void)
@@ -209,6 +155,7 @@ void settings_factory_reset(void)
     weather_factory_reset();
     music_factory_reset();
     album_factory_reset();
+    dates_factory_reset();
     /* R1.2.0（FB-015）：整个命名空间一起擦 —— 「恢复出厂」就该回到出厂状态。
        旧实现刻意保留 web_len/web_crc/page_ver（页面热更标记），理由是「页面是
        系统资产」；现在恢复出厂连热更页面一起清掉、回到内嵌页，才是预期行为。 */

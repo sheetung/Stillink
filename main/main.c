@@ -1,3 +1,5 @@
+#include "display_scheduler.h"
+#include "dates.h"
 #include "connection_card.h"
 #include "service_access.h"
 #include "auth.h"
@@ -35,6 +37,7 @@
 #include "driver/gpio.h"
 #include "esp_log.h"
 #include "esp_system.h"
+#include "esp_heap_caps.h"
 #include "esp_timer.h"
 #include "esp_wifi.h"
 #include "esp_sleep.h"
@@ -65,7 +68,7 @@ static const char *TAG = "main";
 
 #define HOLD_RESET_S    5          /* 长按恢复出厂 */
 #define HTTPD_STACK     6144
-#define HTTPD_MAX_URI   48
+#define HTTPD_MAX_URI   56
 
 /* ---------------- 请求小工具 ---------------- */
 
@@ -112,6 +115,8 @@ static int kv_get(const char *qs, const char *key, char *out, size_t outlen)
    超出缓冲的部分读走丢弃，避免残体污染 keep-alive 的下一个请求。 */
 static int read_body(httpd_req_t *req, char *buf, size_t n)
 {
+    if (!n) return -1;
+    buf[0] = '\0';
     size_t len = req->content_len;
     if (len == 0) return 0;
     size_t cap = (len > n - 1) ? n - 1 : len;
@@ -128,10 +133,28 @@ static int read_body(httpd_req_t *req, char *buf, size_t n)
             got += (size_t)k;
         }
     }
-    if (got == 0) return 0;
+    if (got != len || len >= n) return -1;
     size_t kept = (got < cap) ? got : cap;
     buf[kept] = '\0';
     return (int)kept;
+}
+
+/* SSIDs are at most 32 bytes; allow six JSON characters per input byte. */
+static void json_ssid(const char *src, char out[193])
+{
+    static const char hex[] = "0123456789abcdef";
+    char *p = out;
+    for (size_t i = 0; src[i] && i < 32; ++i) {
+        unsigned char c = (unsigned char)src[i];
+        if (c < 32) {
+            memcpy(p, "\\u00", 4); p += 4;
+            *p++ = hex[c >> 4]; *p++ = hex[c & 15];
+        } else {
+            if (c == '"' || c == '\\') *p++ = '\\';
+            *p++ = c;
+        }
+    }
+    *p = 0;
 }
 
 /* ---------------- 控制页 ---------------- */
@@ -157,7 +180,8 @@ static esp_err_t info_handler(httpd_req_t *req)
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     power_activity();
     const epaper_settings_t *s = settings_get();
-    char buf[512];
+    char buf[768], ssid[193];
+    json_ssid(netif_ap_ssid(), ssid);
 
     /* ver = 统一版本号 = 当前生效页面版本（热更页优先，否则等于固件编译号）。
        fw  = 固件编译进去的号：仅供排障，以及判断「热更控制页是否落后于固件」
@@ -165,16 +189,21 @@ static esp_err_t info_handler(httpd_req_t *req)
        api 仍是帧格式契约号，与发布版本号解耦，页面状态栏另起一行显示。 */
     int n = snprintf(buf, sizeof(buf),
         "{\"ver\":\"%s\",\"fw\":\"%s\",\"api\":%d,"
-        "\"panel\":\"%s\",\"a1_mode\":%u,\"heap\":%lu,\"bat_mv\":%d,"
+        "\"panel\":\"%s\",\"a1_mode\":%u,\"heap\":%lu,\"heap_internal\":%lu,\"heap_largest\":%lu,\"heap_min\":%lu,\"bat_mv\":%d,"
         "\"sleep_s\":%lu,\"wake_s\":%lu,\"clients\":%d,"
         "\"ssid\":\"%s\",\"uptime\":%lld,\"store_slots\":%d}",
         ota_web_page_version(), EPAPER_VERSION, EPAPER_API_VERSION,
         epd_panel_name((epd_panel_t)s->panel), (unsigned)s->a1_mode,
-        (unsigned long)esp_get_free_heap_size(), power_battery_mv(),
+        (unsigned long)esp_get_free_heap_size(),
+        (unsigned long)heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT),
+        (unsigned long)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT),
+        (unsigned long)heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT),
+        power_battery_mv(),
         (unsigned long)s->sleep_s, (unsigned long)s->wake_s,
-        netif_ap_client_count(), netif_ap_ssid(),
+        netif_ap_client_count(), ssid,
         (long long)(esp_timer_get_time() / 1000000), store_slots());
-    if (n < 0 || n >= (int)sizeof(buf)) buf[sizeof(buf) - 1] = '\0';
+    if (n < 0 || n >= (int)sizeof(buf))
+        return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Status too large");
 
     httpd_resp_set_type(req, "application/json");
     return httpd_resp_send(req, buf, strlen(buf));
@@ -187,7 +216,8 @@ static esp_err_t settings_get_handler(httpd_req_t *req)
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     power_activity();
     const epaper_settings_t *s = settings_get();
-    char buf[384];
+    char buf[512], ssid[193];
+    json_ssid(s->ap_ssid, ssid);
 
     snprintf(buf, sizeof(buf),
         "{\"panel\":%u,\"hflip\":%u,\"a1_mode\":%u,\"wifi_pwr\":%u,"
@@ -195,7 +225,7 @@ static esp_err_t settings_get_handler(httpd_req_t *req)
         s->panel, s->hflip, s->a1_mode, s->wifi_pwr,
         (unsigned long)s->sleep_s, (unsigned long)s->wake_s,
         (unsigned long)s->bat_cal_ppm,
-        s->ap_ssid, s->ap_pass[0] ? "true" : "false");
+        ssid, s->ap_pass[0] ? "true" : "false");
 
     httpd_resp_set_type(req, "application/json");
     return httpd_resp_send(req, buf, strlen(buf));
@@ -218,59 +248,66 @@ static esp_err_t settings_post_handler(httpd_req_t *req)
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     power_activity();
     char body[512];
-    read_body(req, body, sizeof(body));
-
-    char v[SETT_PASS_MAX];
-    bool ap_changed = false;
-    bool panel_changed = false, hflip_changed = false;
-
-    if (kv_get(body, "bat_cal_ppm", v, sizeof(v))) {
-        char *end;
-        unsigned long ppm = strtoul(v, &end, 10);
-        if (!v[0] || *end || ppm < 500000 || ppm > 1500000)
-            return httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid battery calibration");
-        if (settings_set_battery_cal((uint32_t)ppm) != ESP_OK)
-            return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Cannot save battery calibration");
+    if (!req->content_len || req->content_len >= sizeof(body) ||
+        read_body(req, body, sizeof(body)) <= 0) {
+        httpd_resp_set_hdr(req, "Connection", "close");
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid settings body");
+        return ESP_FAIL;
     }
 
-    if (kv_get(body, "panel", v, sizeof(v))) {
-        settings_set_panel((uint8_t)atoi(v));
-        panel_changed = true;
+    epaper_settings_t next = *settings_get();
+    struct { const char *key; uint32_t max; void *value; bool byte; } fields[] = {
+        {"panel", EPD_PANEL_COUNT - 1, &next.panel, true},
+        {"hflip", 1, &next.hflip, true},
+        {"a1_mode", EPD_A1_MODE_NATIVE800, &next.a1_mode, true},
+        {"wifi_pwr", SETT_WIFI_PWR_LOW, &next.wifi_pwr, true},
+        {"sleep_s", SETT_WAKE_1D, &next.sleep_s, false},
+        {"wake_s", SETT_WAKE_1D, &next.wake_s, false},
+        {"bat_cal_ppm", 1500000, &next.bat_cal_ppm, false},
+    };
+    char value[512];
+    for (size_t i = 0; i < sizeof(fields) / sizeof(fields[0]); ++i) {
+        if (!kv_get(body, fields[i].key, value, sizeof(value))) continue;
+        if (!value[0])
+            return httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid setting value");
+        uint32_t number = 0;
+        for (const char *p = value; *p; ++p) {
+            if (*p < '0' || *p > '9' || number > fields[i].max / 10 ||
+                (number == fields[i].max / 10 && (uint32_t)(*p - '0') > fields[i].max % 10))
+                return httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid setting value");
+            number = number * 10 + (*p - '0');
+        }
+        if (fields[i].byte) *(uint8_t *)fields[i].value = (uint8_t)number;
+        else *(uint32_t *)fields[i].value = number;
     }
-    if (kv_get(body, "hflip", v, sizeof(v))) {
-        settings_set_hflip((uint8_t)atoi(v));
-        hflip_changed = true;
+    if (kv_get(body, "ssid", value, sizeof(value))) {
+        if (strlen(value) >= sizeof(next.ap_ssid))
+            return httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "SSID too long");
+        strlcpy(next.ap_ssid, value, sizeof(next.ap_ssid));
     }
-    if (kv_get(body, "a1_mode", v, sizeof(v))) {
-        settings_set_a1_mode((uint8_t)atoi(v));
-        /* 模式会改 A1 的画像几何（768x552 顺序 ↔ 800x600 原生对照），立即生效。 */
-        epd_set_a1_mode(settings_get()->a1_mode);
+    if (kv_get(body, "pass", value, sizeof(value))) {
+        size_t length = strlen(value);
+        if (length && (length < 8 || length > 64))
+            return httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid hotspot password");
+        if (length == 64 && strspn(value, "0123456789abcdefABCDEF") != length)
+            return httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid hotspot PSK");
+        strlcpy(next.ap_pass, value, sizeof(next.ap_pass));
     }
-    if (kv_get(body, "wifi_pwr", v, sizeof(v))) {
-        settings_set_wifi_pwr((uint8_t)atoi(v));
-        netif_ap_apply_tx_power();
-    }
-    if (kv_get(body, "sleep_s", v, sizeof(v))) {
-        settings_set_sleep((uint32_t)atoi(v));
-    }
-    if (kv_get(body, "wake_s", v, sizeof(v))) {
-        settings_set_wake((uint32_t)atoi(v));
-    }
+    const epaper_settings_t *previous = settings_get();
+    bool ap_changed = strcmp(previous->ap_ssid, next.ap_ssid) || strcmp(previous->ap_pass, next.ap_pass);
+    bool panel_changed = previous->panel != next.panel;
+    bool hflip_changed = previous->hflip != next.hflip;
+    bool mode_changed = previous->a1_mode != next.a1_mode;
+    bool power_changed = previous->wifi_pwr != next.wifi_pwr;
+    esp_err_t saved = settings_save(&next);
+    if (saved != ESP_OK)
+        return httpd_resp_send_err(req, saved == ESP_ERR_INVALID_ARG ? HTTPD_400_BAD_REQUEST : HTTPD_500_INTERNAL_SERVER_ERROR,
+                                  saved == ESP_ERR_INVALID_ARG ? "Invalid settings" : "Cannot save settings");
 
-    /* 热点凭据（FB-014①）：单字段可改 —— pass 键缺省 = 保持当前密码，
-       pass 空串 = 清除密码（热点转开放）；ssid 键缺省 = 保持当前热点名。
-       页面据此区分「留空不动」与「勾选清除」。 */
-    char ssid[SETT_SSID_MAX], pass[SETT_PASS_MAX];
-    bool have_ssid = kv_get(body, "ssid", ssid, sizeof(ssid));
-    bool have_pass = kv_get(body, "pass", pass, sizeof(pass));
-    if (have_ssid || have_pass) {
-        settings_set_ap(have_ssid ? ssid : NULL, have_pass ? pass : NULL);
-        ap_changed = true;
-    }
-
-    /* 应用到运行时。 */
-    if (panel_changed) epd_set_panel((epd_panel_t)settings_get()->panel);
-    if (hflip_changed) epd_set_hflip(settings_get()->hflip != 0);
+    if (panel_changed) epd_set_panel((epd_panel_t)next.panel);
+    if (hflip_changed) epd_set_hflip(next.hflip != 0);
+    if (mode_changed) epd_set_a1_mode(next.a1_mode);
+    if (power_changed) netif_ap_apply_tx_power();
 
     httpd_resp_set_type(req, "text/plain");
     esp_err_t err = httpd_resp_sendstr(req, "OK");
@@ -301,15 +338,17 @@ static esp_err_t clear_handler(httpd_req_t *req)
     power_activity();
     int cycles = 2;
     char v[16];
-    if (kv_get(req->uri, "cycles", v, sizeof(v))) cycles = atoi(v);
+    char query[64];
+    if (httpd_req_get_url_query_str(req, query, sizeof(query)) == ESP_OK &&
+        kv_get(query, "cycles", v, sizeof(v))) cycles = atoi(v);
     if (cycles < 1) cycles = 1;
     if (cycles > 4) cycles = 4;
 
     ESP_LOGI(TAG, "ghost clear x%d", cycles);
-    int r = frame_clear_cycles(cycles);   /* R1.0.8：持帧锁，防与传图并发互踩 */
-    if (r != 0) return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "clear failed");
-    httpd_resp_set_type(req, "text/plain");
-    return httpd_resp_sendstr(req, "OK");
+    uint32_t id=display_scheduler_clear(cycles);
+    char body[80];snprintf(body,sizeof(body),"{\"requested\":true,\"task_id\":%lu}",(unsigned long)id);
+    httpd_resp_set_type(req, "application/json");httpd_resp_set_status(req,"202 Accepted");
+    return httpd_resp_sendstr(req,body);
 }
 
 static esp_err_t factory_handler(httpd_req_t *req)
@@ -415,6 +454,8 @@ static httpd_handle_t start_server(void)
     weather_register(server);
     music_register(server);
     album_register(server);
+    dates_register(server);
+    display_scheduler_register(server);
 
     /* 必须在所有业务路由之后注册：OS 探测路径此前直接 404，根本进不了首页。
        兜底 GET 同时覆盖带查询参数的探测与厂商自定义路径。 */
@@ -427,24 +468,13 @@ static httpd_handle_t start_server(void)
 
 /* ---------------- 任务 ---------------- */
 
-static void frame_task(void *arg)
-{
-    (void)arg;
-    for (;;) {
-        frame_wait();
-        if (frame_display_now() == 0) {
-            power_activity();
-        }
-    }
-}
-
 static void idle_monitor_task(void *arg)
 {
     (void)arg;
     for (;;) {
         vTaskDelay(pdMS_TO_TICKS(1000));
         if (power_should_sleep()) {
-            power_enter_deep_sleep();   /* 不返回 */
+            power_enter_deep_sleep();   /* New activity can cancel sleep. */
         }
     }
 }
@@ -460,7 +490,7 @@ static void button_task(void *arg)
             power_activity();
             held++;
             if (held >= HOLD_RESET_S * 20) {
-                weather_disable(); music_disable(); album_disable();
+                weather_disable(); music_disable(); album_disable(); dates_disable();
                 connection_card_reset_notice();
                 settings_factory_reset();
                 while (gpio_get_level((gpio_num_t)EPD_PIN_WAKE_BTN) == 0) vTaskDelay(pdMS_TO_TICKS(50));
@@ -516,10 +546,22 @@ void app_main(void)
     if (auth_first_boot()) connection_card_request();
     err = mdns_init();
     if (err == ESP_OK) {
-        mdns_hostname_set("stillink");
-        mdns_instance_name_set("Stillink");
-        mdns_service_add(NULL, "_http", "_tcp", 80, NULL, 0);
-        ESP_LOGI(TAG, "mDNS ready: http://stillink.local/");
+        const char *step = "hostname";
+        err = mdns_hostname_set(netif_hostname());
+        if (err == ESP_OK) {
+            step = "instance name";
+            err = mdns_instance_name_set("Stillink");
+        }
+        if (err == ESP_OK) {
+            step = "HTTP service";
+            err = mdns_service_add(NULL, "_http", "_tcp", 80, NULL, 0);
+        }
+        if (err == ESP_OK) {
+            ESP_LOGI(TAG, "mDNS configured: %s.local, _http._tcp port 80", netif_hostname());
+        } else {
+            ESP_LOGW(TAG, "mDNS %s failed: %s", step, esp_err_to_name(err));
+            mdns_free();
+        }
     } else {
         ESP_LOGW(TAG, "mDNS unavailable: %s", esp_err_to_name(err));
     }
@@ -527,17 +569,21 @@ void app_main(void)
     weather_init();
     music_init();
     album_init();
+    dates_init();
+    if (dates_enabled()) { ESP_ERROR_CHECK(weather_disable()); ESP_ERROR_CHECK(music_disable()); ESP_ERROR_CHECK(album_disable()); }
     if (album_enabled()) {
         ESP_ERROR_CHECK(weather_disable());
         ESP_ERROR_CHECK(music_disable());
     }
     if (music_enabled()) ESP_ERROR_CHECK(weather_disable());
 
+    display_scheduler_init();
+
     if (start_server() == NULL) {
         ESP_LOGE(TAG, "HTTP server failed to start");
     }
 
-    xTaskCreate(frame_task, "frame", 4096, NULL, 5, NULL);
+
     xTaskCreate(idle_monitor_task, "idle_mon", 3072, NULL, 4, NULL);
     xTaskCreate(button_task, "button", 3072, NULL, 4, NULL);
 

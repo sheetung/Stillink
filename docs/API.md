@@ -31,6 +31,8 @@ curl -H "Authorization: Bearer $STILLINK_DEVICE_KEY" -H "Content-Type: applicati
 - `POST /api/service`：相同 JSON，验证成功后保存；地址不变时省略 `key` 保持已有服务密钥；更换服务地址需重新提供密钥，空服务地址清除配置。
 - `GET/POST/DELETE /api/service/proxy?path=<URL编码的服务路径>`：通过 ESP 转发 `/health` 或 `/v1/` 请求。浏览器仅携带设备认证，ESP 自动附加服务密钥；上传相簿使用二进制帧请求体。
 
+检测服务时地址不能为空，检测失败不会修改已保存配置。代理遇到额外服务的 401/403 时返回 HTTP 502，JSON 中 `code` 为 `service_auth_failed`，应检查服务密钥；设备自身的 HTTP 401 才表示需要重新登录。
+
 ```bash
 curl -H "Authorization: Bearer $STILLINK_SERVICE_KEY" http://服务IP:8787/v1/album/photos
 ```
@@ -49,9 +51,9 @@ HTTP 不加密传输，密钥仅提供访问控制。本功能用于可信局域
 | GET | `/api/info` | 版本、屏幕配置、堆内存、电池毫伏值、休眠时间等 JSON |
 | GET | `/api/settings` | 当前设置 JSON |
 | POST | `/api/settings` | URL 编码表单，成功返回 `OK` |
-| POST | `/api/frame` | 四色二进制帧，接收成功返回 `OK`，后台开始刷新 |
-| POST | `/api/clear` | 空请求体，执行两次黑白残影清理，完成返回 `OK` |
-| GET | `/api/wifi/status` | `status`、`ssid`、`ip`、`saved`、`reason` JSON |
+| POST | `/api/frame` | 四色二进制帧，接收成功返回 `OK` 和 `X-Display-Task` 响应头，后台排队刷新 |
+| POST | `/api/clear` | 空请求体，返回 HTTP 202 和 `task_id`，后台执行残影清理 |
+| GET | `/api/wifi/status` | `status`、`ssid`、`ip`、`hostname`（如 `stillink-8120.local`）、`saved`、`reason` JSON |
 | GET | `/api/wifi/scan` | `networks` 数组，每项含 `ssid`、`rssi`、`secured` |
 | POST | `/api/wifi/connect` | 表单 `ssid`、`password`，接受后返回 HTTP 202 |
 | POST | `/api/wifi/forget` | 清除路由器凭据，恢复热点 |
@@ -63,6 +65,16 @@ HTTP 不加密传输，密钥仅提供访问控制。本功能用于可信局域
 | GET / POST | `/api/music` | 音乐配置和同步状态，保存使用 JSON |
 | POST | `/api/music/refresh` | 请求重新下载当前音乐卡片 |
 | POST | `/api/factory` | 恢复出厂设置并重启 |
+
+`/api/info` 的内存数值单位为字节：`heap` 为剩余总堆，`heap_internal` 为剩余内部 8 位可访问堆，`heap_largest` 为该堆最大连续可分配块，`heap_min` 为启动以来的历史最低空闲值。排查 C3 内存问题时应同时观察后三项。上传和在线更新开始、结束时，串口日志也会记录内部堆状态。
+
+`POST /api/settings` 拒绝空请求体、达到 512 字节的请求体和未完整接收的表单，返回 HTTP 400 并关闭连接。`POST /api/clear?cycles=1` 可指定 1～4 次清理，默认 2 次。
+
+设置表单先整体验证，再保存变化的字段并统一提交一次；参数无效返回 400，存储失败返回 500，失败时不应用新的运行参数。重复保存相同设置不重复写入 NVS。多个设置键仍沿用现有 NVS 存储格式，不提供跨键的断电原子性保证。
+
+控制页不周期查询额外服务状态或重载预览；进入功能、手动刷新和保存修改时同步数据。上传和在线升级的进度处理继续运行。
+
+刷屏、受鉴权的 API 请求及在线更新进行期间暂停空闲深睡；操作结束后重新开始计算空闲时间。此保护不改变联网后的轻睡策略。
 
 `/api/weather` 和 `/api/music` 使用 JSON；其他 POST 设置和配网使用 `application/x-www-form-urlencoded`；省略设置字段表示保持原值。跨域调用支持 `GET`、`POST`、`OPTIONS` 和 `Content-Type` 请求头。
 
@@ -190,8 +202,25 @@ Windows UDP 广播和服务器部署见 [音乐功能说明](music.md)。
 
 ## 待办 API
 
-共享清单、PNG 预览和二进制图片由额外服务提供，接口及鉴权见 [待办 API](todo.md#http-接口)。清单修改只更新服务存储；使用设备 Bearer 登录令牌向现有 POST /api/frame 上传二进制图片后才刷新屏幕，成功上传会停止其他自动卡片。
+共享清单、PNG 预览和二进制图片由额外服务提供，接口及鉴权见 [待办 API](todo.md#http-接口)。清单修改只更新服务存储；使用设备 Bearer 登录令牌向 POST /api/display/pull 提交卡片路径后，由 ESP 下载并刷新屏幕，成功上传会停止其他自动卡片。
 
 ## 日历与纪念日 API
 
-日历、日程、纪念日存储及卡片接口见 [日历与纪念日](calendar.md#http-接口)。所有额外服务接口均需服务密钥；通过设备代理时使用设备登录凭证。卡片经 POST /api/frame 手动上传，成功后停止其他自动卡片。
+日历、日程、纪念日存储及卡片接口见 [日历与纪念日](calendar.md#http-接口)。所有额外服务接口均需服务密钥；通过设备代理时使用设备登录凭证。网页通过 POST /api/display/pull 提交卡片路径，ESP 下载并成功刷新后停止其他自动卡片。
+
+日历与纪念日的每日自动展示使用 `GET /api/dates`、`POST /api/dates` 与 `POST /api/dates/refresh`，参数及调度规则见 [每日卡片接口](calendar.md#设备每日卡片接口)。自动模式共用一个展示位置；手动 `/api/frame` 上传会关闭全部自动模式。
+
+
+## 统一显示任务
+
+天气、音乐、相簿、日历与纪念日共用一个 FreeRTOS 调度任务和一个显示执行任务。调度任务等待通知或下次截止时间，网络下载、校验与屏幕操作由执行任务串行完成。浏览器关闭后自动任务继续运行；断网后等待重连，校时与配置变更会唤醒调度。音乐仍需每 5 秒检查歌曲版本，屏幕自动刷新间隔至少 60 秒。
+
+所有接口使用设备鉴权。服务 PNG 预览、清单和配置操作保持原接口，设备代理在有上限的后台队列中执行；队列满返回 503，可稍后重试。网页仅在进入功能或修改配置时请求预览，不周期重载图片。
+
+- `POST /api/display/pull`：JSON `{"path":"/v1/todo/card.bin?page=0&width=768&height=552&panel=0"}`。路径必须为 `/v1/` 下的 `.bin`，可带查询参数；服务地址和鉴权由设备已保存的额外服务设置提供。HTTP 202 返回 `{"requested":true,"task_id":123}`。只表示入队；下载、CRC 校验或刷新失败不会关闭原自动模式。连续提交的尚未执行请求合并为最新请求。
+- `GET /api/display`：返回 `mode`、`status`、`operation`、`busy`、`task_id`、`completed_id`、`error`、`next_update_in_s`。`mode` 为 `manual/weather/music/album/daily`；最后一项表示下一次调度检查的剩余秒数，未安排时为 null，并不保证届时一定刷新屏幕。
+- `GET /api/display?task_id=123`：额外返回 `task_status` 和 `task_error`。状态为 `queued/running/completed/failed/superseded`，保留最近 8 次完成记录；被合并替代或已过期的任务为 `superseded`。网页仅在等待自己提交的任务时每秒查询一次。
+- `POST /api/frame`：仍接收本地产生的帧，返回 200 `OK`；响应头 `X-Display-Task` 可用于等待实际刷新完成。帧缓冲正忙时拒绝上传，请稍后重试。成功接收后关闭全部自动模式，配置保留。
+- `POST /api/clear?cycles=2`：返回 202 JSON `{"requested":true,"task_id":123}`，通过任务状态确认完成。
+
+正在执行的墨水屏刷新无法中途撤销；配置变化会阻止过时的下载开始刷新，随后按新配置调度。固件升级期间暂停派发显示任务，新的服务图片提交返回 409。

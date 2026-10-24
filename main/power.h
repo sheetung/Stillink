@@ -23,6 +23,10 @@ void power_set_lan_light_sleep(bool enabled);
 /* Keep GPIO outputs active throughout a panel update, including BUSY waits. */
 void power_panel_busy(bool busy);
 
+/* Nested operation holds prevent deep sleep until every caller has finished. */
+void power_busy(bool busy);
+void power_log_heap(const char *operation);
+
 /* 重置空闲计时（任何上传 / 请求都调用）。 */
 void power_activity(void);
 
@@ -36,7 +40,7 @@ uint32_t power_wakeup_causes(void);
 /* 空闲是否已超时，应进入深睡。 */
 bool power_should_sleep(void);
 
-/* 设唤醒源并进入深睡（不返回）。 */
+/* Rechecks idle/busy state; returns if new activity cancelled sleep. */
 void power_enter_deep_sleep(void);
 
 /* 电池电压 mV 粗测（分压 470k:100k；满量程需按板实测标定）。 */

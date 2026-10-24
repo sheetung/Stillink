@@ -52,7 +52,7 @@ def fetch_weather(latitude, longitude):
         daily="weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
         forecast_days=4, timezone="auto", timeformat="unixtime", wind_speed_unit="ms"))
     with urlopen(Request("https://api.open-meteo.com/v1/forecast?" + query,
-                         headers={"User-Agent": "Stillink/weather"}), timeout=20) as response:
+                         headers={"User-Agent": "Stillink/weather"}), timeout=8) as response:
         raw = json.load(response)
     current, daily = raw["current"], raw["daily"]
     data = dict(temperature=current["temperature_2m"], humidity=current["relative_humidity_2m"],

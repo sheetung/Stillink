@@ -8,3 +8,6 @@ void music_factory_reset(void);
 bool music_enabled(void);
 esp_err_t music_disable(void);
 #endif
+
+#include "display_scheduler.h"
+display_result_t music_run(void);

@@ -11,8 +11,10 @@
 #include "esp_pm.h"
 #include "esp_wifi.h"
 #include "esp_log.h"
+#include "esp_heap_caps.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/semphr.h"
 
 static const char *TAG = "power";
 
@@ -33,11 +35,35 @@ static TickType_t s_last_activity;
 static bool s_auto_wake = false;
 static bool s_lan_light_sleep = false;
 static esp_pm_lock_handle_t s_panel_lock;
+static SemaphoreHandle_t s_busy_lock;
+static unsigned s_busy_count;
+
+void power_busy(bool busy)
+{
+    xSemaphoreTake(s_busy_lock, portMAX_DELAY);
+    if (busy) ++s_busy_count;
+    else {
+        configASSERT(s_busy_count > 0);
+        --s_busy_count;
+    }
+    s_last_activity = xTaskGetTickCount();
+    xSemaphoreGive(s_busy_lock);
+}
+
+void power_log_heap(const char *operation)
+{
+    ESP_LOGI(TAG, "%s: internal heap free=%u largest=%u minimum=%u", operation,
+             (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT),
+             (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT),
+             (unsigned)heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
+}
 
 void power_panel_busy(bool busy)
 {
+    if (busy) power_busy(true);
     ESP_ERROR_CHECK(busy ? esp_pm_lock_acquire(s_panel_lock) :
                           esp_pm_lock_release(s_panel_lock));
+    if (!busy) power_busy(false);
 }
 
 void power_set_lan_light_sleep(bool enabled)
@@ -56,6 +82,8 @@ void power_set_lan_light_sleep(bool enabled)
 
 void power_init(void)
 {
+    s_busy_lock = xSemaphoreCreateMutex();
+    configASSERT(s_busy_lock);
     /* Keep AP/provisioning awake; the LAN worker enables automatic sleep in STA mode. */
     power_set_lan_light_sleep(false);
     ESP_ERROR_CHECK(esp_pm_lock_create(ESP_PM_NO_LIGHT_SLEEP, 0, "panel", &s_panel_lock));
@@ -88,7 +116,9 @@ void power_init(void)
 
 void power_activity(void)
 {
+    xSemaphoreTake(s_busy_lock, portMAX_DELAY);
     s_last_activity = xTaskGetTickCount();
+    xSemaphoreGive(s_busy_lock);
 }
 
 void power_set_auto_wake(bool v) { s_auto_wake = v; }
@@ -99,8 +129,9 @@ uint32_t power_wakeup_causes(void)
     return esp_sleep_get_wakeup_causes();
 }
 
-bool power_should_sleep(void)
+static bool should_sleep_locked(void)
 {
+    if (s_busy_count) return false;
     /* LAN access must remain available while connected or provisioning. */
     if (wifi_lan_keep_awake() || online_ota_busy()) return false;
     const epaper_settings_t *s = settings_get();
@@ -113,11 +144,25 @@ bool power_should_sleep(void)
     if (limit == 0) return false;
 
     TickType_t idle = xTaskGetTickCount() - s_last_activity;
-    return idle >= pdMS_TO_TICKS(limit * 1000);
+    return (uint64_t)idle * portTICK_PERIOD_MS >= (uint64_t)limit * 1000;
+}
+
+bool power_should_sleep(void)
+{
+    xSemaphoreTake(s_busy_lock, portMAX_DELAY);
+    bool sleep = should_sleep_locked();
+    xSemaphoreGive(s_busy_lock);
+    return sleep;
 }
 
 void power_enter_deep_sleep(void)
 {
+    /* Recheck atomically with operation admission; new work waits for reboot. */
+    xSemaphoreTake(s_busy_lock, portMAX_DELAY);
+    if (!should_sleep_locked()) {
+        xSemaphoreGive(s_busy_lock);
+        return;
+    }
     esp_wifi_stop();
     epd_panel_deep_sleep();
 

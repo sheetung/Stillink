@@ -1,3 +1,5 @@
+#include "display_scheduler.h"
+#include "dates.h"
 #include "service_access.h"
 #include "auth.h"
 #include "cJSON.h"
@@ -6,14 +8,20 @@
 #include "power.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
+#include "freertos/queue.h"
+#include "freertos/task.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 static char base[192], secret[65];
 static SemaphoreHandle_t credential_lock;
+static QueueHandle_t request_queue;
+static void service_worker(void *unused);
 void service_access_init(void) {
   credential_lock = xSemaphoreCreateMutex();
   configASSERT(credential_lock);
+  request_queue=xQueueCreate(6,sizeof(httpd_req_t*));configASSERT(request_queue);
+  ESP_ERROR_CHECK(xTaskCreate(service_worker,"service_io",6144,NULL,3,NULL)==pdPASS?ESP_OK:ESP_ERR_NO_MEM);
   nvs_handle_t n;
   if (nvs_open("service", NVS_READONLY, &n) == ESP_OK) {
     size_t a = sizeof(base), b = sizeof(secret);
@@ -42,6 +50,11 @@ void service_access_attach(esp_http_client_handle_t c, const char *url) {
     snprintf(h, sizeof(h), "Bearer %s", secret);
     esp_http_client_set_header(c, "Authorization", h);
   }
+  xSemaphoreGive(credential_lock);
+}
+void service_access_base(char *out, size_t size) {
+  xSemaphoreTake(credential_lock, portMAX_DELAY);
+  strlcpy(out, base, size);
   xSemaphoreGive(credential_lock);
 }
 static esp_err_t reply(httpd_req_t *r, const char *s, const char *body) {
@@ -90,6 +103,9 @@ static esp_err_t get_config(httpd_req_t *r) {
   return e;
 }
 static esp_err_t config(httpd_req_t *r) {
+  static const char check_path[] = "/api/service/check";
+  bool checking = !strncmp(r->uri, check_path, sizeof(check_path) - 1) &&
+      (r->uri[sizeof(check_path) - 1] == 0 || r->uri[sizeof(check_path) - 1] == '?');
   cJSON *j = read_body(r),
         *u = cJSON_GetObjectItemCaseSensitive(j, "service_url"),
         *k = cJSON_GetObjectItemCaseSensitive(j, "key");
@@ -117,6 +133,8 @@ static esp_err_t config(httpd_req_t *r) {
       return reply(r, "400 Bad Request", "{\"error\":\"Invalid service key\"}");
     }
   cJSON_Delete(j);
+  if (!next[0] && checking)
+    return reply(r, "400 Bad Request", "{\"error\":\"Service address required\"}");
   if (next[0]) {
     char url[220], h[80];
     snprintf(url, sizeof(url), "%s/health", next);
@@ -148,9 +166,10 @@ static esp_err_t config(httpd_req_t *r) {
       return reply(
           r, "400 Bad Request",
           "{\"error\":\"Service connection or key verification failed\"}");
-    if (!strcmp(r->uri, "/api/service/check"))
+    if (checking)
       return reply(r, "200 OK", health);
   }
+  if (!next[0] && dates_disable() != ESP_OK) return reply(r, "500 Internal Server Error", "{\"error\":\"Cannot disable daily card\"}");
   nvs_handle_t n;
   esp_err_t e = nvs_open("service", NVS_READWRITE, &n);
   if (e == ESP_OK) {
@@ -168,9 +187,10 @@ static esp_err_t config(httpd_req_t *r) {
   strlcpy(base, next, sizeof(base));
   strlcpy(secret, next_key, sizeof(secret));
   xSemaphoreGive(credential_lock);
+  display_scheduler_changed();
   return get_config(r);
 }
-static esp_err_t proxy(httpd_req_t *r) {
+static esp_err_t proxy_sync(httpd_req_t *r) {
   char query[768], path[512];
   if (!base[0])
     return reply(r, "409 Conflict", "{\"error\":\"Configure service first\"}");
@@ -242,6 +262,12 @@ static esp_err_t proxy(httpd_req_t *r) {
     return reply(r, "502 Bad Gateway", "{\"error\":\"Service unavailable\"}");
   }
   int status = esp_http_client_get_status_code(c);
+  if (status == 401 || status == 403) {
+    esp_http_client_close(c);
+    esp_http_client_cleanup(c);
+    return reply(r, "502 Bad Gateway",
+                 "{\"code\":\"service_auth_failed\",\"error\":\"Extra service key rejected; check service settings\"}");
+  }
   snprintf(type, sizeof(type), "%d Service response", status);
   httpd_resp_set_status(r, type);
   httpd_resp_set_hdr(r, "Access-Control-Allow-Origin", "*");
@@ -262,14 +288,39 @@ static esp_err_t proxy(httpd_req_t *r) {
     return httpd_resp_send_chunk(r, NULL, 0);
   return ESP_FAIL;
 }
+/* Retain the authenticated request while a bounded worker performs network I/O.
+ * esp_http_server remains free to serve settings and display status. */
+static void service_complete(httpd_req_t *r){
+  httpd_handle_t server=r->handle;int fd=httpd_req_to_sockfd(r);
+  httpd_req_async_handler_complete(r);
+  httpd_sess_trigger_close(server,fd);
+}
+static esp_err_t service_async(httpd_req_t *r){
+  httpd_req_t *copy=NULL;
+  if(httpd_req_async_handler_begin(r,&copy)!=ESP_OK)return reply(r,"503 Service Unavailable","{\"error\":\"Service request busy\"}");
+  httpd_resp_set_hdr(copy,"Connection","close");
+  if(xQueueSend(request_queue,&copy,0)!=pdTRUE){reply(copy,"503 Service Unavailable","{\"error\":\"Too many service requests; retry shortly\"}");service_complete(copy);}
+  return ESP_OK;
+}
+static void service_worker(void *unused){
+  httpd_req_t *r;
+  for(;;){
+    if(xQueueReceive(request_queue,&r,portMAX_DELAY)!=pdTRUE)continue;
+    power_busy(true);
+    if(!strcmp(r->uri,"/api/service")||!strcmp(r->uri,"/api/service/check"))config(r);
+    else proxy_sync(r);
+    power_busy(false);
+    service_complete(r);
+  }
+}
 void service_access_register(httpd_handle_t s) {
   httpd_uri_t routes[] = {
-      {.uri = "/api/service/check", .method = HTTP_POST, .handler = config},
+      {.uri = "/api/service/check", .method = HTTP_POST, .handler = service_async},
       {.uri = "/api/service", .method = HTTP_GET, .handler = get_config},
-      {.uri = "/api/service", .method = HTTP_POST, .handler = config},
-      {.uri = "/api/service/proxy", .method = HTTP_GET, .handler = proxy},
-      {.uri = "/api/service/proxy", .method = HTTP_POST, .handler = proxy},
-      {.uri = "/api/service/proxy", .method = HTTP_DELETE, .handler = proxy}};
+      {.uri = "/api/service", .method = HTTP_POST, .handler = service_async},
+      {.uri = "/api/service/proxy", .method = HTTP_GET, .handler = service_async},
+      {.uri = "/api/service/proxy", .method = HTTP_POST, .handler = service_async},
+      {.uri = "/api/service/proxy", .method = HTTP_DELETE, .handler = service_async}};
   for (size_t i = 0; i < sizeof(routes) / sizeof(*routes); i++)
     ESP_ERROR_CHECK(auth_register_uri_handler(s, &routes[i]));
 }

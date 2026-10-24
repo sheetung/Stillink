@@ -37,9 +37,6 @@ void frame_init(void);
    Called after HTTP response headers; allow() rejects an obsolete configuration. */
 int frame_download_display(esp_http_client_handle_t client, bool (*allow)(void *), void *context);
 
-/* 阻塞等待一帧就绪（由上传处理器触发）。 */
-void frame_wait(void);
-
 /* 锁缓冲 -> 整屏刷新 -> 面板深睡 -> 解锁。成功返回 0。 */
 int frame_display_now(void);
 

@@ -192,7 +192,7 @@ wheels = [
 
 [[package]]
 name = "stillink-services"
-version = "1.6.1"
+version = "2.0.0"
 source = { virtual = "." }
 dependencies = [
     { name = "lunar-python" },

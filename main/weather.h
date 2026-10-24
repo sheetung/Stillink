@@ -21,3 +21,7 @@ void weather_register(httpd_handle_t server);
 void weather_factory_reset(void);
 esp_err_t weather_disable(void);
 #endif
+
+#include "display_scheduler.h"
+display_result_t weather_run(void);
+bool weather_enabled(void);

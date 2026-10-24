@@ -49,16 +49,9 @@ typedef struct {
 void settings_init(void);
 const epaper_settings_t *settings_get(void);
 
-/* 各 setter 立即写 NVS；失败仅告警不影响 RAM 态。 */
-esp_err_t settings_set_panel(uint8_t v);
-esp_err_t settings_set_hflip(uint8_t v);
-esp_err_t settings_set_a1_mode(uint8_t v);
-esp_err_t settings_set_wifi_pwr(uint8_t v);
-esp_err_t settings_set_sleep(uint32_t v);
-esp_err_t settings_set_wake(uint32_t v);
-esp_err_t settings_set_battery_cal(uint32_t ppm);
-/* FB-014①：ssid / pass 任一为 NULL = 保持当前值；pass 为空串 = 清除密码（热点开放）。 */
-esp_err_t settings_set_ap(const char *ssid, const char *pass);
+/* Validate the complete configuration, write changed fields and commit once.
+ * Runtime settings are updated only after a successful commit. */
+esp_err_t settings_save(const epaper_settings_t *next);
 
 /* 恢复出厂：擦除整个 NVS 命名空间（含热点凭据与页面热更标记）；调用方负责重启。 */
 void settings_factory_reset(void);

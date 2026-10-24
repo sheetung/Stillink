@@ -36,12 +36,15 @@ bool online_ota_busy(void)
     return busy;
 }
 
-typedef struct { char *data; size_t used; } json_body_t;
+typedef struct { char *data; size_t used; bool overflow; } json_body_t;
 static esp_err_t receive_json(esp_http_client_event_t *event)
 {
     json_body_t *body = event->user_data;
     if (event->event_id == HTTP_EVENT_ON_DATA && esp_http_client_get_status_code(event->client) == 200) {
-        if (body->used + event->data_len >= JSON_LIMIT) return ESP_ERR_INVALID_SIZE;
+        if (body->overflow || body->used + event->data_len >= JSON_LIMIT) {
+            body->overflow = true;
+            return ESP_ERR_INVALID_SIZE;
+        }
         memcpy(body->data + body->used, event->data, event->data_len);
         body->used += event->data_len;
         body->data[body->used] = 0;
@@ -67,6 +70,7 @@ static esp_err_t check_release(void)
     esp_err_t err = client ? esp_http_client_perform(client) : ESP_ERR_NO_MEM;
     int status = client ? esp_http_client_get_status_code(client) : 0;
     if (client) esp_http_client_cleanup(client);
+    if (body.overflow) err = ESP_ERR_INVALID_SIZE;
     if (err != ESP_OK || status != 200) {
         xSemaphoreTake(s_lock, portMAX_DELAY);
         snprintf(s_error, sizeof(s_error), "GitHub HTTP %d / %s", status, esp_err_to_name(err));
@@ -75,6 +79,7 @@ static esp_err_t check_release(void)
     }
     cJSON *json = cJSON_Parse(body.data);
     free(body.data);
+    if (!json) return ESP_ERR_INVALID_RESPONSE;
     cJSON *tag = cJSON_GetObjectItemCaseSensitive(json, "tag_name"), *asset;
     const esp_partition_t *part = esp_ota_get_next_update_partition(NULL);
     err = ESP_ERR_NOT_FOUND;
@@ -143,14 +148,17 @@ static esp_err_t install_release(void)
 }
 static void worker(void *arg)
 {
+    power_busy(true);
+    power_log_heap("online OTA begin");
     bool install = arg != NULL;
     esp_err_t err = install ? install_release() : check_release();
+    power_log_heap("online OTA end");
     xSemaphoreTake(s_lock, portMAX_DELAY);
     strlcpy(s_status, err == ESP_OK ? "ready" : "error", sizeof(s_status));
     if (err != ESP_OK && !s_error[0]) snprintf(s_error, sizeof(s_error), "%s", esp_err_to_name(err));
     s_busy = false;
     xSemaphoreGive(s_lock);
-    power_activity();
+    power_busy(false);
     vTaskDelete(NULL);
 }
 static esp_err_t status_handler(httpd_req_t *req)

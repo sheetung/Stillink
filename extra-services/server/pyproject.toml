@@ -1,7 +1,7 @@
 [project]
 name = "stillink-services"
-version = "1.6.1"
-description = "Weather and music cards as Stillink binary frames"
+version = "2.0.0"
+description = "Stillink weather, music, album, todo and calendar services"
 requires-python = ">=3.11"
 dependencies = [
     "lunar-python>=1.4,<2",

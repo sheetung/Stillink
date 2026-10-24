@@ -1,3 +1,5 @@
+#include "display_scheduler.h"
+#include "dates.h"
 #include "connection_card.h"
 #include "service_access.h"
 #include "auth.h"
@@ -58,6 +60,7 @@ esp_err_t music_disable(void)
         }
     }
     xSemaphoreGive(s_lock);
+    if(err==ESP_OK)display_scheduler_changed();
     return err;
 }
 
@@ -129,7 +132,8 @@ static esp_err_t config_handler(httpd_req_t *req)
     cJSON_Delete(json);
     xSemaphoreGive(s_lock);
     esp_err_t err = ESP_OK;
-    if (valid && next.enabled) err = weather_disable();
+    if (valid && next.enabled) err = dates_disable();
+    if (valid && next.enabled && err == ESP_OK) err = weather_disable();
     if (valid && next.enabled && err == ESP_OK) err = album_disable();
     xSemaphoreTake(s_lock, portMAX_DELAY);
     if (valid && err == ESP_OK) {
@@ -149,6 +153,7 @@ static esp_err_t config_handler(httpd_req_t *req)
     if (!valid) return httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid music settings");
     if (err != ESP_OK) return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Could not save music settings");
     connection_card_release();
+    display_scheduler_changed();
     return httpd_resp_sendstr(req, "{\"saved\":true}");
 }
 static esp_err_t refresh_handler(httpd_req_t *req)
@@ -158,13 +163,14 @@ static esp_err_t refresh_handler(httpd_req_t *req)
     bool ready = s_config.enabled && wifi_lan_connected();
     if (ready) s_force = true;
     xSemaphoreGive(s_lock);
+    display_scheduler_changed();
     httpd_resp_set_status(req, ready ? "202 Accepted" : "409 Conflict");
     return httpd_resp_sendstr(req, ready ? "{\"status\":\"queued\"}" : "{\"error\":\"Enable music and connect Wi-Fi first\"}");
 }
 static bool still_current(void *context)
 {
     xSemaphoreTake(s_lock, portMAX_DELAY);
-    bool valid = s_config.enabled && s_revision == *(unsigned *)context;
+    bool valid = s_config.enabled && s_revision == *(unsigned *)context && display_scheduler_current();
     xSemaphoreGive(s_lock); return valid;
 }
 static esp_http_client_handle_t open_request(const char *base, const char *path)
@@ -180,15 +186,12 @@ static esp_http_client_handle_t open_request(const char *base, const char *path)
     }
     return client;
 }
-static void worker(void *unused)
+display_result_t music_run(void)
 {
-    for (;;) {
-        vTaskDelay(pdMS_TO_TICKS(5000));
-        if (online_ota_busy()) continue;
         xSemaphoreTake(s_lock, portMAX_DELAY);
         config_t config = s_config; unsigned revision = s_revision;
         xSemaphoreGive(s_lock);
-        if (!config.enabled || !wifi_lan_connected() || (strncmp(config.url,"https://",8)==0 && time(NULL)<1700000000)) continue;
+        if (!config.enabled || !wifi_lan_connected() || (strncmp(config.url,"https://",8)==0 && time(NULL)<1700000000)) return display_result(30000,NULL);
         char error[80] = "", version[65] = "";
         bool playing = false, ok = false;
         esp_http_client_handle_t client = open_request(config.url, "/v1/music.json");
@@ -223,8 +226,7 @@ static void worker(void *unused)
             if (due && !ok) s_force = true;
         }
         xSemaphoreGive(s_lock);
-        if (error[0]) vTaskDelay(pdMS_TO_TICKS(25000));
-    }
+        return display_result(error[0]?30000:5000,error[0]?error:NULL);
 }
 void music_init(void)
 {
@@ -234,7 +236,7 @@ void music_init(void)
         if (nvs_get_blob(nvs,"config_v1",&s_config,&size)!=ESP_OK || size!=sizeof(s_config)) memset(&s_config,0,sizeof(s_config));
         nvs_close(nvs);
     }
-    ESP_ERROR_CHECK(xTaskCreate(worker,"music",6144,NULL,3,NULL)==pdPASS ? ESP_OK : ESP_ERR_NO_MEM);
+
 }
 void music_register(httpd_handle_t server)
 {

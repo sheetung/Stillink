@@ -25,4 +25,7 @@ int netif_ap_client_count(void);
 /* 生效中的热点 SSID（默认或用户设置）。 */
 const char *netif_ap_ssid(void);
 
+/* Stable device hostname derived from the STA MAC, without .local. */
+const char *netif_hostname(void);
+
 #endif /* EPAPER_NETIF_AP_H */

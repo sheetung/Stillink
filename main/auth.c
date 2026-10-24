@@ -36,7 +36,7 @@ static int64_t blocked_until;
 static struct {
   esp_err_t (*handler)(httpd_req_t *);
   void *ctx;
-} handlers[48];
+} handlers[56];
 static size_t count;
 static void random_hex(char *out, int bytes) {
   unsigned char data[32];
@@ -125,16 +125,21 @@ static esp_err_t guard(httpd_req_t *r) {
     json(r, "401 Unauthorized", "{\"error\":\"Authentication required\"}");
     return ESP_FAIL;
   }
-  power_activity();
+  power_busy(true);
+  bool memory_trace = !strcmp(r->uri, "/api/upload") || !strcmp(r->uri, "/api/frame");
+  if (memory_trace) power_log_heap("upload begin");
   size_t i = (size_t)r->user_ctx;
   r->user_ctx = handlers[i].ctx;
-  return handlers[i].handler(r);
+  esp_err_t result = handlers[i].handler(r);
+  if (memory_trace) power_log_heap("upload end");
+  power_busy(false);
+  return result;
 }
 esp_err_t auth_register_uri_handler(httpd_handle_t server,
                                     const httpd_uri_t *route) {
   if (strncmp(route->uri, "/api/", 5) || route->method == HTTP_OPTIONS)
     return httpd_register_uri_handler(server, route);
-  if (count >= 48)
+  if (count >= sizeof(handlers) / sizeof(handlers[0]))
     return ESP_ERR_NO_MEM;
   httpd_uri_t copy = *route;
   handlers[count].handler = route->handler;

@@ -12,7 +12,7 @@ import todo
 import calendar_cards
 from music_receiver import Receiver
 
-VERSION = "V1.6.1"
+VERSION = "V2.0.0"
 MUSIC = Receiver()
 ALBUM = None
 TODO = None

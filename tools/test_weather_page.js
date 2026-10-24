@@ -2,6 +2,7 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs"), path = require("node:path"), vm = require("node:vm");
 const page = fs.readFileSync(path.join(__dirname, "../page/index.html"), "utf8");
+const documentEvents={};
 const source = page.slice(page.indexOf("/* ---------- 天气卡片："), page.indexOf("/* ---------- 音乐卡片："));
 const elements = {}, requests = [], responses = [], timers = [];
 function element(id) {
@@ -12,13 +13,13 @@ function element(id) {
 }
 for (const id of [...page.matchAll(/id="(weather[^" ]*|modeWeather|modeMusic|modeAlbum|modeTodo|modeBoard|editorGrid|steps)"/g)].map(m=>m[1])) elements[id]=element(id);
 const modes=[element("photo"),element("note")];
-const state={enabled:false,name:"杭州",service_url:"http://192.168.31.12:8787",latitude:30.29,longitude:120.16,times:[480,720,1080],status:"disabled",error:""};
+const state={enabled:false,name:"杭州",service_url:"http://192.168.1.10:8787",latitude:30.29,longitude:120.16,times:[480,720,1080],status:"disabled",error:""};
 const notifications=[];
 const context={serviceProxy:p=>"http://server"+p,authenticatedImage:(image,url)=>{image.src=url;},displayModeRevision:0,notifyDisplayMode:mode=>notifications.push(mode),supportServiceURL:"",
   $:id=>elements[id], api:url=>url, console, TextEncoder, Date, Set, Math, JSON, Array,
   setTimeout:(f,ms)=>{timers.push({f,ms});return timers.length;}, clearTimeout:()=>{},
   fetch:async(url,options)=>{requests.push({url,options});assert(responses.length,"Unexpected request: "+url);const response=responses.shift();if(response instanceof Error)throw response;return {ok:response.status<400,text:async()=>response.text||"error",json:async()=>response.body};},
-  document:{querySelectorAll:()=>modes,addEventListener:()=>{},createElement:tag=>{
+  document:{querySelectorAll:()=>modes,addEventListener:(name,fn)=>{documentEvents[name]=fn;},createElement:tag=>{
     if(tag!=="canvas")return element(tag);
     return {getContext:()=>({clearRect(){},fillText(){},getImageData(){const data=new Uint8ClampedArray(1024);data[3]=255;return {data};}})};
   }}
@@ -74,5 +75,10 @@ const trigger=(id,event="click")=>elements[id].events[event].call(elements[id]);
   respond({saved:true});respond(state);trigger("weatherSave");await flush();
   assert.match(elements.weatherMessage.textContent,/已关闭/);
   assert.deepEqual(notifications,["weather"]);
-  console.log("WEATHER PAGE: PASS (schedule validation, device save, service URL, city search, safe image preview, offline state)");
+    context.document.hidden=true;documentEvents.visibilitychange?.();
+  const hiddenRequests=requests.length;assert.equal(timers.filter(t=>t.ms===5000).length,0,"Weather does not periodically poll");await flush();
+  assert.equal(requests.length,hiddenRequests,"Hidden weather pane does not poll");
+  context.document.hidden=false;respond(state);documentEvents.visibilitychange?.();await flush();
+  assert.equal(requests.length,hiddenRequests,"Returning does not reload weather");
+console.log("WEATHER PAGE: PASS (schedule validation, device save, service URL, city search, safe image preview, offline state)");
 })().catch(e=>{console.error(e);process.exitCode=1;});

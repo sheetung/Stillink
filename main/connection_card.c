@@ -1,15 +1,16 @@
+#include "display_scheduler.h"
 #include "connection_card.h"
 #include "auth.h"
 #include "card_font.h"
 #include "esp_netif.h"
 #include "esp_wifi.h"
 #include "frame.h"
+#include "netif_ap.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "qrcodegen.h"
 #include <stdio.h>
 #include <string.h>
-static TaskHandle_t task;
 static volatile bool holding;
 static void pixel(uint8_t *fb, int width, int height, int x, int y) {
   if (x < 0 || y < 0 || x >= width || y >= height)
@@ -61,6 +62,11 @@ static void draw(uint8_t *fb, uint16_t w, uint16_t h, void *context) {
     text(fb, w, h, 42, 162, ssid, 2);
   }
   text(fb, w, h, 42, 220, address, 2);
+  if (lan) {
+    char hostname[32];
+    snprintf(hostname, sizeof(hostname), "%s.local", netif_hostname());
+    text(fb, w, h, 42, 258, hostname, 2);
+  }
   text(fb, w, h, 42, 292, "LOGIN KEY", 2);
   int split = 22;
   for (size_t i = 0; i < strlen(key); i += split) {
@@ -84,27 +90,9 @@ static void draw(uint8_t *fb, uint16_t w, uint16_t h, void *context) {
               pixel(fb, w, h, x0 + x * scale + dx, y0 + y * scale + dy);
   }
 }
-static void worker(void *arg) {
-  for (;;) {
-    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-    vTaskDelay(pdMS_TO_TICKS(500));
-    ulTaskNotifyTake(pdTRUE, 0);
-    while (frame_render_card(draw, NULL) != 0)
-      vTaskDelay(pdMS_TO_TICKS(500));
-  }
-}
-void connection_card_init(void) {
-  configASSERT(xTaskCreate(worker, "connection_card", 4096, NULL, 4, &task) ==
-               pdPASS);
-}
-void connection_card_request(void) {
-  holding = true;
-  if (task)
-    xTaskNotifyGive(task);
-}
-bool connection_card_holding(void) { return holding; }
-void connection_card_release(void) { holding = false; }
-void connection_card_reset_notice(void) {
-  holding = true;
-  frame_render_card(draw, (void *)1);
-}
+void connection_card_init(void) { }
+void connection_card_request(void) {holding=true;display_scheduler_connection();}
+bool connection_card_holding(void) {return holding;}
+void connection_card_release(void) {holding=false;display_scheduler_wake();}
+int connection_card_render(bool reset) {return frame_render_card(draw,reset?(void*)1:NULL);}
+void connection_card_reset_notice(void) {holding=true;display_scheduler_reset_notice();}

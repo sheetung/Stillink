@@ -1,3 +1,5 @@
+#include "display_scheduler.h"
+#include "dates.h"
 #include "connection_card.h"
 #include "service_access.h"
 #include "auth.h"
@@ -83,6 +85,7 @@ esp_err_t weather_disable(void)
         }
     }
     xSemaphoreGive(s_lock);
+    if(err==ESP_OK)display_scheduler_changed();
     return err;
 }
 
@@ -180,7 +183,7 @@ static esp_err_t config_handler(httpd_req_t *req)
     if (next->enabled && (!next->name[0] || !next->service_url[0])) valid = false;
     cJSON_Delete(json);
     if (!valid) { free(next); return httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid weather settings"); }
-    if (next->enabled && (music_disable() != ESP_OK || album_disable() != ESP_OK)) {
+    if (next->enabled && (music_disable() != ESP_OK || album_disable() != ESP_OK || dates_disable() != ESP_OK)) {
         free(next);
         return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Could not disable music");
     }
@@ -199,6 +202,7 @@ static esp_err_t config_handler(httpd_req_t *req)
     free(next);
     if (err != ESP_OK) return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Could not save weather settings");
     connection_card_release();
+    display_scheduler_changed();
     return httpd_resp_sendstr(req, "{\"saved\":true}");
 }
 
@@ -210,6 +214,7 @@ static esp_err_t refresh_handler(httpd_req_t *req)
     if (available) { s_requested = true; s_retry = 0; }
     xSemaphoreGive(s_lock);
     if (!available) { httpd_resp_set_status(req, "409 Conflict"); return httpd_resp_sendstr(req, "{\"error\":\"Enable weather and connect Wi-Fi first\"}"); }
+    display_scheduler_changed();
     httpd_resp_set_status(req, "202 Accepted");
     return httpd_resp_sendstr(req, "{\"status\":\"queued\"}");
 }
@@ -228,7 +233,7 @@ static bool still_current(void *context)
 {
     unsigned revision = *(unsigned *)context;
     xSemaphoreTake(s_lock, portMAX_DELAY);
-    bool current = s_config.enabled && s_revision == revision;
+    bool current = s_config.enabled && s_revision == revision && display_scheduler_current();
     xSemaphoreGive(s_lock);
     return current;
 }
@@ -268,53 +273,34 @@ static int64_t schedule_slot(time_t now, int offset, const weather_config_t *con
     return (day - 1) * 3 + 2;
 }
 
-static void worker(void *unused)
-{
-    weather_config_t *config = malloc(sizeof(*config));
-    if (!config) { vTaskDelete(NULL); return; }
-    for (;;) {
-        vTaskDelay(pdMS_TO_TICKS(3000));
-        if (online_ota_busy()) continue;
-        if (music_enabled() || album_enabled()) continue;
-        time_t now = time(NULL);
-        xSemaphoreTake(s_lock, portMAX_DELAY);
-        int offset = s_has_data ? s_data.utc_offset : 8 * 3600;
-        int64_t slot = schedule_slot(now, offset, &s_config);
-        bool due = !s_has_data || s_requested || slot > s_last_slot;
-        bool retry_ready = !s_retry || (int32_t)(xTaskGetTickCount() - s_retry) >= 0;
-        /* NTP must establish time before certificate validity checks. */
-        if (!s_config.enabled || !wifi_lan_connected() || now < 1700000000 || !due || !retry_ready) { xSemaphoreGive(s_lock); continue; }
-        *config = s_config;
-        unsigned revision = s_revision;
-        s_requested = false;
-        s_loading = true;
-        xSemaphoreGive(s_lock);
-        weather_data_t data = {0};
-        char error[80] = "";
-        bool ok = fetch_weather(config, &data, error, revision);
-        xSemaphoreTake(s_lock, portMAX_DELAY);
-        bool current = revision == s_revision && s_config.enabled;
-        xSemaphoreGive(s_lock);
-        xSemaphoreTake(s_lock, portMAX_DELAY);
-        s_loading = false;
-        if (current && revision == s_revision) {
-            if (ok) {
-                s_data = data;
-                s_has_data = true;
-                s_last_slot = schedule_slot(time(NULL), data.utc_offset, config);
-                s_retry = 0;
-                s_error[0] = 0;
-            } else {
-                strlcpy(s_error, error, sizeof(s_error));
-                s_requested = true;
-                s_retry = xTaskGetTickCount() + pdMS_TO_TICKS(300000);
-            }
-        }
-        xSemaphoreGive(s_lock);
-        ESP_LOGI(TAG, "weather %s: %s", config->name, ok ? "updated" : error);
+bool weather_enabled(void){if(!s_lock)return false;xSemaphoreTake(s_lock,portMAX_DELAY);bool enabled=s_config.enabled;xSemaphoreGive(s_lock);return enabled;}
+static uint32_t next_weather_ms(time_t now,int offset,const weather_config_t *config){
+    int64_t local=(int64_t)now+offset,day=local/86400;
+    for(int i=0;i<3;i++){int64_t target=day*86400+config->minutes[i]*60;if(target>local)return (uint32_t)((target-local)*1000);}
+    return (uint32_t)(((day+1)*86400+config->minutes[0]*60-local)*1000);
+}
+display_result_t weather_run(void){
+    if(time(NULL)<1700000000)return display_result(30000,NULL);
+    weather_config_t config;
+    xSemaphoreTake(s_lock,portMAX_DELAY);
+    time_t now=time(NULL);int offset=s_has_data?s_data.utc_offset:28800;
+    int64_t slot=schedule_slot(now,offset,&s_config);
+    if(!s_config.enabled){xSemaphoreGive(s_lock);return display_result(DISPLAY_WAIT_FOREVER,NULL);}
+    int32_t remaining=(int32_t)(s_retry-xTaskGetTickCount());
+    if(s_retry&&remaining>0){xSemaphoreGive(s_lock);return display_result((uint32_t)remaining*portTICK_PERIOD_MS,NULL);}
+    if(s_has_data&&!s_requested&&slot<=s_last_slot){uint32_t delay=next_weather_ms(now,offset,&s_config);xSemaphoreGive(s_lock);return display_result(delay,NULL);}
+    config=s_config;unsigned revision=s_revision;s_requested=false;s_loading=true;xSemaphoreGive(s_lock);
+    weather_data_t data={0};char error[80]="";bool ok=fetch_weather(&config,&data,error,revision);
+    xSemaphoreTake(s_lock,portMAX_DELAY);s_loading=false;
+    if(revision==s_revision&&s_config.enabled){
+        if(ok){s_data=data;s_has_data=true;s_last_slot=schedule_slot(time(NULL),data.utc_offset,&config);s_retry=0;s_error[0]=0;}
+        else{strlcpy(s_error,error,sizeof(s_error));s_requested=true;s_retry=xTaskGetTickCount()+pdMS_TO_TICKS(300000);}
     }
+    xSemaphoreGive(s_lock);
+    return display_result(ok?next_weather_ms(time(NULL),data.utc_offset,&config):300000,ok?NULL:error);
 }
 
+static void clock_ready(struct timeval *tv){(void)tv;display_scheduler_wake();}
 void weather_init(void)
 {
     s_lock = xSemaphoreCreateMutex();
@@ -331,8 +317,9 @@ void weather_init(void)
         nvs_close(nvs);
     }
     esp_sntp_config_t ntp = ESP_NETIF_SNTP_DEFAULT_CONFIG("ntp.aliyun.com");
+    ntp.sync_cb=clock_ready;
     ESP_ERROR_CHECK(esp_netif_sntp_init(&ntp));
-    ESP_ERROR_CHECK(xTaskCreate(worker, "weather", 8192, NULL, 3, NULL) == pdPASS ? ESP_OK : ESP_ERR_NO_MEM);
+
 }
 
 void weather_register(httpd_handle_t server)

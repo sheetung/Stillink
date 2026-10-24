@@ -24,6 +24,13 @@ DATA = dict(temperature=22, humidity=65, wind=2.3, code=0, updated=1791802800,
 
 
 class WeatherTests(unittest.TestCase):
+    def test_weather_timeout_fits_device_proxy_budget(self):
+        weather.CACHE.clear()
+        with patch.object(weather, "urlopen", side_effect=TimeoutError("offline")) as request:
+            with self.assertRaises(TimeoutError):
+                weather.fetch_weather(1.23, 4.56)
+        self.assertLess(request.call_args.kwargs["timeout"], 15)
+
     def test_frame_contract(self):
         image = Image.new("P", (768, 552), 1)
         image.putpixel((0, 0), 3)

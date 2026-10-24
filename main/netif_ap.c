@@ -21,6 +21,7 @@ static const char *TAG = "netif_ap";
 #define AP_CHANNEL  6
 
 static esp_netif_t *s_ap = NULL;
+static char s_hostname[17];
 static char s_ssid[SETT_SSID_MAX];
 
 static void configure_dhcp_portal(void)
@@ -101,6 +102,9 @@ static void build_ssid(char *out, size_t n)
 
 void netif_ap_init(void)
 {
+    uint8_t mac[6];
+    ESP_ERROR_CHECK(esp_read_mac(mac, ESP_MAC_WIFI_STA));
+    snprintf(s_hostname, sizeof(s_hostname), "stillink-%02x%02x", mac[4], mac[5]);
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     s_ap = esp_netif_create_default_wifi_ap();
@@ -141,6 +145,13 @@ void netif_ap_apply(void)
     if (e1 != ESP_OK) ESP_LOGE(TAG, "set_config failed: %s", esp_err_to_name(e1));
     esp_err_t e2 = esp_wifi_start();
     if (e2 != ESP_OK) ESP_LOGE(TAG, "wifi start failed: %s", esp_err_to_name(e2));
+#ifdef STILLINK_MDNS_DIAGNOSTIC
+    if (e2 == ESP_OK) {
+        esp_err_t ps_err = esp_wifi_set_ps(WIFI_PS_NONE);
+        if (ps_err != ESP_OK) ESP_LOGE(TAG, "disable Wi-Fi power saving: %s", esp_err_to_name(ps_err));
+        else ESP_LOGW(TAG, "mDNS diagnostic: Wi-Fi power saving disabled");
+    }
+#endif
 
     netif_ap_apply_tx_power();
 
@@ -158,3 +169,4 @@ int netif_ap_client_count(void)
 }
 
 const char *netif_ap_ssid(void) { return s_ssid; }
+const char *netif_hostname(void) { return s_hostname; }

@@ -8,3 +8,6 @@ void album_factory_reset(void);
 bool album_enabled(void);
 esp_err_t album_disable(void);
 #endif
+
+#include "display_scheduler.h"
+display_result_t album_run(void);

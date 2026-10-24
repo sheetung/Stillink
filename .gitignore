@@ -57,3 +57,12 @@ extra-services/server/*.spec
 # ---- 编辑器 ----
 .vscode/
 .idea/
+
+# ---- 本地测试、调试构建与过程记录（不入库）----
+/build-*/
+/docs/benchmarks/
+/docs/performance-testing.md
+/docs/plans/
+/design-qa.md
+/tools/benchmark_*.py
+/tools/test_benchmark.py
