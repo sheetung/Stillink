@@ -1113,7 +1113,7 @@ input[type=date],input[type=time]{font:inherit;color:var(--ink);background:var(-
 <dialog id="onlineOtaNotesDialog" class="releaseDialog" aria-labelledby="onlineOtaNotesTitle">
   <h2 id="onlineOtaNotesTitle">更新内容</h2>
   <div id="onlineOtaNotesBody" class="releaseNotes"></div>
-  <div class="row"><a id="onlineOtaNotesLink" target="_blank" rel="noopener noreferrer">查看 Release</a><button class="mini" id="onlineOtaNotesClose">关闭</button></div>
+  <div class="row"><a id="onlineOtaNotesLink" target="_blank" rel="noopener noreferrer">查看 Release</a><button class="mini" id="onlineOtaNotesInstall" disabled>下载并升级</button><button class="mini" id="onlineOtaNotesClose">关闭</button></div>
 </dialog>
 
 <div id="workLoading" aria-hidden="true">
@@ -3650,7 +3650,7 @@ $("savePanel").addEventListener("click", function(){
   function newer(a,b){for(var i=0;i<3;i++){if(a[i]!==b[i])return a[i]>b[i];}return false;}
   function display(status,message,percent){
     $("onlineOtaCheck").disabled=!state||busy;
-    $("onlineOtaInstall").disabled=!state||busy||!asset;
+    $("onlineOtaInstall").disabled=$("onlineOtaNotesInstall").disabled=!state||busy||!asset;
     $("upGo").disabled=busy;
     $("onlineOtaInfo").textContent=state?"当前 "+state.current+" · "+state.chip+(state.latest?" · 最新 "+state.latest:""):"正在读取设备信息…";
     $("onlineOtaProgress").hidden=status!=="downloading"&&status!=="uploading";
@@ -3700,7 +3700,7 @@ $("savePanel").addEventListener("click", function(){
       $("onlineOtaNotesLink").href="https://github.com/sheetung/Stillink/releases/tag/"+encodeURIComponent(release.tag_name);
       if(!silent&&!$("onlineOtaNotesDialog").open)$("onlineOtaNotesDialog").showModal();
     }catch(e){if(!silent)display("error","检查失败："+(e.name==="AbortError"?"请求超时":e.message)+"。请检查网络后重试，也可使用文件上传升级。");}
-    finally{busy=false;$("onlineOtaCheck").disabled=!state;$("onlineOtaInstall").disabled=!asset;$("upGo").disabled=false;updateNotice();if(recheckPending){recheckPending=false;refreshAfterConnection();}}
+    finally{busy=false;$("onlineOtaCheck").disabled=!state;$("onlineOtaInstall").disabled=$("onlineOtaNotesInstall").disabled=!asset;$("upGo").disabled=false;updateNotice();if(recheckPending){recheckPending=false;refreshAfterConnection();}}
   }
   async function download(selected){
     var controller=new AbortController(),timer=setTimeout(function(){controller.abort();},120000);
@@ -3734,15 +3734,17 @@ $("savePanel").addEventListener("click", function(){
   async function install(){
     if(busy||!state||!asset)return;
     if(!confirm("下载 "+asset.version+" 并升级？设备将重启，屏幕等设置恢复默认，Wi-Fi、热点凭据和服务配置保留。升级期间请勿断电。"))return;
+    if($("onlineOtaNotesDialog").open)$("onlineOtaNotesDialog").close();
     var selected=asset;busy=true;display("downloading","浏览器正在下载固件…",0);
     try{var data=await download(selected);display("uploading","正在上传至设备，请勿断电。",0);await upload(data);asset=null;updateNotice();display("rebooting","固件已校验通过，设备重启中；45 秒内勿断电，随后刷新页面。");}
     catch(e){display("error","升级失败："+(e.name==="AbortError"?"下载超时":e.message)+"。可重试或使用文件上传升级。");}
-    finally{busy=false;$("onlineOtaCheck").disabled=!state;$("onlineOtaInstall").disabled=!asset;$("upGo").disabled=false;if(recheckPending){recheckPending=false;refreshAfterConnection();}}
+    finally{busy=false;$("onlineOtaCheck").disabled=!state;$("onlineOtaInstall").disabled=$("onlineOtaNotesInstall").disabled=!asset;$("upGo").disabled=false;if(recheckPending){recheckPending=false;refreshAfterConnection();}}
   }
   $("updateNotice").addEventListener("click",function(){setTab("device");$("maintenanceSettings").open=true;$("onlineOtaInfo").scrollIntoView({block:"center",behavior:"smooth"});$("onlineOtaCheck").focus({preventScroll:true});});
   document.addEventListener("visibilitychange",function(){if(!document.hidden&&!autoChecked)load();});
   $("onlineOtaCheck").addEventListener("click",function(){return check(false);});
   $("onlineOtaInstall").addEventListener("click",install);
+  $("onlineOtaNotesInstall").addEventListener("click",install);
   $("onlineOtaNotesClose").addEventListener("click",function(){$("onlineOtaNotesDialog").close();});
   $("gearBtn").addEventListener("click",load);
   load();
